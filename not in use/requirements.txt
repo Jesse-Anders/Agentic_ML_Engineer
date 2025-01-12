@@ -1,0 +1,8 @@
+flask
+langchain-community>=0.2.11
+langchain
+langchain_openai
+markdown
+bs4
+pandas
+python-dotenv
