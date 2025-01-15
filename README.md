@@ -2,6 +2,8 @@
  Agentic system that generates a data Pipeline for AI models
 
 # The Journal<br>
+(For Nick and Jesse Capstone)<br>
+                          
 
 ### 1/14/2025<br>
 1pm - 2:30pm. <br>
