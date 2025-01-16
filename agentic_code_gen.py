@@ -198,16 +198,19 @@ def print_stream(stream):
 
 # Example user message:
 instructions = (
-    "Complete Tasks in Order and Use the 5 steps below to complete each task."
-    "1.) Use the search_toolbox tool to find an appropriate function for the task. "
-    "2.) Use the execute_existing_code tool to complete the task on the df. "
-    "3.) If no existing function found with search_toolbox tool can complete the task, use the write_code_to_file to create a new Python function to complete the task. "
-    "4.) If a new function is created, save the function to a file named 'generated_toolbox.py'. "
-    "5.) Use the execute_generated_code tool to complete the task of the df. "
-
+    "Complete each task strictly in numerical order, starting with Task 1, followed by Task 2, and so on. Finish each task fully before starting the next. "
     "Task 1: Please fix any spelling errors in the data frame named df. " 
     "Task 2: Drop duplicate rows from the data frame named 'df' and return a summary of how many rows were removed, etc. "
     "Task 3: Save the data frame named df to a file named data_cleaned.csv "
+
+    "Use the 5 steps below to complete each individual task."
+    "1.) Use the search_toolbox tool to find an appropriate function for the task. "
+    "2.) Use the execute_existing_code tool to complete the task on the df. "
+    "If, and only if, no appropriate function was found to complete the task, proceed to step 3. "
+    "3.) Thoroughly consider what Pythonic function will be needed to complete the task on the data frame. Write excellent and thorough code and include code comments."
+    "4.) Use the write_code_to_file to tool to save the Python function. "
+    "5.) Use the execute_generated_code tool to complete the task on the df. "
+
 )
 
 inputs = {"messages": [("user", instructions)]}

@@ -8,6 +8,30 @@ def fix_spelling_errors(df):
     return df
 
 import pandas as pd
+
+
+# Another successfully generated function to fix spelling errors
+import pandas as pd
+from textblob import TextBlob
+
+def fix_spelling_errors(df):
+    """
+    Fixes spelling errors in the DataFrame by applying a correction to each string entry.
+    Assumes all columns are of string type for simplicity.
+    """
+    def correct_spelling(text):
+        if isinstance(text, str):
+            return str(TextBlob(text).correct())
+        return text
+
+    # Apply the correction function to each element in the DataFrame
+    return df.applymap(correct_spelling)
+
+
+
+
+
+
 from spellchecker import SpellChecker
 
 
