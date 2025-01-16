@@ -1,35 +1,22 @@
 # Saved this generated code for fixing spelling errors
 import pandas as pd
-
 from textblob import TextBlob
+
 def fix_spelling_errors(df):
+    """
+    Fixes spelling errors in string columns of the DataFrame.
+    
+    Parameters:
+    df (pd.DataFrame): The DataFrame to process.
+    
+    Returns:
+    pd.DataFrame: The DataFrame with corrected spelling in string columns.
+    """
     for column in df.select_dtypes(include=['object']).columns:
-        df[column] = df[column].apply(lambda x: str(TextBlob(x).correct()) if pd.notnull(x) else x)
+        df[column] = df[column].apply(lambda x: str(TextBlob(x).correct()) if isinstance(x, str) else x)
     return df
 
-import pandas as pd
-
-
 # Another successfully generated function to fix spelling errors
-import pandas as pd
-from textblob import TextBlob
-
-def fix_spelling_errors(df):
-    """
-    Fixes spelling errors in the DataFrame by applying a correction to each string entry.
-    Assumes all columns are of string type for simplicity.
-    """
-    def correct_spelling(text):
-        if isinstance(text, str):
-            return str(TextBlob(text).correct())
-        return text
-
-    # Apply the correction function to each element in the DataFrame
-    return df.applymap(correct_spelling)
-
-
-
-
 
 
 from spellchecker import SpellChecker

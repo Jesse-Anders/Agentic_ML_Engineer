@@ -41,7 +41,7 @@ def initialize_pipeline_file():
         pipeline_file.write("# It is intended to be a reusable data pipeline.\n")
         pipeline_file.write("import pandas as pd\n\n")
         pipeline_file.write("import toolbox\n\n")
-        pipeline_file.write("import generated_toolbox\n\n")
+        pipeline_file.write("import generated_toolbox_saved\n\n")
         pipeline_file.write('data_file_name = "data.csv"\n')
         pipeline_file.write("df = pd.read_csv(data_file_name)\n\n")
     print("generated_pipeline.py has been reset with boilerplate code.")
@@ -49,7 +49,7 @@ def initialize_pipeline_file():
 initialize_pipeline_file()
 
 # ---------------------------------------------------------------------------
-# 2) DEFINE TOOLS: "WRITE_CODE_TO_FILE" AND "EXECUTE_GENERATED_CODE"
+# 2) DEFINE TOOLS: "GENERATE_CODE" AND "EXECUTE_GENERATED_CODE"
 # ---------------------------------------------------------------------------
 @tool
 def search_toolbox() -> str:
@@ -106,19 +106,35 @@ def execute_existing_code(
     except Exception as e:
         return f"Error: An unexpected error occurred while executing '{function_name}'. Details: {e}"
 
+@tool
+def coding_instructions() -> str:
+    """
+    Provides detailed guidance for writing new Python functions.
+    Use this tool only when no pre-existing function meets the task requirements.
+    """
+    return (
+        "When writing new Python functions, follow these guidelines:\n"
+        "- employ textblob when handling spelling errors.\n"
+        "- Ensure the function is Pythonic, efficient, and handles edge cases.\n"
+        "- Include inline comments explaining the logic and any assumptions.\n"
+        "- Test the function with realistic inputs to ensure correctness.\n"
+        "- Use descriptive variable names to make the code readable.\n"
+        "- Avoid hardcoding values; make the function reusable when possible.\n"
+        "- Structure the code logically, with clear input and output specifications.\n"
+    )
 
 @tool
-def write_code_to_file(
+def generate_code(
     code: Annotated[str, "The code to write into the file"]
 ) -> str:
     """
-    Writes the provided 'code' to a file named 'generated_toolbox.py'.
+    Writes the provided 'code' to a file named 'generated_toolbox_sandbox.py'.
     Overwrites if the file exists.
     Returns a success message or error.
     """
     try:
         # Fixed filename
-        filename = "generated_toolbox.py"
+        filename = "generated_toolbox_sandbox.py"
 
         # Write the code to the fixed file
         with open(filename, "w") as f:
@@ -154,8 +170,8 @@ def execute_generated_code(
         result = func(df)
 
         # Append the function call to the pipeline file
-        with open("generated_pipeline.py", "a") as pipeline_file:
-            pipeline_file.write(f"generated_toolbox.{function_name}(df)\n")
+        #with open("generated_pipeline.py", "a") as pipeline_file:
+        #    pipeline_file.write(f"generated_toolbox_sandbox.{function_name}(df)\n")
 
         return f"Function '{function_name}' executed successfully. Result:\n{result}"
     except NameError:
@@ -163,11 +179,41 @@ def execute_generated_code(
     except Exception as e:
         return f"Error executing code: {e}"
 
+@tool
+def save_successful_code():
+    """
+    Appends the content of 'generated_toolbox_sandbox.py' to 'generated_toolbox_saved.py'.
+    Use this tool after verifying that the generated code in 'generated_toolbox_sandbox.py' 
+    has been successfully executed and works as expected.
+    """
+    generated_file = "generated_toolbox_sandbox.py"
+    saved_file = "generated_toolbox_saved.py"
+
+    try:
+        # Read the content of generated_toolbox_sandbox.py
+        with open(generated_file, "r") as gen_file:
+            generated_code = gen_file.read()
+
+        # Append the content to generated_toolbox_saved.py
+        with open(saved_file, "a") as save_file:
+            save_file.write("\n\n# --- Successfully Generated Code ---\n")
+            save_file.write(generated_code)
+# FUNCTION_NAME IS NOT DEFINED YET IN THE GENERATED FUNCTION IN ORDER TO UPDATE GENERATED_PIPELINE
+                # Append the function call to the pipeline file
+        #with open("generated_pipeline.py", "a") as pipeline_file:
+        #    pipeline_file.write(f"generated_toolbox_saved.{function_name}(df)\n")
+
+        return f"Code from '{generated_file}' has been successfully appended to '{saved_file}'."
+
+    except FileNotFoundError as e:
+        return f"Error: {str(e)}"
+    except Exception as e:
+        return f"An unexpected error occurred: {str(e)}"
 
 # ---------------------------------------------------------------------------
 # 3) PUT TOOLS IN LIST
 # ---------------------------------------------------------------------------
-tools = [search_toolbox, execute_existing_code, write_code_to_file, execute_generated_code]
+tools = [search_toolbox, execute_existing_code, coding_instructions, generate_code, execute_generated_code, save_successful_code]
 
 # ---------------------------------------------------------------------------
 # 4) CREATE THE LLM (ChatOpenAI) AND REACT AGENT
@@ -203,13 +249,15 @@ instructions = (
     "Task 2: Drop duplicate rows from the data frame named 'df' and return a summary of how many rows were removed, etc. "
     "Task 3: Save the data frame named df to a file named data_cleaned.csv "
 
-    "Use the 5 steps below to complete each individual task."
-    "1.) Use the search_toolbox tool to find an appropriate function for the task. "
-    "2.) Use the execute_existing_code tool to complete the task on the df. "
-    "If, and only if, no appropriate function was found to complete the task, proceed to step 3. "
-    "3.) Thoroughly consider what Pythonic function will be needed to complete the task on the data frame. Write excellent and thorough code and include code comments."
-    "4.) Use the write_code_to_file to tool to save the Python function. "
-    "5.) Use the execute_generated_code tool to complete the task on the df. "
+    "Use the 5 steps below to complete each individual task.\n"
+    "1.) Use the search_toolbox tool to find an appropriate function for the task.\n"
+    "2.) Use the execute_existing_code tool to complete the task on the df.\n"
+    "3.) If, and only if, no appropriate function is found to complete the task, proceed as follows. "
+    "   a) Use the coding_instructions tool to retrieve detailed guidelines for writing the function.\n"
+    "   b) Write a Pythonic function based on the instructions provided.\n"
+    "   c) Use the write_code_to_file tool to save the function.\n"
+    "   d) Use the execute_generated_code tool to apply the function to the data frame.\n"
+    "   e) If the generated code executes successfully, run the save_successful_code tool.\n"
 
 )
 
