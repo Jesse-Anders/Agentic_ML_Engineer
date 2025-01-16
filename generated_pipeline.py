@@ -12,4 +12,3 @@ df = pd.read_csv(data_file_name)
 
 toolbox.drop_df_duplicates(df)
 toolbox.save_df_to_csv(df)
-generated_toolbox.fix_spelling_errors(df)

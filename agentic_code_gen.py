@@ -195,22 +195,21 @@ def print_stream(stream):
 # ---------------------------------------------------------------------------
 # 6) DEMO USAGE
 # ---------------------------------------------------------------------------
-if __name__ == "__main__":
 
-    # Example user message:
-    instructions = (
-        "Complete Tasks in Order and Use the 5 steps below to complete each task."
-        "1.) Use the search_toolbox tool to find an appropriate function for the task. "
-        "2.) Use the execute_existing_code tool to complete the task on the df. "
-        "3.) If no existing function found with search_toolbox tool can complete the task, use the write_code_to_file to create a new Python function to complete the task. "
-        "4.) If a new function is created, save the function to a file named 'generated_toolbox.py'. "
-        "5.) Use the execute_generated_code tool to complete the task of the df. "
+# Example user message:
+instructions = (
+    "Complete Tasks in Order and Use the 5 steps below to complete each task."
+    "1.) Use the search_toolbox tool to find an appropriate function for the task. "
+    "2.) Use the execute_existing_code tool to complete the task on the df. "
+    "3.) If no existing function found with search_toolbox tool can complete the task, use the write_code_to_file to create a new Python function to complete the task. "
+    "4.) If a new function is created, save the function to a file named 'generated_toolbox.py'. "
+    "5.) Use the execute_generated_code tool to complete the task of the df. "
 
-        "Task 1: Please fix any spelling errors in the data frame named df. " 
-        "Task 2: Drop duplicate rows from the data frame named 'df' and return a summary of how many rows were removed, etc. "
-        "Task 3: Save the data frame named df to a file named data_cleaned.csv "
-    )
+    "Task 1: Please fix any spelling errors in the data frame named df. " 
+    "Task 2: Drop duplicate rows from the data frame named 'df' and return a summary of how many rows were removed, etc. "
+    "Task 3: Save the data frame named df to a file named data_cleaned.csv "
+)
 
-    inputs = {"messages": [("user", instructions)]}
-    stream = graph.stream(inputs, stream_mode="values")
-    print_stream(stream)
+inputs = {"messages": [("user", instructions)]}
+stream = graph.stream(inputs, stream_mode="values")
+print_stream(stream)
