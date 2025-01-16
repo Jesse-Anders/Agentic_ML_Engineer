@@ -17,3 +17,8 @@ Deepend understand of states, nodes, edges, memory, time travel, etc.<br>
 Concepts to Further Study and Employ: Human in The Loop. Give LLM agency to decide to bring human into the loop.<br> 
 <b>Create ReAct agent from scratch</b> https://langchain-ai.github.io/langgraph/how-tos/react-agent-from-scratch/<br>
 Might want to rebuild the current pre-built ReAct agent to handle human in the loop and give pre-prompted workflow instructions to the agent.<br>
+
+### 1/16/25<br>
+10pm - 1am
+Jesse Evening Coding Session.<br>
+Added the following 2 Tools [coding_instructions, save_successful_code]. These instructions tools allows for detailed instructions on how to handle coding for the main ReAct agent when it must generate code. The save succesfull code is part of a set of functions that moves intitially generated code from a sandbox to a commited long term file that is accessed by the final generated_pipeline. Main instructions have been updated to be extremeleley explicit about task order of operations. 
