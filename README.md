@@ -2,7 +2,7 @@
  Agentic system that generates a data Pipeline for AI models
 
 # The Journal<br>
-(For Nick and Jesse Capstone)<br>
+##(For Nick and Jesse Capstone Only)<br>
                           
 
 ### 1/14/2025<br>
@@ -19,6 +19,21 @@ Concepts to Further Study and Employ: Human in The Loop. Give LLM agency to deci
 Might want to rebuild the current pre-built ReAct agent to handle human in the loop and give pre-prompted workflow instructions to the agent.<br>
 
 ### 1/15/25<br>
-10pm - 1am
+10pm - 1am<br>
 Jesse Evening Coding Session.<br>
 Added the following 2 Tools [coding_instructions, save_successful_code]. The instructions tools allows for detailed instructions on how to handle pythonic coding for the main ReAct agent when it must autonomously generate code. The save succesfull code is part of a set of functions that moves intitially generated code from a tool sandbox to a commited long term file that is accessed by the final generated_pipeline.py. Main instructions have been updated to be extremeleley explicit about task order of operations and handling the added tools.
+
+### 1/16/25<br>
+9-11:45pm<br>
+Jesse Evening Coding Session.<br>
+Cleaning file naming structure. Added code to grab name and descriptions from the lib_eda_static.py file and auto populate lib_eda_static_list.json file The lib_eda_static_list.json allows the LLM to search only tool names and descriptions of functions in a lib without having to poor over all the complete code of each function. Prepping data set for args parser...<br>
+if __name__ == "_main_":
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset_path', type=str)
+parser.add_argument('--pipeline_path', type=str, default=‘pipeline-py’) 
+parser.add_argument('--static_edalib_path', type=str, default='static_edalib.py’)
+parser.add_argument('--dynamic_edalib_path', type=str, default=‘dynamic_edalib.py’)
+parser.add_argument('--11m_model', type=str, default=‘LM Studio Community/Meta-Llama-3-8B-Instruct-GGUF’)
+parser.add_argument('--target_var', type-str)
+args = parser.parse_args)
+
