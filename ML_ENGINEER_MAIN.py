@@ -1,5 +1,6 @@
 import os
 import json
+import ast
 import importlib.util
 from typing import Annotated
 import pandas as pd
@@ -9,7 +10,7 @@ from dotenv import load_dotenv
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
-import toolbox
+import lib_eda_static
 import inspect
 
 # ---------------------------------------------------------------------------
@@ -40,7 +41,7 @@ def initialize_pipeline_file():
         pipeline_file.write("# This file is automatically populated by the agentic system.\n")
         pipeline_file.write("# It is intended to be a reusable data pipeline.\n")
         pipeline_file.write("import pandas as pd\n\n")
-        pipeline_file.write("import toolbox\n\n")
+        pipeline_file.write("import lib_eda_static\n\n")
         pipeline_file.write("import generated_toolbox_saved\n\n")
         pipeline_file.write('data_file_name = "data.csv"\n')
         pipeline_file.write("df = pd.read_csv(data_file_name)\n\n")
@@ -49,38 +50,84 @@ def initialize_pipeline_file():
 initialize_pipeline_file()
 
 # ---------------------------------------------------------------------------
+# GENERATE A JSON WITH NAMES AND DESCRIPTIONS OF DEFS FOR LLM'S TO QUICK READ
+#  --# UPDATE ARGUMENTS WITH ARGS.PATHS!!!--
+# ---------------------------------------------------------------------------
+def generate_name_descriptions_list(file_path, output_json):
+    """
+    Extracts function names and descriptions from a Python file and saves them to a JSON file.
+
+    Args:
+        file_path (str): Path to the Python file to parse.
+        output_json (str): Path to the JSON file to save the output.
+    """
+    with open(file_path, 'r') as file:
+        tree = ast.parse(file.read())
+
+    function_list = []
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            function_name = node.name
+            docstring = ast.get_docstring(node)
+
+            if docstring:
+                # Extract the "description" from the docstring
+                description_key = "\"description\":"
+
+                description_value = ""
+
+                for line in docstring.split('\n'):
+                    line = line.strip()
+                    if line.startswith(description_key):
+                        description_value = line.split(':', 1)[1].strip().strip('"').strip(',')
+
+                function_list.append({
+                    "function_name": function_name,
+                    "description": description_value
+                })
+
+    # Write the extracted data to a JSON file
+    with open(output_json, 'w') as json_file:
+        json.dump(function_list, json_file, indent=4)
+
+# UPDATE ARGUMENTS WITH ARGS.PATHS!!!
+generate_name_descriptions_list('lib_eda_static.py', 'lib_eda_static_list.json')
+
+
+# ---------------------------------------------------------------------------
 # 2) DEFINE TOOLS: "GENERATE_CODE" AND "EXECUTE_GENERATED_CODE"
 # ---------------------------------------------------------------------------
 @tool
-def search_toolbox() -> str:
+def search_lib() -> str:
     """
     Returns a JSON-serialized list of available tools and their descriptions
-    from the tool_list.json file.
+    from the lib_eda_static_list.json file.
     """
     try:
         # Load the tool list from the JSON file
-        with open("tool_list.json", "r") as f:
+        with open("lib_eda_static_list.json", "r") as f:
             tools = json.load(f)
 
         # Validate the structure of the JSON file
         if not isinstance(tools, list) or not all("function_name" in tool for tool in tools):
-            return "Error: Invalid format in tool_list.json. Each entry must include 'function_name'."
+            return "Error: Invalid format in lib_eda_static_list.json. Each entry must include 'function_name'."
 
         return json.dumps(tools, indent=2)
     except FileNotFoundError:
-        return "Error: tool_list.json not found. Ensure the file exists in the working directory."
+        return "Error: lib_eda_static_list.json not found. Ensure the file exists in the working directory."
     except Exception as e:
-        return f"Error reading tool_list.json: {e}"
+        return f"Error reading lib_eda_static_list.json: {e}"
 
 
 @tool
 def execute_existing_code(
-    function_name: Annotated[str, "Name of the function in toolbox.py to run"]
+    function_name: Annotated[str, "Name of the function in lib_eda_static.py to run"]
 ) -> str:
     """
-    Executes the specified function from toolbox.py on the global DataFrame `df`.
+    Executes the specified function from lib_eda_static.py on the global DataFrame `df`.
 
-    Assumes that `function_name` has been validated as existing in toolbox.py.
+    Assumes that `function_name` has been validated as existing in lib_eda_static.py.
 
     Returns
     -------
@@ -88,21 +135,21 @@ def execute_existing_code(
         A string containing the result of the function execution or an error message.
     """
     try:
-        # Retrieve the function from toolbox.py
-        func = getattr(toolbox, function_name)
+        # Retrieve the function from lib_eda_static.py
+        func = getattr(lib_eda_static, function_name)
 
         # Execute the function with the global DataFrame `df`
         result = func(df)
 
         # Append the function call to the pipeline file
         with open("generated_pipeline.py", "a") as pipeline_file:
-            pipeline_file.write(f"toolbox.{function_name}(df)\n")
+            pipeline_file.write(f"lib_eda_static.{function_name}(df)\n")
 
         return f"Function '{function_name}' executed successfully. Result:\n{result}"
     except NameError:
         return "Error: Global DataFrame 'df' not defined."
     except AttributeError:
-        return f"Error: Function '{function_name}' not found in toolbox.py."
+        return f"Error: Function '{function_name}' not found in lib_eda_static.py."
     except Exception as e:
         return f"Error: An unexpected error occurred while executing '{function_name}'. Details: {e}"
 
@@ -213,7 +260,7 @@ def save_successful_code():
 # ---------------------------------------------------------------------------
 # 3) PUT TOOLS IN LIST
 # ---------------------------------------------------------------------------
-tools = [search_toolbox, execute_existing_code, coding_instructions, generate_code, execute_generated_code, save_successful_code]
+tools = [search_lib, execute_existing_code, coding_instructions, generate_code, execute_generated_code, save_successful_code]
 
 # ---------------------------------------------------------------------------
 # 4) CREATE THE LLM (ChatOpenAI) AND REACT AGENT
@@ -250,7 +297,7 @@ instructions = (
     "Task 3: Save the data frame named df to a file named data_cleaned.csv "
 
     "Use the 5 steps below to complete each individual task.\n"
-    "1.) Use the search_toolbox tool to find an appropriate function for the task.\n"
+    "1.) Use the search_lib tool to find an appropriate function for the task.\n"
     "2.) Use the execute_existing_code tool to complete the task on the df.\n"
     "3.) If, and only if, no appropriate function is found to complete the task, proceed as follows. "
     "   a) Use the coding_instructions tool to retrieve detailed guidelines for writing the function.\n"

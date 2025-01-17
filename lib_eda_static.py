@@ -1,4 +1,4 @@
-#toolbox.py
+#lib_eda_static.py
 
 def drop_df_duplicates(df):
     """
