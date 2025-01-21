@@ -454,7 +454,7 @@ class Preprocesser:
             print(f'Error initializing ChatOpenAI model: {e}')
 
         try:
-            graph = create_react_agent(model, tools=tools)
+            execution_agent = create_react_agent(model, tools=tools)
         except Exception as e:
             print(f'Error creating react agent: {e}')
 
@@ -465,7 +465,12 @@ class Preprocesser:
         for task in TASKS:
             inputs = {'messages': [('user', task)]}
             try:
-                stream = graph.stream(inputs, stream_mode='values')
+                # analytics agent runs analytics, returns output and task list of size n
+
+                # feed the task list into the execution agent
+                
+
+                stream = execution_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
@@ -515,6 +520,41 @@ class FeatureEngineer:
         Executes feature engineering logic
         '''
         return self.df
+    
+
+# endregion
+#=============================================================================================#
+# region                                AnalyticsRunner                                       #
+#=============================================================================================#
+
+class AnalyticsRunner:
+    def __init__(self, args, df):
+        self.args = args
+        
+        self.original_df = df.copy()
+        self.backup_df = df.copy()
+        self.df = df.copy()
+
+    def get_df(self):
+        '''
+        Return current df
+        '''
+        return self.df
+    
+    def set_df(self, df):
+        '''
+        Reassigns all dataframe variables
+        '''
+        self.original_df = df.copy()
+        self.backup_df = df.copy()
+        self.df = df.copy()
+
+    def run(self):
+        '''
+        Executes feature engineering logic
+        '''
+        return self.df
+
 
 # endregion
 #=============================================================================================#
