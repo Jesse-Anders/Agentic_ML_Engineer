@@ -253,6 +253,8 @@ def search_lib() -> str:
     Searches the static function library and returns a JSON string of all available functions.
     example function: {'function_name': [val], 'description': [val]}
     '''
+    # This will be too processor heavy to run hundreds of times in full system runs.
+    # Best to output get_func_objects to json on startup and search the json. 
     try:
         return json.dumps(static_lib.get_func_objects(), indent=4)
     
