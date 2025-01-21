@@ -727,3 +727,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     run_ml_engineer(args)
+
+# Jesse Terminal Run
+# /opt/anaconda3/envs/Agentic-ML-Engineer/bin/python main.py --llm_platform=openai
