@@ -28,6 +28,7 @@ pipeline = None
 # Preprocessor and FeatureEngineer objects for global ML Workflow
 preprocessor = None
 feature_engineer = None
+
 # endregion
 #=============================================================================================#
 # region                                  OpenAI API                                          #
@@ -250,16 +251,11 @@ class PyFile:
 @tool
 def search_lib() -> str:
     '''
-    Searches the static function library and returns a JSON string of all available functions.
+    Returns the static function library as a JSON string of all available functions.
     example function: {'function_name': [val], 'description': [val]}
     '''
-    # This will be too processor heavy to run hundreds of times in full system runs.
-    # Best to output get_func_objects to json on startup and search the json. 
-    try:
-        return json.dumps(static_lib.get_func_objects(), indent=4)
-    
-    except Exception as e:
-        return f'Error searching libraries: {e}'
+    with open(f'{JSON_DIR}/{STATIC_JSON_LIB}.json', "r") as json_file:
+        return json_file.read()
 
 
 @tool
@@ -468,7 +464,7 @@ class Preprocesser:
                 # analytics agent runs analytics, returns output and task list of size n
 
                 # feed the task list into the execution agent
-                
+
 
                 stream = execution_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
@@ -601,6 +597,19 @@ def init_pyfiles(args):
     pipeline = PyFile(args.pipeline_path, args)
 
 
+def init_json_files():
+    '''
+    Verifys the json directory and creates the static_lib_json.json file
+
+    args: system arguments
+    '''
+    if not os.path.exists(JSON_DIR):
+        os.mkdir(JSON_DIR)
+
+    with open(f'{JSON_DIR}/{STATIC_JSON_LIB}.json', "w") as json_file:
+        json.dump(static_lib.get_func_objects(), json_file, indent=4)
+
+
 def init_global_objects(args, df):
     '''
     Initialize global Preprocessor and FeatureEngineer objects
@@ -728,6 +737,9 @@ def run_ml_engineer(args):
     
     # init PyFile objects once lib paths are verified
     init_pyfiles(args)
+
+    # init json dir and files
+    init_json_files()
 
     # load in the dataset
     pipeline.write(f'df = pd.read_csv("{args.data_input_path}")\n')

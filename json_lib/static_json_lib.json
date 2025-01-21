@@ -1,0 +1,6 @@
+[
+    {
+        "function_name": "drop_df_duplicates",
+        "description": "Drops duplicate rows from a DataFrame \"in place\""
+    }
+]

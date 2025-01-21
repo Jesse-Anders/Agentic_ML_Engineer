@@ -10,6 +10,9 @@ LIB_DIR = 'lib'
 PIPELINE_DIR = 'pipelines'
 SAVED_GENS_DIR = 'saved_generations'
 
+JSON_DIR = 'json_lib'
+STATIC_JSON_LIB = 'static_json_lib'
+
 
 # boilerplate file code
 PIPELINE_BOILERPLATE = '''
