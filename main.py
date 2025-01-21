@@ -719,7 +719,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--lms_model', type=str, default='LM Studio Community/Meta-Llama-3-8B-Instruct-GGUF')
     parser.add_argument('--openai_model', type=str, default='gpt-4o-mini')
-    parser.add_argument('--llm_platform', type=str, default='lm-studio')
+    parser.add_argument('--llm_platform', type=str, default='openai')
 
     parser.add_argument('--target_var', type=str)
     parser.add_argument('--id_var', type=str)
