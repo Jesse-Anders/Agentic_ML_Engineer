@@ -16,7 +16,7 @@ from utils import *
 from lib.static_lib import *
 
 #=============================================================================================#
-#                                       Dynamic Globals                                       #
+# region                                Dynamic Globals                                       #
 #=============================================================================================#
 
 # PyFile objects for managing each individual code library / pipeline
@@ -28,9 +28,9 @@ pipeline = None
 # Preprocessor and FeatureEngineer objects for global ML Workflow
 preprocessor = None
 feature_engineer = None
-
+# endregion
 #=============================================================================================#
-#                                         OpenAI API                                          #
+# region                                  OpenAI API                                          #
 #=============================================================================================#
 
 try:
@@ -45,9 +45,9 @@ def get_openai_api_key():
     except Exception as e:
         print(f'Error retrieving OpenAI API Key: {e}')
 
-
+# endregion
 #=============================================================================================#
-#                                        LM Studio API                                        #
+# region                                LM Studio API                                         #
 #=============================================================================================#
 
 lms_client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
@@ -82,9 +82,9 @@ def get_lmstudio_response(model, msg_list, temperature=0.7, stream=False):
 
     return response
 
-
+# endregion
 #=============================================================================================#
-#                                            PyFile                                           #
+# region                                    PyFile                                            #
 #=============================================================================================#
 
 class PyFile:
@@ -242,11 +242,10 @@ class PyFile:
         except Exception as e:
             print(f'Error writing to PyFile (PyFile.write): {e}')
 
-
+# endregion
 #=============================================================================================#
-#                                       Tool Functions                                        #
+# region                                Tool Functions                                        #
 #=============================================================================================#
-
 
 @tool
 def search_lib() -> str:
@@ -398,9 +397,9 @@ tools = [
     get_coding_instructions
 ]
 
-
+# endregion
 #=============================================================================================#
-#                                        Preprocessor                                         #
+# region                                 Preprocessor                                         #
 #=============================================================================================#
 
 class Preprocesser:
@@ -482,9 +481,9 @@ class Preprocesser:
         self.backup_df = self.df.copy()
         self.df = altered_df.copy()
 
-
+# endregion
 #=============================================================================================#
-#                                       FeatureEngineer                                       #
+# region                                FeatureEngineer                                       #
 #=============================================================================================#
 
 class FeatureEngineer:
@@ -515,9 +514,9 @@ class FeatureEngineer:
         '''
         return self.df
 
-
+# endregion
 #=============================================================================================#
-#                                       File Management                                       #
+# region                                File Management                                       #
 #=============================================================================================#
 
 def save_df_to_csv(args, df, csv_name=None):
@@ -704,8 +703,9 @@ def run_ml_engineer(args):
     # save the final dataframe
     save_df_to_csv(args, feature_engineered_df)
 
+# endregion
 #=============================================================================================#
-#                                   Entry Point w/ Argparser                                  #
+# region                            Entry Point w/ Argparser                                  #
 #=============================================================================================#
 
 if __name__ == "__main__":
@@ -730,3 +730,5 @@ if __name__ == "__main__":
 
 # Jesse Terminal Run
 # /opt/anaconda3/envs/Agentic-ML-Engineer/bin/python main.py --llm_platform=openai
+
+# endregion
