@@ -518,24 +518,6 @@ class Preprocesser:
 
         # Return the most recent dataframe (assuming it's updated elsewhere in the class)
         self.df
-
-        #=======================================================#
-        #  OLD Task Loop - execution_agent 
-        # (probably can delete for above .json task execution loop JAND 1/21/25)                #
-        #=======================================================#
-
-        # for task in TASKS:
-        #     inputs = {'messages': [('user', f"{get_task_instructions()}\n\nTask: {task}")]}
-
-        #     try:
-        #         # feed the task list into the execution agent
-        #         stream = execution_agent.stream(inputs, stream_mode='values')
-        #         print_stream(stream)
-        #     except Exception as e:
-        #         print(f'Error during stream: {e}')
-
-        # # return the most recent df
-        # return self.df
     
     def update_df(self, altered_df):
         '''
