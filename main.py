@@ -321,7 +321,7 @@ def write_generated_func(
     except Exception as e:
         return f'Error writing generated function: {e}'
 
-
+# WOULD THIS ALLOW LLM TO CREATE AND APPLY MULTIPLE INPUT ARGUMENTS GATHERED FROM THE TASK?
 @tool
 def exec_generated_func(
     func_name: Annotated[str, 'name of the generated function to be run']
@@ -457,35 +457,36 @@ class Preprocesser:
 
 
         try:
-            execution_agent = create_react_agent(model, 
-                                                 tools=tools, 
-                                                 #state_modifier=task_execution_agent_instructions
-                                                 )
+            execution_agent = create_react_agent(model, tools=tools) # state_modifier did not work
+                                                                                              
         except Exception as e:
             print(f'Error creating execution_agent : A LanGraph prebuit ReAct agent: {e}')
 
 
         #=======================================================#
-        #           Task Loop - task_creation_agent             #
+        #           Task Creation Agent            #
         #=======================================================#
+        # Put this def somewhere else someday :)
+        # def get_task_instructions() -> str:
+        #     '''
+        #     Provides order-of-operations style guidance for completing tasks in the task list.
+        #     '''
+        #     return TASK_CREATION_INST
+        
+        # for entry in ANALYTICS:
+        #     #inputs = {'messages': [('user', task)]}
+        #     inputs = {'messages': [('user', f"{get_creation_instructions()}\n\nTask: {task}")]}
 
-        # for task in TASKS:
-        #     inputs = {'messages': [('user', task)]}
         #     try:
-        #         # analytics agent runs analytics, returns output and task list of size n
-
         #         # feed the task list into the execution agent
-
-
         #         stream = task_creation_agent.stream(inputs, stream_mode='values')
         #         print_stream(stream)
         #     except Exception as e:
         #         print(f'Error during stream: {e}')
-        
 
-        #=======================================================#
-        #            Task Loop - execution_agent                #
-        #=======================================================#
+        # # return the most recent df
+        # return self.df
+    
 
         # Put this def somewhere else someday :)
         def get_task_instructions() -> str:
@@ -494,19 +495,47 @@ class Preprocesser:
             '''
             return TASK_INST
         
-        for task in TASKS:
-            #inputs = {'messages': [('user', task)]}
+        #=======================================================#
+        #        Execution from task_list.json Jand     #
+        #=======================================================#       
+
+        # Load tasks from task_list.json
+        with open(f'{JSON_DIR}/{TASK_LIST}.json', "r") as file:
+            task = json.load(file)
+
+        # Iterate over each task in the JSON file
+        for task_data in task:
+    
+            # Construct inputs with global instructions and the task
             inputs = {'messages': [('user', f"{get_task_instructions()}\n\nTask: {task}")]}
 
             try:
-                # feed the task list into the execution agent
+                # Feed the task list into the execution agent
                 stream = execution_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        # return the most recent df
-        return self.df
+        # Return the most recent dataframe (assuming it's updated elsewhere in the class)
+        self.df
+
+        #=======================================================#
+        #  OLD Task Loop - execution_agent 
+        # (probably can delete for above .json task execution loop JAND 1/21/25)                #
+        #=======================================================#
+
+        # for task in TASKS:
+        #     inputs = {'messages': [('user', f"{get_task_instructions()}\n\nTask: {task}")]}
+
+        #     try:
+        #         # feed the task list into the execution agent
+        #         stream = execution_agent.stream(inputs, stream_mode='values')
+        #         print_stream(stream)
+        #     except Exception as e:
+        #         print(f'Error during stream: {e}')
+
+        # # return the most recent df
+        # return self.df
     
     def update_df(self, altered_df):
         '''
@@ -810,7 +839,6 @@ if __name__ == "__main__":
 
     parser.add_argument('--target_var', type=str)
     parser.add_argument('--id_var', type=str)
-
 
     args = parser.parse_args()
     run_ml_engineer(args)

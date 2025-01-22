@@ -10,6 +10,3 @@ from lib.pipeline_lib import *
 
 df = pd.read_csv("data_inputs/data.csv")
 
-drop_df_duplicates(df)
-fix_spelling_errors(df)
-drop_df_duplicates(df)

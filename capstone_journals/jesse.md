@@ -42,3 +42,18 @@ parser.add_argument('--11m_model', type=str, default=‘LM Studio Community/Meta
 parser.add_argument('--target_var', type-str)
 args = parser.parse_args)
 
+### 1/18/25<br>
+4hr<br> 
+Jesse Graphic Design Session<br>
+Company name research and logo brainstorms, AI Dall-E designs and Photoshop design work.
+![ferringrad-hex-rec](https://github.com/user-attachments/assets/27ba56ac-c653-4e23-aa4e-265d0c976bd3)
+
+1/21/25<br>
+Multisession Day<br>
+1hr Meeting Prep<br>
+1hr Meeting (Nick, Jesse, Daniyal, Fletcher)<br>
+4hr Coding Session : Integrated task instruction directly into the LLM call via TASK_INST. <br>
+Worked on updating and detailing the task instructions themselves. <br>
+Detailed the generate code instruction CODE_INST<br> 
+Put a place holder in for future code trouble shooting feature. Designed to help the LLM correct mistakes from its first coding attempt CODE_INSTR_TROUBLESHOOTING. <br>
+Began work on the Task Creation Agent!
