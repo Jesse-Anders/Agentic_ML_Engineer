@@ -290,6 +290,7 @@ def exec_stored_func(
         pipeline.write(func_call)
 
         return f'Successfully executed stored function: {func_name}'
+    
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
@@ -300,6 +301,25 @@ def iteration_wrapper():
     Used to execute a column-wise function on multiple columns.
     '''
     pass
+
+@tool
+def write_generated_func(
+    code: Annotated[str, 'string of the code being fused into dynamic_lib.py for further access']
+) -> str:
+    '''
+    Adds the given code to the sandbox.
+    '''
+
+    # clear any leftover output
+    sandbox.reset()
+
+    # TODO: Add code validation here
+
+    try:
+        sandbox.write(code + '\n')
+        return 'Successfully added function to the sandbox'
+    except Exception as e:
+        return f'Error writing generated function: {e}'
 
 
 @tool
@@ -344,26 +364,6 @@ def exec_generated_func(
 
 
 @tool
-def write_generated_func(
-    code: Annotated[str, 'string of the code being fused into dynamic_lib.py for further access']
-) -> str:
-    '''
-    Adds the given code to the sandbox.
-    '''
-
-    # clear any leftover output
-    sandbox.reset()
-
-    # TODO: Add code validation here
-
-    try:
-        sandbox.write(code + '\n')
-        return 'Successfully added function to the sandbox'
-    except Exception as e:
-        return f'Error writing generated function: {e}'
-
-
-@tool
 def write_to_pipeline(
     code: Annotated[str, 'string of the code being appended onto the existing pipeline']
 ) -> str:
@@ -389,10 +389,11 @@ def get_coding_instructions() -> str:
 tools = [
     search_lib,
     exec_stored_func,
-    exec_generated_func,
+    get_coding_instructions,
     write_generated_func,
+    exec_generated_func,
     # write_to_pipeline,
-    get_coding_instructions
+    
 ]
 
 # endregion
@@ -449,28 +450,60 @@ class Preprocesser:
         except Exception as e:
             print(f'Error initializing ChatOpenAI model: {e}')
 
+        # try:
+        #     task_creation_agent = create_react_agent(model, tools=tools)
+        # except Exception as e:
+        #     print(f'Error creating task_creation_agent : A LanGraph prebuit ReAct agent: {e}')
+
+
         try:
-            execution_agent = create_react_agent(model, tools=tools)
+            execution_agent = create_react_agent(model, 
+                                                 tools=tools, 
+                                                 #state_modifier=task_execution_agent_instructions
+                                                 )
         except Exception as e:
-            print(f'Error creating react agent: {e}')
+            print(f'Error creating execution_agent : A LanGraph prebuit ReAct agent: {e}')
+
 
         #=======================================================#
-        #                       Task Loop                       #
+        #           Task Loop - task_creation_agent             #
         #=======================================================#
 
+        # for task in TASKS:
+        #     inputs = {'messages': [('user', task)]}
+        #     try:
+        #         # analytics agent runs analytics, returns output and task list of size n
+
+        #         # feed the task list into the execution agent
+
+
+        #         stream = task_creation_agent.stream(inputs, stream_mode='values')
+        #         print_stream(stream)
+        #     except Exception as e:
+        #         print(f'Error during stream: {e}')
+        
+
+        #=======================================================#
+        #            Task Loop - execution_agent                #
+        #=======================================================#
+
+        # Put this def somewhere else someday :)
+        def get_task_instructions() -> str:
+            '''
+            Provides order-of-operations style guidance for completing tasks in the task list.
+            '''
+            return TASK_INST
+        
         for task in TASKS:
-            inputs = {'messages': [('user', task)]}
+            #inputs = {'messages': [('user', task)]}
+            inputs = {'messages': [('user', f"{get_task_instructions()}\n\nTask: {task}")]}
+
             try:
-                # analytics agent runs analytics, returns output and task list of size n
-
                 # feed the task list into the execution agent
-
-
                 stream = execution_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
-
 
         # return the most recent df
         return self.df
