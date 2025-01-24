@@ -4,5 +4,8 @@
     },
     {
         "task": "Remove any duplicates from the df."
+    },
+    {
+        "task": "Handle the null values in the df."
     }
 ]

@@ -1,4 +1,4 @@
 col1,col2,col3,target
 1,A,michigan,1
-2,B,nan,0
-3,C,nan,1
+2,B,,0
+3,C,,1

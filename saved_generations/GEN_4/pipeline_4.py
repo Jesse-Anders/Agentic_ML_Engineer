@@ -5,10 +5,9 @@
 
 import pandas as pd
 
-from lib.static_lib import *
-from lib.pipeline_lib import *
+from pipeline_lib import *
 
-df = pd.read_csv("data_inputs/data.csv")
+df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
-fix_spelling(df)
-drop_df_duplicates(df)
+df = fix_spelling_errors(df)
+df = remove_duplicates(df)

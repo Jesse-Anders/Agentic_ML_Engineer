@@ -6,8 +6,7 @@
 # directory path globals
 DATA_INPUT_DIR = 'data_inputs'
 DATA_OUTPUT_DIR = 'data_outputs'
-LIB_DIR = 'lib'
-PIPELINE_DIR = 'pipelines'
+LIB_DIR = 'runtime_lib'
 SAVED_GENS_DIR = 'saved_generations'
 
 JSON_DIR = 'json_lib'
@@ -23,13 +22,14 @@ PIPELINE_BOILERPLATE = '''
 
 import pandas as pd
 
-from lib.static_lib import *
-from lib.pipeline_lib import *
+from pipeline_lib import *
 
 '''
 
 PIPELINE_LIB_BOILERPLATE = '''
 # pipeline_lib.py
+
+import pandas as pd
 
 '''
 
@@ -49,16 +49,13 @@ ANALYTICS = [
     )
 ]
 
-# Instructions on how to proceed through each task.
+
 TASK_INST = (
     "Use the steps below to complete the task.\n"
-    "1.) Use the search_lib tool to find an appropriate function for the task.\n"
-    "2.) Use the execute_existing_code tool to complete the task on the df.\n"
-    "3.) If, and only if, no appropriate function is found to complete the task, proceed as follows: "
-    "   a) Use the coding_instructions tool to view guidelines for writing the function.\n"
-    "   b) Use the write_generated_func tool to save the function.\n"
-    "   c) Use the exec_generated_func tool to apply the function to the data frame.\n"
-
+    "1.) Use the coding_instructions tool to view guidelines for writing the function.\n"
+    "2.) Use the write_generated_func tool to create and save the new function.\n"
+    "3.) Use the exec_generated_func tool to apply the function to the data frame.\n"
+    "4.) If an error message is received from a tool, cease all operations and exit.\n"
 )
 
 # Coding Instructions / Guidelines / Constraints

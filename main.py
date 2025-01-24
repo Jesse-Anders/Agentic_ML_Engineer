@@ -13,7 +13,7 @@ from langgraph.prebuilt import create_react_agent
 from openai import OpenAI
 from typing import Annotated
 from utils import *
-from lib.static_lib import *
+from runtime_lib.static_lib import *
 
 #=============================================================================================#
 # region                                Dynamic Globals                                       #
@@ -100,6 +100,14 @@ class PyFile:
         
         # string representation of the file
         self.content = self.read()
+
+    def add_import(self, import_str):
+        '''
+        Adds import statements to the top of the file.
+
+        import_str: a code string of the import statement(s) to be inserted
+        '''
+        pass
 
     def get_func(self, func_name):
         '''
@@ -302,6 +310,7 @@ def iteration_wrapper():
     '''
     pass
 
+
 @tool
 def write_generated_func(
     code: Annotated[str, 'string of the code being fused into dynamic_lib.py for further access']
@@ -321,44 +330,57 @@ def write_generated_func(
     except Exception as e:
         return f'Error writing generated function: {e}'
 
-# WOULD THIS ALLOW LLM TO CREATE AND APPLY MULTIPLE INPUT ARGUMENTS GATHERED FROM THE TASK?
+
 @tool
 def exec_generated_func(
-    func_name: Annotated[str, 'name of the generated function to be run']
+    func_name: Annotated[str, 'name of the generated function to be run'],
+    func_call_code: Annotated[str, 'the code (usually one line) to call the function, parameter values included. Always include "output = " before the call to catch return values. format examples: output = func_name(df, param1=value1), output = func_name(df) ']
 ) -> str:
-    '''
+    """
     Executes a dynamically generated function on the current working dataframe
     and writes the function call to the pipeline file.
-    '''
+    """
     try:
-        func = sandbox.get_func(func_name)
+        # Get the function code from the sandbox
+        func_code = sandbox.read()
+
+        # Dynamically define the function in the local context
+        exec(func_code, globals())
+        func = globals().get(func_name)
+        if func is None:
+            raise ValueError(f'Function {func_name} could not be defined.')
     except Exception as e:
-        return f'Error loading function from file: {e}'
-
-    if func == -1: # error code from get_func
-        return f'Error loading function from file: {e}'
+        return f'Error loading function from sandbox: {e}'
 
     try:
-        # call the function on the preprocessor's df locally
-        output = func(preprocessor.get_df())
+        # Dynamically execute the function call code
+        # Use the provided `func_call_code` to call the function
+        local_vars = {'df': preprocessor.get_df()}
+        exec(func_call_code, globals(), local_vars)
 
-        # make sure to reassign the working df if one was returned
-        if isinstance(output, pd.DataFrame):
-            preprocessor.update_df(output)
+        # Capture the updated DataFrame (if any)
+        output = local_vars.get('output', None)
+
+        # Update the preprocessor's DataFrame if the function modifies it in place or returns it
+        updated_df = output if isinstance(output, pd.DataFrame) else local_vars.get('df', None)
+        if isinstance(updated_df, pd.DataFrame):
+            preprocessor.update_df(updated_df)
+        else:
+            print('Error updating local dataframe')
     except Exception as e:
-        return f'Error calling sandbox function: {e}'
+        return f'Error executing function locally: {e}'
 
     try:
-        func_call = f'{func.__name__}(df)' # TODO: handle multi-parameter function calls
-        
-        # write the function call to the pipeline
-        pipeline.write(func_call)
+        # Write the function call code to the pipeline file
+        if func_call_code[:8] == 'output =':
+            func_call_code = 'df =' + func_call_code[8:]
+        pipeline.write(func_call_code)
 
-        # move the function to the pipeline_lib
-        pipeline_lib.write(sandbox.read())
+        # Save the function code from the sandbox to the pipeline_lib
+        pipeline_lib.write(func_code)
         sandbox.reset()
 
-        return f'Successfully executed generated function: {func_name}'
+        return f'Successfully executed and saved function: {func_name}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
@@ -387,8 +409,8 @@ def get_coding_instructions() -> str:
 
 
 tools = [
-    search_lib,
-    exec_stored_func,
+    # search_lib,
+    # exec_stored_func,
     get_coding_instructions,
     write_generated_func,
     exec_generated_func,
@@ -488,26 +510,19 @@ class Preprocesser:
         # return self.df
     
 
-        # Put this def somewhere else someday :)
-        def get_task_instructions() -> str:
-            '''
-            Provides order-of-operations style guidance for completing tasks in the task list.
-            '''
-            return TASK_INST
-        
         #=======================================================#
         #        Execution from task_list.json Jand     #
         #=======================================================#       
 
         # Load tasks from task_list.json
         with open(f'{JSON_DIR}/{TASK_LIST}.json', "r") as file:
-            task = json.load(file)
+            tasks = json.load(file)
 
         # Iterate over each task in the JSON file
-        for task_data in task:
+        for task in tasks:
     
             # Construct inputs with global instructions and the task
-            inputs = {'messages': [('user', f"{get_task_instructions()}\n\nTask: {task}")]}
+            inputs = {'messages': [('user', f"{TASK_INST}\n\nTask: {task['task']}")]}
 
             try:
                 # Feed the task list into the execution agent
@@ -517,7 +532,7 @@ class Preprocesser:
                 print(f'Error during stream: {e}')
 
         # Return the most recent dataframe (assuming it's updated elsewhere in the class)
-        self.df
+        return self.df
     
     def update_df(self, altered_df):
         '''
@@ -774,7 +789,7 @@ def run_ml_engineer(args):
     
     # attempt to load dataset
     try:
-        df = pd.read_csv(args.data_input_path)
+        df = pd.read_csv(args.data_input_path, index_col=None)
     except Exception as e:
         print(f'Error reading csv to df: {e}')
         return
@@ -786,7 +801,7 @@ def run_ml_engineer(args):
     init_json_files()
 
     # load in the dataset
-    pipeline.write(f'df = pd.read_csv("{args.data_input_path}")\n')
+    pipeline.write(f'df = pd.read_csv("{args.data_input_path}", index_col=None)\n')
 
     # initialize the preprocessor and feature_engineer objects
     init_global_objects(args, df)
@@ -810,10 +825,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_input_path', type=str, default='data_inputs/data.csv')
     parser.add_argument('--data_output_path', type=str, default='data_outputs/output.csv')
-    parser.add_argument('--pipeline_path', type=str, default='pipelines/pipeline.py')
-    parser.add_argument('--static_lib_path', type=str, default='lib/static_lib.py')
-    parser.add_argument('--pipeline_lib_path', type=str, default='lib/pipeline_lib.py')
-    parser.add_argument('--sandbox_path', type=str, default='lib/sandbox.py')
+    parser.add_argument('--pipeline_path', type=str, default='runtime_lib/pipeline.py')
+    parser.add_argument('--static_lib_path', type=str, default='runtime_lib/static_lib.py')
+    parser.add_argument('--pipeline_lib_path', type=str, default='runtime_lib/pipeline_lib.py')
+    parser.add_argument('--sandbox_path', type=str, default='runtime_lib/sandbox.py')
 
     parser.add_argument('--lms_model', type=str, default='LM Studio Community/Meta-Llama-3-8B-Instruct-GGUF')
     parser.add_argument('--openai_model', type=str, default='gpt-4o-mini')
