@@ -57,3 +57,12 @@ Worked on updating and detailing the task instructions themselves. <br>
 Detailed the generate code instruction CODE_INST<br> 
 Put a place holder in for future code trouble shooting feature. Designed to help the LLM correct mistakes from its first coding attempt CODE_INSTR_TROUBLESHOOTING. <br>
 Began work on the Task Creation Agent!
+
+1/25/25<br>
+2hr session<br>
+Succesfully implemented state_modifier=TASK_INST, which allows a set of instructions to be appended to the task execution agent, which it uses to complete tasks.
+<br><br>
+Updated instructions to include a task completion confirmation check. The task execution agent genereates and runs code to confirm its task is complete.
+<br><br>
+Task Creation Agent Deployed! POORLY!<br>
+Created a rudimentary single set of intructions to test what gpt4o mini can do when given broad freedom to  anylize the df and write a series of tasks based on its analysis. It is NOT GOOD at doing this. BUT, it functionally did create usable code and even added some usable tasks task_list.json.
