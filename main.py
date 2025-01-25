@@ -408,12 +408,62 @@ def get_coding_instructions() -> str:
     return CODE_INST
 
 
+# Define the path to your task list JSON file
+TASK_LIST_PATH = "json_lib/task_list.json"
+
+@tool
+def add_task_to_list(new_task: str) -> str:
+    '''
+    Appends a new task to json_lib/task_list.json.
+
+    Args:
+        new_task (str): The task to be added to the task list.
+
+    Returns:
+        str: A confirmation message indicating the task was added successfully.
+    
+    Example JSON structure:
+    [
+        {
+            "task": "Remove any duplicates from the df."
+        },
+        {
+            "task": "Handle the null values in the df."
+        }
+    ]
+    '''
+    try:
+        # Load the existing task list from the JSON file
+        with open(TASK_LIST_PATH, "r") as file:
+            task_list = json.load(file)
+
+        # Append the new task
+        task_list.append({"task": new_task})
+
+        # Save the updated task list back to the JSON file
+        with open(TASK_LIST_PATH, "w") as file:
+            json.dump(task_list, file, indent=4)
+
+        return f"Task successfully added: {new_task}"
+
+    except FileNotFoundError:
+        return "Error: Task list file not found."
+
+    except json.JSONDecodeError:
+        return "Error: Task list file is not in a valid JSON format."
+
+    except Exception as e:
+        return f"An unexpected error occurred: {e}"
+
+
+
 tools = [
     # search_lib,
     # exec_stored_func,
     get_coding_instructions,
     write_generated_func,
     exec_generated_func,
+    add_task_to_list,
     # write_to_pipeline,
     
 ]
@@ -473,13 +523,13 @@ class Preprocesser:
             print(f'Error initializing ChatOpenAI model: {e}')
 
         # try:
-        #     task_creation_agent = create_react_agent(model, tools=tools)
+        #     task_creation_agent = create_react_agent(model, tools) #, state_modifier=ANALYTICS_INSTR)
         # except Exception as e:
         #     print(f'Error creating task_creation_agent : A LanGraph prebuit ReAct agent: {e}')
 
 
         try:
-            execution_agent = create_react_agent(model, tools=tools) # state_modifier did not work
+            execution_agent = create_react_agent(model, tools, state_modifier=TASK_INST)
                                                                                               
         except Exception as e:
             print(f'Error creating execution_agent : A LanGraph prebuit ReAct agent: {e}')
@@ -488,25 +538,19 @@ class Preprocesser:
         #=======================================================#
         #           Task Creation Agent            #
         #=======================================================#
-        # Put this def somewhere else someday :)
-        # def get_task_instructions() -> str:
-        #     '''
-        #     Provides order-of-operations style guidance for completing tasks in the task list.
-        #     '''
-        #     return TASK_CREATION_INST
+
         
-        # for entry in ANALYTICS:
-        #     #inputs = {'messages': [('user', task)]}
-        #     inputs = {'messages': [('user', f"{get_creation_instructions()}\n\nTask: {task}")]}
+        # # for entry in ANALYTICS:
+        # inputs = {'messages': [('user', ANALYTICS_INSTR)]}
 
-        #     try:
-        #         # feed the task list into the execution agent
-        #         stream = task_creation_agent.stream(inputs, stream_mode='values')
-        #         print_stream(stream)
-        #     except Exception as e:
-        #         print(f'Error during stream: {e}')
+        # try:
+        #     # feed the task list into the execution agent
+        #     stream = task_creation_agent.stream(inputs, stream_mode='values')
+        #     print_stream(stream)
+        # except Exception as e:
+        #     print(f'Error during stream: {e}')
 
-        # # return the most recent df
+        # #return the most recent df
         # return self.df
     
 
@@ -522,7 +566,7 @@ class Preprocesser:
         for task in tasks:
     
             # Construct inputs with global instructions and the task
-            inputs = {'messages': [('user', f"{TASK_INST}\n\nTask: {task['task']}")]}
+            inputs = {'messages': [('user', f"Task: {task['task']}")]}
 
             try:
                 # Feed the task list into the execution agent

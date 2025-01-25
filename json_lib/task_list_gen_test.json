@@ -1,0 +1,38 @@
+[
+    {
+        "task": "Fix any spelling errors that exist in the rows of the df."
+    },
+    {
+        "task": "Remove any duplicates from the df."
+    },
+    {
+        "task": "Handle the null values in the df."
+    },
+    {
+        "task": "Handle the null values in the df, found a total of 0 nulls."
+    },
+    {
+        "task": "Review the data types of each column in the df to ensure they are appropriate for analysis."
+    },
+    {
+        "task": "Analyze the summary statistics of the df to understand the distribution of numerical data."
+    },
+    {
+        "task": "Handle the null values in the df, as there are nulls present."
+    },
+    {
+        "task": "Review the data types of each column in the df to ensure they are appropriate for analysis."
+    },
+    {
+        "task": "Examine the summary statistics for numerical columns in the df to identify any anomalies or outliers."
+    },
+    {
+        "task": "Remove any duplicates from the df."
+    },
+    {
+        "task": "Handle the null values in the df."
+    },
+    {
+        "task": "Handle the null values in the df."
+    }
+]
