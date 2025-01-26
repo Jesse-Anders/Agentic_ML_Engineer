@@ -101,14 +101,6 @@ class PyFile:
         # string representation of the file
         self.content = self.read()
 
-    def add_import(self, import_str):
-        '''
-        Adds import statements to the top of the file.
-
-        import_str: a code string of the import statement(s) to be inserted
-        '''
-        pass
-
     def get_func(self, func_name):
         '''
         Returns the function object matching the given name
@@ -268,7 +260,8 @@ def search_lib() -> str:
 
 @tool
 def exec_stored_func(
-    func_name: Annotated[str, 'name of the library function to be run']
+    func_name: Annotated[str, 'name of the library function to be run'],
+    func_call_code: Annotated[str, 'the code (usually one line) to call the function, parameter values included. Always include "output = " before the call to catch return values. format examples: output = func_name(df, param1=value1), output = func_name(df) ']
 ) -> str:
     '''
     Executes a static function on the current working dataframe and writes
@@ -279,26 +272,36 @@ def exec_stored_func(
     except Exception as e:
         return f'Error loading function from file: {e}'
 
-    if func == -1: # error code from lib.get_func
+    if func == -1 or func == None: # error code from lib.get_func
         return f'Error loading function from file: {e}'
-
+        
     try:
-        # call the function on the preprocessor's df locally
-        output = func(preprocessor.get_df())
+        # Dynamically execute the function call code
+        local_vars = {'df': preprocessor.get_df()}
+        exec(func_call_code, globals(), local_vars)
 
-        # make sure to reassign the working df if one was returned
-        if isinstance(output, pd.DataFrame):
-            preprocessor.update_df(output)
+        # Capture the updated DataFrame (if any)
+        output = local_vars.get('output', None)
 
+        # Update the preprocessor's DataFrame if the function modifies it in place or returns it
+        updated_df = output if isinstance(output, pd.DataFrame) else local_vars.get('df', None)
+        if isinstance(updated_df, pd.DataFrame):
+            preprocessor.update_df(updated_df)
+        else:
+            print('Error updating local dataframe')
     except Exception as e:
-        return f'Error calling stored function: {e}'
+        return f'Error executing function locally: {e}'
 
     try:
-        func_call = f'{func.__name__}(df)' # TODO: handle multi-parameter function calls
-        pipeline.write(func_call)
+        # Write the function call code to the pipeline file
+        if func_call_code[:8] == 'output =':
+            func_call_code = 'df =' + func_call_code[8:]
+        pipeline.write(func_call_code)
 
-        return f'Successfully executed stored function: {func_name}'
-    
+        # Reset the sandbox file
+        sandbox.reset()
+
+        return f'Successfully executed and saved function: {func_name}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
@@ -316,13 +319,11 @@ def write_generated_func(
     code: Annotated[str, 'string of the code being fused into dynamic_lib.py for further access']
 ) -> str:
     '''
-    Adds the given code to the sandbox.
+    Writes the given code to the sandbox.
     '''
 
     # clear any leftover output
     sandbox.reset()
-
-    # TODO: Add code validation here
 
     try:
         sandbox.write(code + '\n')
@@ -354,7 +355,6 @@ def exec_generated_func(
 
     try:
         # Dynamically execute the function call code
-        # Use the provided `func_call_code` to call the function
         local_vars = {'df': preprocessor.get_df()}
         exec(func_call_code, globals(), local_vars)
 
@@ -421,7 +421,7 @@ def add_task_to_list(new_task: str) -> str:
 
     Returns:
         str: A confirmation message indicating the task was added successfully.
-    
+
     Example JSON structure:
     [
         {
@@ -463,10 +463,10 @@ tools = [
     get_coding_instructions,
     write_generated_func,
     exec_generated_func,
-    add_task_to_list,
+    # add_task_to_list,
     # write_to_pipeline,
-    
 ]
+
 
 # endregion
 #=============================================================================================#
@@ -522,17 +522,10 @@ class Preprocesser:
         except Exception as e:
             print(f'Error initializing ChatOpenAI model: {e}')
 
-        # try:
-        #     task_creation_agent = create_react_agent(model, tools) #, state_modifier=ANALYTICS_INSTR)
-        # except Exception as e:
-        #     print(f'Error creating task_creation_agent : A LanGraph prebuit ReAct agent: {e}')
-
-
         try:
-            execution_agent = create_react_agent(model, tools, state_modifier=TASK_INST)
-                                                                                              
+            preprocessor_agent = create_react_agent(model, tools, state_modifier=TASK_INST)                                                                       
         except Exception as e:
-            print(f'Error creating execution_agent : A LanGraph prebuit ReAct agent: {e}')
+            print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
 
 
         #=======================================================#
@@ -570,7 +563,7 @@ class Preprocesser:
 
             try:
                 # Feed the task list into the execution agent
-                stream = execution_agent.stream(inputs, stream_mode='values')
+                stream = preprocessor_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
