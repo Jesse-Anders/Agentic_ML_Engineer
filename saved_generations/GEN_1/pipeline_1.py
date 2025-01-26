@@ -5,10 +5,11 @@
 
 import pandas as pd
 
-from lib.static_lib import *
-from lib.pipeline_lib import *
+from pipeline_lib import *
 
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
-output = fix_spelling_errors(df)
-output = remove_duplicates(df)
+df = data_type_check(df, column)
+df = data_type_check(df, column)
+df = data_type_check(df, column)
+df = data_type_check(df, column)

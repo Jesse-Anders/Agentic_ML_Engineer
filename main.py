@@ -30,7 +30,7 @@ preprocessor = None
 feature_engineer = None
 
 # Current Column Name of Column in Iteration Loop
-column_name = None
+current_column = None
 
 # endregion
 #=============================================================================================#
@@ -264,7 +264,9 @@ def search_lib() -> str:
 @tool
 def exec_stored_func(
     func_name: Annotated[str, 'name of the library function to be run'],
-    func_call_code: Annotated[str, 'the code (usually one line) to call the function, parameter values included. Always include "output = " before the call to catch return values. format examples: output = func_name(df, param1=value1), output = func_name(df) ']
+    func_call_code: Annotated[str, '''The code (usually one line) to call the function. Include all necessary parameter values except for df and column,
+                              those will be assigned locally. Always include "output = " before the call to catch return values. Format examples:
+                              output = func_name(df, column, param1=value1), output = func_name(df, column), output = func_name(df)''']
 ) -> str:
     '''
     Executes a static function on the current working dataframe and writes
@@ -280,11 +282,7 @@ def exec_stored_func(
         
     try:
         # Dynamically execute the function call code
-        # local_vars = {'df': preprocessor.get_df()}
-        # exec(func_call_code, globals(), local_vars)
-
-        # ???? Was trying this direction -Jesse
-        local_vars = {'df': preprocessor.get_df(), 'column_name': column_name}  # Include column_name in local_vars
+        local_vars = {'df': preprocessor.get_df(), 'column': current_column}
         exec(func_call_code, globals(), local_vars)
 
         # Capture the updated DataFrame (if any)
@@ -308,7 +306,7 @@ def exec_stored_func(
         # Reset the sandbox file
         sandbox.reset()
 
-        return f'Successfully executed and saved function: {func_name}'
+        return f'Successfully executed and saved function: {func_name}\n\nFunction Output: {output}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
@@ -518,6 +516,8 @@ class Preprocesser:
 
         temperature: temp for the ChatOpenAI model used in the react agent
         '''
+        global current_column
+
         try:
             is_lms = self.args.llm_platform == 'lm-studio'
             api_key = 'lm-studio' if is_lms else get_openai_api_key()
@@ -592,9 +592,8 @@ class Preprocesser:
         #=======================================================#       
 
         # Iterate over Each Column in the DF
-        columns = preprocessor.get_df().columns
-        for column in columns:
-            column_name = column
+        for column in preprocessor.get_df().columns:
+            current_column = column
     
             # Construct inputs
             inputs = {'messages': [('user', COLUMN_INST_START)]}

@@ -98,7 +98,7 @@ CODE_INST_TROUBLESHOOTING = (
 #=============================================================================================#
 
 COLUMN_INST_START = (
-    "Use exec_stored_func tool to run data_type_check function to determin the Column's data type.\n"
+    "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
     "State the column's data type.\n"
 )
 
