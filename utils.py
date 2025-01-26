@@ -60,14 +60,6 @@ ANALYTICS_INSTR = (
     "EXAMPLE: Create a Python function to check for nulls in the data set. If nulls are present, create a well defined task to be completed and save it using add_task_to_list.\n"
 )
 
-# OLD INSTRUCTIONS
-# TASK_INST = (
-#     "Use the steps below to complete the task.\n"
-#     "1.) Use the coding_instructions tool to view guidelines to write a function to complete the task.\n"
-#     "2.) Use the write_generated_func tool to create and save the new function.\n"
-#     "3.) Use the exec_generated_func tool to apply the function to the data frame.\n"
-#     "4.) If an error message is received from a tool, cease all operations and exit.\n"
-# )
 
 # NEW INSTRUCTIONS CREATE ANALYSIS FUNCTION TO CONFIRM TASK WAS COMPLETED
 TASK_INST = (
@@ -101,6 +93,16 @@ CODE_INST_TROUBLESHOOTING = (
     "This can serve as a trouble shooting guide\n"
 )
 
+#=============================================================================================#
+#  region                                    Column Iteration Instructions                    #
+#=============================================================================================#
+
+COLUMN_INST_START = (
+    "Use exec_stored_func tool to run data_type_check function to determin the Column's data type.\n"
+    "State the column's data type.\n"
+)
+
+# endregion
 
 #=============================================================================================#
 #                                      Util Functions                                         #

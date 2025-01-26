@@ -277,7 +277,11 @@ def exec_stored_func(
         
     try:
         # Dynamically execute the function call code
-        local_vars = {'df': preprocessor.get_df()}
+        # local_vars = {'df': preprocessor.get_df()}
+        # exec(func_call_code, globals(), local_vars)
+
+        # Was trying this direction -Jesse
+        local_vars = {'df': preprocessor.get_df(), 'column_name': column_name}  # Include column_name in local_vars
         exec(func_call_code, globals(), local_vars)
 
         # Capture the updated DataFrame (if any)
@@ -408,61 +412,61 @@ def get_coding_instructions() -> str:
     return CODE_INST
 
 
-# Define the path to your task list JSON file
-TASK_LIST_PATH = "json_lib/task_list.json"
+# # Define the path to your task list JSON file
+# TASK_LIST_PATH = "json_lib/task_list.json"
 
-@tool
-def add_task_to_list(new_task: str) -> str:
-    '''
-    Appends a new task to json_lib/task_list.json.
+# @tool
+# def add_task_to_list(new_task: str) -> str:
+#     '''
+#     Appends a new task to json_lib/task_list.json.
 
-    Args:
-        new_task (str): The task to be added to the task list.
+#     Args:
+#         new_task (str): The task to be added to the task list.
 
-    Returns:
-        str: A confirmation message indicating the task was added successfully.
+#     Returns:
+#         str: A confirmation message indicating the task was added successfully.
 
-    Example JSON structure:
-    [
-        {
-            "task": "Remove any duplicates from the df."
-        },
-        {
-            "task": "Handle the null values in the df."
-        }
-    ]
-    '''
-    try:
-        # Load the existing task list from the JSON file
-        with open(TASK_LIST_PATH, "r") as file:
-            task_list = json.load(file)
+#     Example JSON structure:
+#     [
+#         {
+#             "task": "Remove any duplicates from the df."
+#         },
+#         {
+#             "task": "Handle the null values in the df."
+#         }
+#     ]
+#     '''
+#     try:
+#         # Load the existing task list from the JSON file
+#         with open(TASK_LIST_PATH, "r") as file:
+#             task_list = json.load(file)
 
-        # Append the new task
-        task_list.append({"task": new_task})
+#         # Append the new task
+#         task_list.append({"task": new_task})
 
-        # Save the updated task list back to the JSON file
-        with open(TASK_LIST_PATH, "w") as file:
-            json.dump(task_list, file, indent=4)
+#         # Save the updated task list back to the JSON file
+#         with open(TASK_LIST_PATH, "w") as file:
+#             json.dump(task_list, file, indent=4)
 
-        return f"Task successfully added: {new_task}"
+#         return f"Task successfully added: {new_task}"
 
-    except FileNotFoundError:
-        return "Error: Task list file not found."
+#     except FileNotFoundError:
+#         return "Error: Task list file not found."
 
-    except json.JSONDecodeError:
-        return "Error: Task list file is not in a valid JSON format."
+#     except json.JSONDecodeError:
+#         return "Error: Task list file is not in a valid JSON format."
 
-    except Exception as e:
-        return f"An unexpected error occurred: {e}"
+#     except Exception as e:
+#         return f"An unexpected error occurred: {e}"
 
 
 
 tools = [
     # search_lib,
-    # exec_stored_func,
-    get_coding_instructions,
-    write_generated_func,
-    exec_generated_func,
+    exec_stored_func,
+    #get_coding_instructions,
+    #write_generated_func,
+    #exec_generated_func,
     # add_task_to_list,
     # write_to_pipeline,
 ]
@@ -522,8 +526,13 @@ class Preprocesser:
         except Exception as e:
             print(f'Error initializing ChatOpenAI model: {e}')
 
+        # try:
+        #     preprocessor_agent = create_react_agent(model, tools, state_modifier=TASK_INST)                                                                       
+        # except Exception as e:
+        #     print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
+
         try:
-            preprocessor_agent = create_react_agent(model, tools, state_modifier=TASK_INST)                                                                       
+            column_agent = create_react_agent(model, tools)                                                                       
         except Exception as e:
             print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
 
@@ -551,19 +560,40 @@ class Preprocesser:
         #        Execution from task_list.json Jand     #
         #=======================================================#       
 
-        # Load tasks from task_list.json
-        with open(f'{JSON_DIR}/{TASK_LIST}.json', "r") as file:
-            tasks = json.load(file)
+        # # Load tasks from task_list.json
+        # with open(f'{JSON_DIR}/{TASK_LIST}.json', "r") as file:
+        #     tasks = json.load(file)
 
-        # Iterate over each task in the JSON file
-        for task in tasks:
+        # # Iterate over each task in the JSON file
+        # for task in tasks:
     
-            # Construct inputs with global instructions and the task
-            inputs = {'messages': [('user', f"Task: {task['task']}")]}
+        #     # Construct inputs with global instructions and the task
+        #     inputs = {'messages': [('user', f"Task: {task['task']}")]}
+
+        #     try:
+        #         # Feed the task list into the execution agent
+        #         stream = preprocessor_agent.stream(inputs, stream_mode='values')
+        #         print_stream(stream)
+        #     except Exception as e:
+        #         print(f'Error during stream: {e}')
+
+        # # Return the most recent dataframe (assuming it's updated elsewhere in the class)
+        # return self.df
+    
+        #=======================================================#
+        #        Column Cleaning Agent                         #
+        #=======================================================#       
+
+        # Iterate over Each Column in the DF
+        columns = preprocessor.get_df().columns
+        for column in columns:
+    
+            # Construct inputs
+            inputs = {'messages': [('user', COLUMN_INST_START)]}
 
             try:
-                # Feed the task list into the execution agent
-                stream = preprocessor_agent.stream(inputs, stream_mode='values')
+                # Feed the task list into the column_agent
+                stream = column_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')

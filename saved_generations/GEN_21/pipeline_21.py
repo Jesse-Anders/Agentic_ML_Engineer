@@ -9,3 +9,4 @@ from pipeline_lib import *
 
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
+df = check_column_data_type(df, column_name='your_column_name')
