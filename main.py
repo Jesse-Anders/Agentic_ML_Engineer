@@ -29,6 +29,9 @@ pipeline = None
 preprocessor = None
 feature_engineer = None
 
+# Current Column Name of Column in Iteration Loop
+column_name = None
+
 # endregion
 #=============================================================================================#
 # region                                  OpenAI API                                          #
@@ -280,7 +283,7 @@ def exec_stored_func(
         # local_vars = {'df': preprocessor.get_df()}
         # exec(func_call_code, globals(), local_vars)
 
-        # Was trying this direction -Jesse
+        # ???? Was trying this direction -Jesse
         local_vars = {'df': preprocessor.get_df(), 'column_name': column_name}  # Include column_name in local_vars
         exec(func_call_code, globals(), local_vars)
 
@@ -352,6 +355,10 @@ def exec_generated_func(
         # Dynamically define the function in the local context
         exec(func_code, globals())
         func = globals().get(func_name)
+
+        # Jesse ???? Dynamically define the Column Name in the local context
+        # column_name = globals().get(column_name)
+
         if func is None:
             raise ValueError(f'Function {func_name} could not be defined.')
     except Exception as e:
@@ -581,12 +588,13 @@ class Preprocesser:
         # return self.df
     
         #=======================================================#
-        #        Column Cleaning Agent                         #
+        #        Column Cleaning Agent                          #
         #=======================================================#       
 
         # Iterate over Each Column in the DF
         columns = preprocessor.get_df().columns
         for column in columns:
+            column_name = column
     
             # Construct inputs
             inputs = {'messages': [('user', COLUMN_INST_START)]}
