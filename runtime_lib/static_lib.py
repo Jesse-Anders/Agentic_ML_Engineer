@@ -15,6 +15,9 @@ def drop_df_duplicates(df):
 
     return f'Dropped {start_rows - end_rows} duplicate rows. There are {end_rows} remaining rows.'
 
+#=============================================================================================#
+#  region              COLUMN START - Determine Data Type                                     #
+#=============================================================================================#
 
 def data_type_check(df, column) -> str:
     """
@@ -74,6 +77,7 @@ def determine_numeric_or_categorical(df, column, numeric_override_threshold=0.9)
     Returns:
         dict: A dictionary containing the column type, handling strategy, and the updated DataFrame.
     """
+
     # Ensure the column exists and is of integer type
     if column not in df.columns:
         return {"error": f"Column '{column}' does not exist in the DataFrame."}

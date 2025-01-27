@@ -272,6 +272,9 @@ def exec_stored_func(
     Executes a static function on the current working dataframe and writes
     the function call to the pipeline file.
     '''
+    # Let us know what function is being applied to what column
+    print(f"Agent is attempting to run {func_name} on the '{current_column}' column")
+
     try:
         func = static_lib.get_func(func_name)
     except Exception as e:
@@ -310,7 +313,9 @@ def exec_stored_func(
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
-
+#=============================================================================================#
+# region                                TEMP - Hide Unused Tools                              #
+#=============================================================================================#
 @tool
 def iteration_wrapper():
     '''
@@ -393,19 +398,19 @@ def exec_generated_func(
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
-
-@tool
-def write_to_pipeline(
-    code: Annotated[str, 'string of the code being appended onto the existing pipeline']
-) -> str:
-    '''
-    Writes the given code to the pipeline.py file
-    '''
-    try:
-        pipeline.write(code)
-        return 'Successfully wrote code to pipeline'
-    except Exception as e:
-        return f'Error writing to pipeline: {e}'
+# Not in Use
+# @tool
+# def write_to_pipeline(
+#     code: Annotated[str, 'string of the code being appended onto the existing pipeline']
+# ) -> str:
+#     '''
+#     Writes the given code to the pipeline.py file
+#     '''
+#     try:
+#         pipeline.write(code)
+#         return 'Successfully wrote code to pipeline'
+#     except Exception as e:
+#         return f'Error writing to pipeline: {e}'
 
  
 @tool
@@ -464,6 +469,7 @@ def get_coding_instructions() -> str:
 #     except Exception as e:
 #         return f"An unexpected error occurred: {e}"
 
+# endregion
 
 
 tools = [
@@ -604,12 +610,12 @@ class Preprocesser:
             if column == "target":
                 # Skip processing for the 'target' column
                 continue
-            current_column = column
 
-            # DEBUGGING: TEST 1 CHOSEN COLUMN AT A TIME
-            # if column != "COLUMN NAME TO TEST":
-            #     # Skip processing for all but the 'CHOSEN COLUMN'.
-            #     continue
+            # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
+            COLUMNS_TO_TEST = ["col3"]
+            if column not in COLUMNS_TO_TEST:
+                # Skip processing for all columns except 'COLUMNS_TO_TEST'.
+                continue
             
             current_column = column
     
