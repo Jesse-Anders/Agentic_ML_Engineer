@@ -605,6 +605,13 @@ class Preprocesser:
                 # Skip processing for the 'target' column
                 continue
             current_column = column
+
+            # DEBUGGING: TEST 1 CHOSEN COLUMN AT A TIME
+            # if column != "COLUMN NAME TO TEST":
+            #     # Skip processing for all but the 'CHOSEN COLUMN'.
+            #     continue
+            
+            current_column = column
     
             # Construct inputs
             inputs = {'messages': [('user', COLUMN_INST_START())]}
