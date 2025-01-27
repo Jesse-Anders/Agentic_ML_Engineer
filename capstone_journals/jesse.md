@@ -66,3 +66,13 @@ Updated instructions to include a task completion confirmation check. The task e
 <br><br>
 Task Creation Agent Deployed! POORLY!<br>
 Created a rudimentary single set of intructions to test what gpt4o mini can do when given broad freedom to  anylize the df and write a series of tasks based on its analysis. It is NOT GOOD at doing this. BUT, it functionally did create usable code and even added some usable tasks task_list.json.
+
+1/26/25<br>
+2pm-4pm 2h<br>
+Jesse + Nick meeting 30 minutes + Brainstorm 1.5hr<br>
+Prepped for new column iteration agent handling. Created data flow chart before building Column Iteration Agent<br><br>
+
+8pm -12am 4h Coding Session<br>
+Jesse Coding Session<br>
+Created and deployed the Column Iteration Agent. This agent represents a new overall approach to the agentic system. One agent will handle all data Preprocessing in a column by column workflow that includes a drill-down-to-instructions methodology.<br>
+This agent is now capable of determining data type and handling Integer & Float data preprocessing. 
