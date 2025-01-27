@@ -265,7 +265,7 @@ def search_lib() -> str:
 def exec_stored_func(
     func_name: Annotated[str, 'name of the library function to be run'],
     func_call_code: Annotated[str, '''The code (usually one line) to call the function. Include all necessary parameter values except for df and column,
-                              those will be assigned locally. Always include "output = " before the call to catch return values. Format examples:
+                              those will be assigned locally--leave them explicity as 'df' and 'column'. Always include "output = " before the call to catch return values. Format examples:
                               output = func_name(df, column, param1=value1), output = func_name(df, column), output = func_name(df)''']
 ) -> str:
     '''
@@ -304,6 +304,8 @@ def exec_stored_func(
         # Write the function call code to the pipeline file
         if func_call_code[:8] == 'output =':
             func_call_code = 'df =' + func_call_code[8:]
+        if 'column' in func_call_code and 'column=' not in func_call_code and 'column =' not in func_call_code:
+            func_call_code = func_call_code.replace('column', f'\'{str(current_column)}\'')
         pipeline.write(func_call_code)
 
         # Reset the sandbox file
