@@ -59,7 +59,7 @@ def data_type_check(df, column) -> str:
     
 
 #=============================================================================================#
-#  region              INTEGER Column Functions                                               #
+#  region              INTEGER & FLOAT Column Functions                                       #
 #=============================================================================================#
 def determine_numeric_or_categorical(df, column, numeric_override_threshold=0.9):
     """
@@ -99,7 +99,7 @@ def determine_numeric_or_categorical(df, column, numeric_override_threshold=0.9)
         column_type = "categorical"
 
     return {
-        # "column": column,
+        "column": column,
         "column_type": column_type,
         # "null_count": df[column].isnull().sum(),  # Log null values
         # "unique_ratio": unique_ratio,
@@ -108,7 +108,7 @@ def determine_numeric_or_categorical(df, column, numeric_override_threshold=0.9)
         # "updated_df": df,
     }
     #=============================================================================#
-    #  region              INTEGER Column NUMERIC Functions                       #
+    #  region              INTEGER & FLOAT Column NUMERIC Functions               #
     #=============================================================================#
 def check_outliers_and_nulls(df, column):
     """
@@ -147,13 +147,13 @@ def check_outliers_and_nulls(df, column):
     # Return results
     return {
         "column": column,
-        "lower_bound": lower_bound,
-        "upper_bound": upper_bound,
-        "outliers": outliers.tolist(),
+        #"lower_bound": lower_bound,
+        #"upper_bound": upper_bound,
+        #"outliers": outliers.tolist(),
         "outlier_count": len(outliers),
-        "q1": q1,
-        "q3": q3,
-        "iqr": iqr,
+        #"q1": q1,
+        #"q3": q3,
+        #"iqr": iqr,
         "null_count": df[column].isnull().sum(),  # Log null values
     }
 
@@ -161,6 +161,8 @@ def check_outliers_and_nulls(df, column):
 def cap_outliers_and_impute_nulls(df, column):
     """
     Caps outliers to the 95th and 5th percentiles (Winsorizing) and imputes nulls with the mean value.
+    Maintains the column's original data type, rounding to the nearest integer for integers
+    or to the appropriate precision for floats.
 
     Args:
         df (pd.DataFrame): The DataFrame containing the column.
@@ -173,44 +175,108 @@ def cap_outliers_and_impute_nulls(df, column):
     if not pd.api.types.is_numeric_dtype(df[column]):
         print(f"Skipped non-numeric column: {column}")
         return df
-    
+
+    # Exclude nulls from calculations
+    non_null_values = df[column].dropna()
+
     # Cap Outliers (Winsorizing)
-    # Calculate the 5th and 95th percentiles of the column
-    percentile_5 = df[column].quantile(0.05)
-    percentile_95 = df[column].quantile(0.95)
-    
+    # Calculate the 5th and 95th percentiles of the column (excluding nulls)
+    percentile_5 = non_null_values.quantile(0.05)
+    percentile_95 = non_null_values.quantile(0.95)
+
     # Count values to be replaced
-    count_below_5 = np.sum(df[column] < percentile_5)
-    count_above_95 = np.sum(df[column] > percentile_95)
-    
+    count_below_5 = np.sum(non_null_values < percentile_5)
+    count_above_95 = np.sum(non_null_values > percentile_95)
+
+    # Handle rounding based on column type
+    if pd.api.types.is_integer_dtype(df[column]):
+        # Integer columns: Round to the nearest integer
+        percentile_5 = round(percentile_5)
+        percentile_95 = round(percentile_95)
+        round_func = lambda x: round(x)
+    else:
+        # Float columns: Determine maximum precision (decimal places deep) currently existing in column and rounds accordingly
+        max_precision = non_null_values.apply(lambda x: len(str(x).split(".")[1]) if "." in str(x) else 0).max()
+        round_func = lambda x: round(x, max_precision)
+
     # Replace values less than the 5th percentile with the 5th percentile
-    df[column] = np.where(df[column] < percentile_5, percentile_5, df[column])
+    df.loc[df[column] < percentile_5, column] = round_func(percentile_5)
 
     # Replace values greater than the 95th percentile with the 95th percentile
-    df[column] = np.where(df[column] > percentile_95, percentile_95, df[column])
+    df.loc[df[column] > percentile_95, column] = round_func(percentile_95)
 
     # Print replaced counts and values
     if count_below_5 > 0:
-        print(f"Column '{column}': Replaced {count_below_5} values with {percentile_5} (5th percentile).")
+        print(f"Column '{column}': Replaced {count_below_5} values with {round_func(percentile_5)} (5th percentile).")
     if count_above_95 > 0:
-        print(f"Column '{column}': Replaced {count_above_95} values with {percentile_95} (95th percentile).")
+        print(f"Column '{column}': Replaced {count_above_95} values with {round_func(percentile_95)} (95th percentile).")
     if count_below_5 == 0 and count_above_95 == 0:
         print(f"Skipped no outliers in column: {column}")
 
     # Impute Nulls
     if df[column].isnull().sum() > 0:
-        mean_value = df[column].mean()
+        mean_value = round_func(non_null_values.mean())
         null_count = df[column].isnull().sum()
-        df[column].fillna(mean_value, inplace=True)
+        # df[column].fillna(mean_value, inplace=True) # Replaced with recommend for Pandas 3.0 in next line
+        df.fillna({column: mean_value}, inplace=True)
+
         print(f"Column '{column}': Imputed {null_count} null values with mean value {mean_value}.")
     else:
         print(f"Column '{column}': No nulls to impute.")
 
     return df
+
+
 # endregion
     #=============================================================================#
     #  region              INTEGER Column CATEGORICAL Functions                   #
     #=============================================================================#
+# Import Categorical Nulls as Mode or Create Unique ex_null Category
+def impute_mode_or_create_exnulls_cat(df, column):
+    # Skip columns that are not of type 'object'
+    if df[column].dtype != 'object':
+        print(f"Skipped is not of type 'object':{column}")
+        return df
+
+    # Proceed with columns of type 'object'
+    total_items = len(df[column])
+    null_count = df[column].isnull().sum()
+
+    # Early exit if no nulls
+    if null_count == 0:
+        print(f"Skipped No Nulls in: {column}: ")
+        return df
+
+    # Calculate statistics
+    value_counts = df[column].value_counts()  # Excludes nulls automatically
+    min_cat_count = value_counts.min()
+    max_cat_count = value_counts.max()
+    max_cat_percent = max_cat_count / total_items
+    null_cat_percent = null_count / total_items
+
+    # Determine the mode; mode can return multiple values, so ensure to get the first one if that's the case
+    mode = df[column].mode().iloc[0]
+
+    # Impute Nulls as ex_null If they represent more than 5% of Column 
+    # And they have at least as many values as the smallest category
+    # And the Mode category is not over 80%
+    # AUGMENTED TO 1% FOR JOBS DATA SET (SET BACK TO 5%)
+    
+    if null_count >= min_cat_count and null_cat_percent >= 0.01 and max_cat_percent < 0.8:
+        fill_value = 'ex_null'
+        print(f"{column}: {null_count} nulls imputed as 'ex_null'")
+    else:
+        fill_value = mode
+        print(f"{column}: {null_count} nulls imputed as '{mode}', the Mode value")
+
+    df[column].fillna(fill_value, inplace=True)
+
+    return df
+
+# Example usage
+# Assuming 'df' is your DataFrame and 'category_feature' is the column you want to process
+# df = impute_or_convert_nulls(df, 'category_feature')
+
 
 # endregion
 # endregion

@@ -600,6 +600,10 @@ class Preprocesser:
 
         # Iterate over Each Column in the DF
         for column in preprocessor.get_df().columns:
+            # TEMP: Jesse knows this 'target' skip needs better global implementation
+            if column == "target":
+                # Skip processing for the 'target' column
+                continue
             current_column = column
     
             # Construct inputs
