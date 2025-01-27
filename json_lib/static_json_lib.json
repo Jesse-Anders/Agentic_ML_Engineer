@@ -6,5 +6,21 @@
     {
         "function_name": "data_type_check",
         "description": ""
+    },
+    {
+        "function_name": "determine_numeric_or_categorical",
+        "description": ""
+    },
+    {
+        "function_name": "check_outliers_and_nulls",
+        "description": ""
+    },
+    {
+        "function_name": "cap_outliers_and_impute_nulls",
+        "description": ""
+    },
+    {
+        "function_name": "if_float_is_really_int_convert",
+        "description": ""
     }
 ]

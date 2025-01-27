@@ -469,6 +469,13 @@ def get_coding_instructions() -> str:
 tools = [
     # search_lib,
     exec_stored_func,
+    *instructions_list, # unpacks instruction list from utils.py
+    # IF_INT_INST,
+    # INT_NUMERIC_INST,
+    # INT_CATEGORICAL_INST,
+    # IF_FLOAT_INST,
+    # IF_OBJECT_INST,
+    # IF_UNKNOWN_INST,
     #get_coding_instructions,
     #write_generated_func,
     #exec_generated_func,
@@ -596,7 +603,7 @@ class Preprocesser:
             current_column = column
     
             # Construct inputs
-            inputs = {'messages': [('user', COLUMN_INST_START)]}
+            inputs = {'messages': [('user', COLUMN_INST_START())]}
 
             try:
                 # Feed the task list into the column_agent

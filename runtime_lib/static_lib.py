@@ -3,6 +3,7 @@
 # Every function should ideally have a [description]: field within its docstring
 
 import pandas as pd
+import numpy as np
 
 def drop_df_duplicates(df):
     '''
@@ -14,25 +15,244 @@ def drop_df_duplicates(df):
 
     return f'Dropped {start_rows - end_rows} duplicate rows. There are {end_rows} remaining rows.'
 
-# static_lib.py
+
 def data_type_check(df, column) -> str:
     """
     Checks the data type of the given column in the DataFrame.
 
     Args:
         df (pd.DataFrame): The DataFrame.
-        column_name (str): The name of the column to check.
+        column (str): The name of the column to check.
 
     Returns:
         str: A message describing the column's data type.
     """
     column_dtype = df[column].dtype # Access the column dynamically
 
+    # Handle text data
     if column_dtype == 'object':
         return f"Column '{column}' contains text data (dtype: {column_dtype})."
-    elif column_dtype in ['int64', 'float64']:
-        return f"Column '{column}' contains numeric data (dtype: {column_dtype})."
+    
+    # Handle integer data
+    elif column_dtype == 'int64':
+        return f"Column '{column}' contains integer data (dtype: {column_dtype})."
+    
+    # Handle float data
+    elif column_dtype == 'float64':
+        return f"Column '{column}' contains floating-point data (dtype: {column_dtype})."
+    
+    # Handle boolean data
     elif column_dtype == 'bool':
         return f"Column '{column}' contains boolean data (dtype: {column_dtype})."
+    
+    # Handle datetime data
+    elif column_dtype == 'datetime64[ns]':
+        return f"Column '{column}' contains datetime data (dtype: {column_dtype})."
+    
+    # Handle categorical data
+    elif pd.api.types.is_categorical_dtype(df[column]):
+        return f"Column '{column}' contains categorical data (dtype: {column_dtype})."
+    
+    # Handle other unhandled data types
     else:
         return f"Column '{column}' has an unhandled data type: {column_dtype}."
+    
+
+#=============================================================================================#
+#  region              INTEGER Column Functions                                               #
+#=============================================================================================#
+def determine_numeric_or_categorical(df, column, numeric_override_threshold=0.9):
+    """
+    Identifies whether an integer column is numeric or categorical.
+    Overrides classification if data is truly numeric despite skewed unique ratios.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+        column (str): The name of the column to analyze.
+        numeric_override_threshold (float): The proportion of non-dominant unique values to classify as numeric.
+
+    Returns:
+        dict: A dictionary containing the column type, handling strategy, and the updated DataFrame.
+    """
+    # Ensure the column exists and is of integer type
+    if column not in df.columns:
+        return {"error": f"Column '{column}' does not exist in the DataFrame."}
+
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        return {"error": f"Column '{column}' is not of integer data type."}
+    
+
+    # Count unique values and their frequencies
+    unique_values = df[column].value_counts(normalize=True)  # Frequencies as proportions
+    dominant_value_ratio = unique_values.iloc[0]  # Proportion of the most frequent value
+
+    # Analyze the unique-to-total ratio
+    unique_count = df[column].nunique()
+    total_count = len(df[column])
+    unique_ratio = unique_count / total_count
+
+    # Determine if data is numeric or categorical
+    # Override to numeric if most values are unique despite dominant values
+    if unique_ratio > 0.05 or unique_values.iloc[1:].sum() > numeric_override_threshold:
+        column_type = "numeric"
+    else:
+        column_type = "categorical"
+
+    return {
+        # "column": column,
+        "column_type": column_type,
+        # "null_count": df[column].isnull().sum(),  # Log null values
+        # "unique_ratio": unique_ratio,
+        # "dominant_value_ratio": dominant_value_ratio,
+        # "handling_strategy": handling_strategy,
+        # "updated_df": df,
+    }
+    #=============================================================================#
+    #  region              INTEGER Column NUMERIC Functions                       #
+    #=============================================================================#
+def check_outliers_and_nulls(df, column):
+    """
+    Checks for outliers in a column with an integer data type using the IQR method.
+    Explicitly handles null values by removing them before calculations.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to check.
+        column (str): The name of the column to analyze.
+
+    Returns:
+        dict: A dictionary containing the outliers and basic statistics.
+    """
+    # Ensure the column exists and is of integer type
+    if column not in df.columns:
+        return {"error": f"Column '{column}' does not exist in the DataFrame."}
+    
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        return {"error": f"Column '{column}' is not of integer data type."}
+
+    # Drop null values from the column
+    col_data = df[column].dropna()
+
+    # Compute basic statistics
+    q1 = col_data.quantile(0.25)  # First quartile (25th percentile)
+    q3 = col_data.quantile(0.75)  # Third quartile (75th percentile)
+    iqr = q3 - q1                 # Interquartile range
+
+    # Define outlier thresholds
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+
+    # Identify outliers
+    outliers = col_data[(col_data < lower_bound) | (col_data > upper_bound)]
+
+    # Return results
+    return {
+        "column": column,
+        "lower_bound": lower_bound,
+        "upper_bound": upper_bound,
+        "outliers": outliers.tolist(),
+        "outlier_count": len(outliers),
+        "q1": q1,
+        "q3": q3,
+        "iqr": iqr,
+        "null_count": df[column].isnull().sum(),  # Log null values
+    }
+
+
+def cap_outliers_and_impute_nulls(df, column):
+    """
+    Caps outliers to the 95th and 5th percentiles (Winsorizing) and imputes nulls with the mean value.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+        column (str): The name of the column to process.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame with outliers capped and nulls imputed.
+    """
+    # Skip non-numeric columns
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        print(f"Skipped non-numeric column: {column}")
+        return df
+    
+    # Cap Outliers (Winsorizing)
+    # Calculate the 5th and 95th percentiles of the column
+    percentile_5 = df[column].quantile(0.05)
+    percentile_95 = df[column].quantile(0.95)
+    
+    # Count values to be replaced
+    count_below_5 = np.sum(df[column] < percentile_5)
+    count_above_95 = np.sum(df[column] > percentile_95)
+    
+    # Replace values less than the 5th percentile with the 5th percentile
+    df[column] = np.where(df[column] < percentile_5, percentile_5, df[column])
+
+    # Replace values greater than the 95th percentile with the 95th percentile
+    df[column] = np.where(df[column] > percentile_95, percentile_95, df[column])
+
+    # Print replaced counts and values
+    if count_below_5 > 0:
+        print(f"Column '{column}': Replaced {count_below_5} values with {percentile_5} (5th percentile).")
+    if count_above_95 > 0:
+        print(f"Column '{column}': Replaced {count_above_95} values with {percentile_95} (95th percentile).")
+    if count_below_5 == 0 and count_above_95 == 0:
+        print(f"Skipped no outliers in column: {column}")
+
+    # Impute Nulls
+    if df[column].isnull().sum() > 0:
+        mean_value = df[column].mean()
+        null_count = df[column].isnull().sum()
+        df[column].fillna(mean_value, inplace=True)
+        print(f"Column '{column}': Imputed {null_count} null values with mean value {mean_value}.")
+    else:
+        print(f"Column '{column}': No nulls to impute.")
+
+    return df
+# endregion
+    #=============================================================================#
+    #  region              INTEGER Column CATEGORICAL Functions                   #
+    #=============================================================================#
+
+# endregion
+# endregion
+#=============================================================================================#
+#  region              FLOAT Column Functions                                                 #
+#=============================================================================================#
+def if_float_is_really_int_convert(df, column):
+    """
+    Checks if a column with a float data type contains only values ending in .0
+    and converts it to an integer data type if true.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+        column (str): The name of the column to check and possibly convert.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame with the column converted if applicable.
+        str: A message indicating whether the column was converted or not.
+    """
+    # Ensure the column exists and is of float type
+    if column not in df.columns:
+        return df, f"Column '{column}' does not exist in the DataFrame."
+    
+    if not pd.api.types.is_float_dtype(df[column]):
+        return df, f"Column '{column}' is not of float data type."
+
+    # Check if all values are integers (when ignoring nulls)
+    non_null_values = df[column].dropna()  # Exclude null values
+    if (non_null_values % 1 == 0).all():  # Check if all values are whole numbers
+        df[column] = df[column].astype("Int64")  # Use pandas nullable integer type
+        return df, f"Column '{column}' has been converted to integer."
+    else:
+        return df, f"Column '{column}' remains as float."
+
+    #=============================================================================#
+    #  region              FLOAT Column NUMERIC Functions                         #
+    #=============================================================================#
+
+# endregion
+    #=============================================================================#
+    #  region              FLOAT Column CATEGORICAL Functions                     #
+    #=============================================================================#
+
+#endregion
+# endregion
