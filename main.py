@@ -617,14 +617,17 @@ class Preprocesser:
         for column in preprocessor.get_df().columns:
             # TEMP: Jesse knows this 'target' skip needs better global implementation
             if column == "target":
-                # Skip processing for the 'target' column
+                continue
+            
+            # Skip Numeric Columns: ALIAS NULLS are only present in Object data type Columns.
+            if pd.api.types.is_numeric_dtype(preprocessor.get_df()[column]):
                 continue
 
             # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            COLUMNS_TO_TEST = ["col3"]
-            if column not in COLUMNS_TO_TEST:
-                # Skip processing for all columns except 'COLUMNS_TO_TEST'.
-                continue
+            # COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+            # if column not in COLUMNS_TO_TEST:
+            #     # Skip processing for all columns except 'COLUMNS_TO_TEST'.
+            #     continue
             
             current_column = column
     
@@ -639,7 +642,7 @@ class Preprocesser:
                 print(f'Error during stream: {e}')
 
         # Return the most recent dataframe (assuming it's updated elsewhere in the class)
-        return self.df
+        # return self.df
 
         #=======================================================#
         #        Column Cleaning Agent                          #
@@ -649,14 +652,13 @@ class Preprocesser:
         for column in preprocessor.get_df().columns:
             # TEMP: Jesse knows this 'target' skip needs better global implementation
             if column == "target":
-                # Skip processing for the 'target' column
                 continue
 
             # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            COLUMNS_TO_TEST = ["col2"]
-            if column not in COLUMNS_TO_TEST:
-                # Skip processing for all columns except 'COLUMNS_TO_TEST'.
-                continue
+            # COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+            # if column not in COLUMNS_TO_TEST:
+            #     # Skip processing for all columns except 'COLUMNS_TO_TEST'.
+            #     continue
             
             current_column = column
     

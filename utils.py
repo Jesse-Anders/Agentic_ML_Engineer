@@ -96,7 +96,7 @@ def OBJECT_TO_NUM_INST()-> str:
     "If column 'is less than 90% numeric', End process\n"
     "If column 'is 90%+ numeric and can be considered truly numeric', use exec_stored_func tool to run check_for_text_nums.\n"
     "If result from check_for_text_nums comes back as True, use exec_stored_func to run convert_text_nums_to_numeric\n"
-    "follow instructions in the HANDLE_ALIAS_NULLS_IN_NUMS tool.\n"
+    "Continue on and follow instructions in the HANDLE_ALIAS_NULLS_IN_NUMS tool.\n"
     
 )
 @tool
@@ -105,13 +105,13 @@ def HANDLE_ALIAS_NULLS_IN_NUMS()-> str:
     Instructions for handling mislabeled or alias nulls, like empty, unknown, none, etc.
     """
     return (
-    # This will need to utilize the LLM's talents. We can populate a list of unique non_numeric entries.
-    # From this list, the llm can determine if all the entries are supposed to be type nan or not.
-    # If there are more than 10 UNIQUE non-numeric entries we throw a flag and delete the column or something like that.
-    #"Use exec_stored_func tool to run count_unique_non_numeric_entries to find potenital alias nulls and assess the quality of the data.\n"
-    "If column contains 1-10 unique non_numerics, populate a list with these unique entries.\n"
-    "If LLM deams the list to be 100 percent alias nulls, exec_stored_func to run_convert_alias_list_to_nan.\n"
-    
+    "Use exec_stored_func tool to run describe_and_clean_non_numeric_entries to find potenital alias nulls and assess the quality of the data.\n"
+    # Below is under construction. Need to work 1 better describing items in list and 2 passing list to convert_review_list_entries_to_null
+    "If 0 items added to the Unique Review List, End Process\n"
+    "If 11 or more items added to the Unique Review List, WARNING: Column Low Quality Data Likely. End Process\n"
+    "If 1-10 items added to the Unique Review List, think about the nature of the entries and decide if the items in the list should be coverted to proper Nulls.\n"
+    "If you decide to convert the list to proper nulls, use the exec_stored_func tool to run convert_review_list_entries_to_null and convert all items to proper nulls\n"
+    "Otherwise Raise WARNING: Column Low Quality Data Likely. End Process\n"
 )
 
 # endregion

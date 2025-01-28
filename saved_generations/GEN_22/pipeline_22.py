@@ -9,6 +9,8 @@ from pipeline_lib import *
 
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
+df = data_type_check(df, 'col1')
+df = data_type_check(df, 'col2')
 df = data_type_check(df, 'col3')
 df = check_percent_numeric(df, 'col3')
 df = check_for_text_nums(df, 'col3')

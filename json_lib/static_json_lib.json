@@ -4,6 +4,26 @@
         "description": "Drops duplicate rows from a DataFrame \"in place\""
     },
     {
+        "function_name": "check_percent_numeric",
+        "description": ""
+    },
+    {
+        "function_name": "check_for_text_nums",
+        "description": ""
+    },
+    {
+        "function_name": "convert_text_nums_to_numeric",
+        "description": ""
+    },
+    {
+        "function_name": "describe_and_clean_non_numeric_entries",
+        "description": ""
+    },
+    {
+        "function_name": "convert_review_list_entries_to_null",
+        "description": ""
+    },
+    {
         "function_name": "data_type_check",
         "description": ""
     },
@@ -25,6 +45,14 @@
     },
     {
         "function_name": "if_float_is_really_int_convert",
+        "description": ""
+    },
+    {
+        "function_name": "is_numeric",
+        "description": ""
+    },
+    {
+        "function_name": "is_non_numeric",
         "description": ""
     }
 ]

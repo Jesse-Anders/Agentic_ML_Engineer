@@ -2,9 +2,11 @@
 
 # Every function should ideally have a [description]: field within its docstring
 
-from text2num import text2num
+from word2number import w2n
+from collections import Counter
 import pandas as pd
 import numpy as np
+
 
 def drop_df_duplicates(df):
     '''
@@ -18,7 +20,7 @@ def drop_df_duplicates(df):
 
 
 #=============================================================================================#
-#  region              COLUMN UNIVERSALS - Determine Data Type                                #
+#  region              COLUMN NUM AND ALIAS NULL CHECKERES                                #
 #=============================================================================================#
 
 
@@ -39,8 +41,18 @@ def check_percent_numeric(df, column, numeric_threshold=0.9):
     if column not in df.columns:
         return f"Column '{column}' does not exist in the DataFrame."
 
+    def is_numeric(value):
+        """
+        Helper function to check if a value is numeric or can be safely cast to a number.
+        """
+        try:
+            float(value)  # Try converting to a float
+            return True
+        except (ValueError, TypeError):
+            return False
+
     # Count numeric and non-numeric entries
-    numeric_count = df[column].apply(lambda x: isinstance(x, (int, float)) or pd.api.types.is_number(x)).sum()
+    numeric_count = df[column].apply(is_numeric).sum()
     total_count = len(df[column])
     numeric_ratio = numeric_count / total_count if total_count > 0 else 0
 
@@ -49,7 +61,6 @@ def check_percent_numeric(df, column, numeric_threshold=0.9):
         return f"Column '{column}' is 90%+ numeric and can be considered truly numeric (Numeric Ratio: {numeric_ratio:.2%})."
     else:
         return f"Column '{column}' is less than 90% numeric and should be treated as text/object (Numeric Ratio: {numeric_ratio:.2%})."
-
 
 def check_for_text_nums(df, column):
     """
@@ -71,13 +82,14 @@ def check_for_text_nums(df, column):
         if isinstance(value, str):
             try:
                 # Attempt to parse the text as a number
-                text2num(value)
+                w2n.word_to_num(value)
                 return True  # Found at least one convertible text number
             except (ValueError, TypeError):
                 continue
 
     return False  # No text numbers found
 
+# PLEASE UPDATE TO INCLUDE LIST OF UPDATEDED/CONVERTED ENTRIES TO NUMBERS 
 def convert_text_nums_to_numeric(df, column):
     """
     Converts written numbers in a column to numeric values.
@@ -98,12 +110,96 @@ def convert_text_nums_to_numeric(df, column):
         try:
             if isinstance(value, str):
                 # Convert written number to numeric
-                df.at[i, column] = text2num(value)
+                df.at[i, column] = w2n.word_to_num(value)
         except (ValueError, TypeError):
             # Skip invalid entries
             continue
 
     return df
+
+
+def describe_and_clean_non_numeric_entries(df, column):
+    """
+    Identifies traditional alias nulls, converts them to proper NaN values, and returns a list of
+    non-numeric entries that are not traditional nulls for review.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to process.
+        column (str): The name of the column to analyze.
+
+    Returns:
+        dict: A dictionary containing:
+            - 'alias_null_summary': Summary of alias nulls found and converted, including counts of each.
+            - 'unique_review_list': List of non-numeric entries requiring human/LLM review.
+    """
+    # Ensure the column exists
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+
+    def is_non_numeric(value):
+        """
+        Helper function to determine if a value is non-numeric.
+        Numeric-like strings (e.g., '23') are treated as numeric.
+        """
+        if pd.isna(value):  # Treat NaNs as numeric
+            return False
+        try:
+            float(value)  # Attempt to cast to float
+            return False  # If successful, it's numeric-like
+        except (ValueError, TypeError):
+            return True  # Otherwise, it's non-numeric
+
+    # Define traditional alias nulls
+    alias_nulls = {"na", "n/a", "null", "missing", "none", "nan", "not available", "unknown", "empty"}
+
+    # Normalize the column for processing
+    normalized_column = df[column].apply(lambda x: x.strip().lower() if isinstance(x, str) else x)
+
+    # Count and convert alias nulls to NaN
+    alias_null_counts = Counter(normalized_column[normalized_column.isin(alias_nulls)])
+    df.loc[normalized_column.isin(alias_nulls), column] = pd.NA
+
+    # Identify non-numeric entries that are not alias nulls
+    non_numeric_entries = normalized_column[normalized_column.apply(is_non_numeric) & ~normalized_column.isin(alias_nulls)].unique()
+
+    # Generate detailed output
+    alias_null_summary = ", ".join([f"{key}: {value}" for key, value in alias_null_counts.items()])
+    alias_null_count_total = sum(alias_null_counts.values())
+    unique_review_list = list(non_numeric_entries)
+
+    # Return detailed information
+    return {
+        "alias_null_summary": f"Converted {alias_null_count_total} alias nulls to proper NaN. {alias_null_summary}",
+        "unique_review_list": f"{len(unique_review_list)} items added to the Unique Review List {unique_review_list}"
+    }
+
+# THIS IS UNDER CONSTRUCTION - NEED TO PASS THE unique_review_list from describe_and_clean_non_numeric_entries to this function
+def convert_review_list_entries_to_null(df, column, review_list="pass unique_review_list"):
+    """
+    Converts all entries in the provided review list to proper NaN values in the specified column.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to process.
+        column (str): The name of the column to update.
+        review_list (list): The list of values to be converted to NaN.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame with the specified entries converted to NaN.
+    """
+    # Ensure the column exists
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+    
+    # Normalize review list for case-insensitive matching
+    normalized_review_list = [str(item).strip().lower() for item in review_list]
+
+    # Normalize the column for processing and replace matches with NaN
+    df[column] = df[column].apply(
+        lambda x: pd.NA if str(x).strip().lower() in normalized_review_list else x
+    )
+
+    return df
+
 
 
 #=============================================================================================#
@@ -255,7 +351,7 @@ def check_outliers_and_nulls(df, column):
 
 def cap_outliers_and_impute_nulls(df, column):
     """
-    Caps outliers to the 95th and 5th percentiles (Winsorizing) and imputes nulls with the mean value.
+    Caps outliers to the 95th and 5th percentiles (Winsorizing) and imputes nulls with the median value.
     Maintains the column's original data type, rounding to the nearest integer for integers
     or to the appropriate precision for floats.
 
@@ -310,12 +406,12 @@ def cap_outliers_and_impute_nulls(df, column):
 
     # Impute Nulls
     if df[column].isnull().sum() > 0:
-        mean_value = round_func(non_null_values.mean())
+        median_value = round_func(non_null_values.median())
         null_count = df[column].isnull().sum()
-        # df[column].fillna(mean_value, inplace=True) # Replaced with recommend for Pandas 3.0 in next line
-        df.fillna({column: mean_value}, inplace=True)
+        # df[column].fillna(median_value, inplace=True) # Replaced with recommend for Pandas 3.0 in next line
+        df.fillna({column: median_value}, inplace=True)
 
-        print(f"Column '{column}': Imputed {null_count} null values with mean value {mean_value}.")
+        print(f"Column '{column}': Imputed {null_count} null values with median value {median_value}.")
     else:
         print(f"Column '{column}': No nulls to impute.")
 

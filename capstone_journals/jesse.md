@@ -75,4 +75,11 @@ Prepped for new column iteration agent handling. Created data flow chart before 
 8pm -12am 4h Coding Session<br>
 Jesse Coding Session<br>
 Created and deployed the Column Iteration Agent. This agent represents a new overall approach to the agentic system. One agent will handle all data Preprocessing in a column by column workflow that includes a drill-down-to-instructions methodology.<br>
-This agent is now capable of determining data type and handling Integer & Float data preprocessing. 
+This agent is now capable of determining data type and handling Integer & Float data preprocessing.<br><br>
+
+1/26/27<br>
+Afternoon 1hr Coding session<br>
+Working towards handling alias nulls (NA, None, Missing, etc)<br><br>
+
+Evening 3hr Coding Session<br>
+Continued work on handling alias nulls and edge cases, when handling a numeric column with some limited text entries that are bad data, nulls, etc.
