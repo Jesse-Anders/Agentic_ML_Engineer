@@ -78,6 +78,42 @@ def COLUMN_INST_START():
         # f"If data type is any other type, follow instructions: {IF_UNKNOWN_INST()}\n"
     )
 
+def OJECT_TO_NUM_INST_START():
+    return (
+        "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
+        "State the column's data type.\n"
+        "If data type is Object, follow instructions in the OBJECT_TO_NUM_INST tool.\n"
+        "If data type is any other type, END.\n"
+    )
+
+@tool
+def OBJECT_TO_NUM_INST()-> str:
+    """
+    Instructions for finding Integer or Float cloumns that are currently Object data type columns.
+    """
+    return (
+    "Use exec_stored_func tool to run check_percent_numeric to determine if the column is truly object or if it is numeric.\n"
+    "If column 'is less than 90% numeric', End process\n"
+    "If column 'is 90%+ numeric and can be considered truly numeric', use exec_stored_func tool to run check_for_text_nums.\n"
+    "If result from check_for_text_nums comes back as True, use exec_stored_func to run convert_text_nums_to_numeric\n"
+    "follow instructions in the HANDLE_ALIAS_NULLS_IN_NUMS tool.\n"
+    
+)
+@tool
+def HANDLE_ALIAS_NULLS_IN_NUMS()-> str:
+    """
+    Instructions for handling mislabeled or alias nulls, like empty, unknown, none, etc.
+    """
+    return (
+    # This will need to utilize the LLM's talents. We can populate a list of unique non_numeric entries.
+    # From this list, the llm can determine if all the entries are supposed to be type nan or not.
+    # If there are more than 10 UNIQUE non-numeric entries we throw a flag and delete the column or something like that.
+    #"Use exec_stored_func tool to run count_unique_non_numeric_entries to find potenital alias nulls and assess the quality of the data.\n"
+    "If column contains 1-10 unique non_numerics, populate a list with these unique entries.\n"
+    "If LLM deams the list to be 100 percent alias nulls, exec_stored_func to run_convert_alias_list_to_nan.\n"
+    
+)
+
 # endregion
 
 #=============================================================================================#
@@ -197,6 +233,8 @@ def print_stream(stream):
 #=============================================================================================#
 
 instructions_list = [
+    OBJECT_TO_NUM_INST,
+    HANDLE_ALIAS_NULLS_IN_NUMS,
     IF_INT_INST,
     INT_NUMERIC_INST,
     INT_CATEGORICAL_INST,

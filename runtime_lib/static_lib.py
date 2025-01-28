@@ -2,6 +2,7 @@
 
 # Every function should ideally have a [description]: field within its docstring
 
+from text2num import text2num
 import pandas as pd
 import numpy as np
 
@@ -14,6 +15,96 @@ def drop_df_duplicates(df):
     end_rows = len(df)
 
     return f'Dropped {start_rows - end_rows} duplicate rows. There are {end_rows} remaining rows.'
+
+
+#=============================================================================================#
+#  region              COLUMN UNIVERSALS - Determine Data Type                                #
+#=============================================================================================#
+
+
+def check_percent_numeric(df, column, numeric_threshold=0.9):
+    """
+    Checks whether a column is text/object or if it is 90%+ numeric,
+    providing a comment on its classification.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to check.
+        column (str): The name of the column to analyze.
+        numeric_threshold (float): The threshold for numeric data classification (default: 0.9).
+
+    Returns:
+        str: A comment describing whether the column is text/object or numeric.
+    """
+    # Ensure the column exists
+    if column not in df.columns:
+        return f"Column '{column}' does not exist in the DataFrame."
+
+    # Count numeric and non-numeric entries
+    numeric_count = df[column].apply(lambda x: isinstance(x, (int, float)) or pd.api.types.is_number(x)).sum()
+    total_count = len(df[column])
+    numeric_ratio = numeric_count / total_count if total_count > 0 else 0
+
+    # Determine classification
+    if numeric_ratio >= numeric_threshold:
+        return f"Column '{column}' is 90%+ numeric and can be considered truly numeric (Numeric Ratio: {numeric_ratio:.2%})."
+    else:
+        return f"Column '{column}' is less than 90% numeric and should be treated as text/object (Numeric Ratio: {numeric_ratio:.2%})."
+
+
+def check_for_text_nums(df, column):
+    """
+    Checks if a column contains text entries that could represent written numbers.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to check.
+        column (str): The name of the column to analyze.
+
+    Returns:
+        bool: True if the column contains text that could represent written numbers, False otherwise.
+    """
+    # Ensure the column exists
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+
+    # Check for potential text numbers
+    for value in df[column]:
+        if isinstance(value, str):
+            try:
+                # Attempt to parse the text as a number
+                text2num(value)
+                return True  # Found at least one convertible text number
+            except (ValueError, TypeError):
+                continue
+
+    return False  # No text numbers found
+
+def convert_text_nums_to_numeric(df, column):
+    """
+    Converts written numbers in a column to numeric values.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to process.
+        column (str): The name of the column to process.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame with written numbers converted.
+    """
+    # Ensure the column exists
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+
+    # Convert text numbers to numeric values
+    for i, value in df[column].items():
+        try:
+            if isinstance(value, str):
+                # Convert written number to numeric
+                df.at[i, column] = text2num(value)
+        except (ValueError, TypeError):
+            # Skip invalid entries
+            continue
+
+    return df
+
 
 #=============================================================================================#
 #  region              COLUMN START - Determine Data Type                                     #

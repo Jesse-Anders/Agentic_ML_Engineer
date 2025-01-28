@@ -552,9 +552,16 @@ class Preprocesser:
         #     print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
 
         try:
+            object_to_num_agent = create_react_agent(model, tools)                                                                       
+        except Exception as e:
+            print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
+
+        try:
             column_agent = create_react_agent(model, tools)                                                                       
         except Exception as e:
             print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
+        
+
 
 
         #=======================================================#
@@ -599,7 +606,39 @@ class Preprocesser:
 
         # # Return the most recent dataframe (assuming it's updated elsewhere in the class)
         # return self.df
+
+        #=======================================================#
+        #        Column Object to Num and Alias Null Agent      #
+        #=======================================================#       
+
+        # Iterate over Each Column in the DF
+        for column in preprocessor.get_df().columns:
+            # TEMP: Jesse knows this 'target' skip needs better global implementation
+            if column == "target":
+                # Skip processing for the 'target' column
+                continue
+
+            # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
+            COLUMNS_TO_TEST = ["col3"]
+            if column not in COLUMNS_TO_TEST:
+                # Skip processing for all columns except 'COLUMNS_TO_TEST'.
+                continue
+            
+            current_column = column
     
+            # Construct inputs
+            inputs = {'messages': [('user', OJECT_TO_NUM_INST_START())]}
+
+            try:
+                # Feed the task list into the column_agent
+                stream = object_to_num_agent.stream(inputs, stream_mode='values')
+                print_stream(stream)
+            except Exception as e:
+                print(f'Error during stream: {e}')
+
+        # Return the most recent dataframe (assuming it's updated elsewhere in the class)
+        return self.df
+
         #=======================================================#
         #        Column Cleaning Agent                          #
         #=======================================================#       
@@ -612,7 +651,7 @@ class Preprocesser:
                 continue
 
             # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            COLUMNS_TO_TEST = ["col3"]
+            COLUMNS_TO_TEST = ["col2"]
             if column not in COLUMNS_TO_TEST:
                 # Skip processing for all columns except 'COLUMNS_TO_TEST'.
                 continue
