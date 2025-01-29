@@ -6,6 +6,7 @@ from word2number import w2n
 from collections import Counter
 import pandas as pd
 import numpy as np
+import json
 
 
 def drop_df_duplicates(df):
@@ -118,10 +119,11 @@ def convert_text_nums_to_numeric(df, column):
     return df
 
 
+
 def describe_and_clean_non_numeric_entries(df, column):
     """
-    Identifies traditional alias nulls, converts them to proper NaN values, and returns a list of
-    non-numeric entries that are not traditional nulls for review.
+    Identifies traditional alias nulls, converts them to proper NaN values, and converts
+    all remaining non-numeric (text) entries to NaN. It also returns a summary of these changes.
 
     Args:
         df (pd.DataFrame): The DataFrame containing the column to process.
@@ -130,7 +132,7 @@ def describe_and_clean_non_numeric_entries(df, column):
     Returns:
         dict: A dictionary containing:
             - 'alias_null_summary': Summary of alias nulls found and converted, including counts of each.
-            - 'unique_review_list': List of non-numeric entries requiring human/LLM review.
+            - 'unique_review_list': List of non-numeric entries that were found and converted.
     """
     # Ensure the column exists
     if column not in df.columns:
@@ -150,7 +152,7 @@ def describe_and_clean_non_numeric_entries(df, column):
             return True  # Otherwise, it's non-numeric
 
     # Define traditional alias nulls
-    alias_nulls = {"na", "n/a", "null", "missing", "none", "nan", "not available", "unknown", "empty"}
+    alias_nulls = {"na", "n/a", "null", "missing", "none", "nan", "not available", "unknown", "empty", "no data", "data missing"}
 
     # Normalize the column for processing
     normalized_column = df[column].apply(lambda x: x.strip().lower() if isinstance(x, str) else x)
@@ -160,46 +162,155 @@ def describe_and_clean_non_numeric_entries(df, column):
     df.loc[normalized_column.isin(alias_nulls), column] = pd.NA
 
     # Identify non-numeric entries that are not alias nulls
-    non_numeric_entries = normalized_column[normalized_column.apply(is_non_numeric) & ~normalized_column.isin(alias_nulls)].unique()
+    non_numeric_entries = normalized_column[normalized_column.apply(is_non_numeric) & ~normalized_column.isin(alias_nulls)]
+
+    # List and count of unique non-numeric entries that are not alias nulls
+    unique_non_numeric_entries = non_numeric_entries.unique()
+
+    # Convert all non-numeric entries to NaN
+    df.loc[non_numeric_entries.index, column] = pd.NA
 
     # Generate detailed output
     alias_null_summary = ", ".join([f"{key}: {value}" for key, value in alias_null_counts.items()])
     alias_null_count_total = sum(alias_null_counts.values())
-    unique_review_list = list(non_numeric_entries)
+    unique_review_list = list(unique_non_numeric_entries)
 
     # Return detailed information
     return {
         "alias_null_summary": f"Converted {alias_null_count_total} alias nulls to proper NaN. {alias_null_summary}",
-        "unique_review_list": f"{len(unique_review_list)} items added to the Unique Review List {unique_review_list}"
+        "unique_review_list": f"{len(unique_review_list)} unique non-numeric entries were found and converted to NaN: {unique_review_list}"
     }
 
-# THIS IS UNDER CONSTRUCTION - NEED TO PASS THE unique_review_list from describe_and_clean_non_numeric_entries to this function
-def convert_review_list_entries_to_null(df, column, review_list="pass unique_review_list"):
+
+
+def convert_column_to_numeric(df, column):
     """
-    Converts all entries in the provided review list to proper NaN values in the specified column.
+    Converts the column to numeric (either int or float) based on the data.
 
     Args:
-        df (pd.DataFrame): The DataFrame containing the column to process.
-        column (str): The name of the column to update.
-        review_list (list): The list of values to be converted to NaN.
+        df (pd.DataFrame): The DataFrame containing the column to convert.
+        column (str): The name of the column to convert.
 
     Returns:
-        pd.DataFrame: The updated DataFrame with the specified entries converted to NaN.
+        pd.DataFrame: The DataFrame with the converted column.
     """
     # Ensure the column exists
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
     
-    # Normalize review list for case-insensitive matching
-    normalized_review_list = [str(item).strip().lower() for item in review_list]
-
-    # Normalize the column for processing and replace matches with NaN
-    df[column] = df[column].apply(
-        lambda x: pd.NA if str(x).strip().lower() in normalized_review_list else x
-    )
+    # Try converting the column to integer if possible
+    df[column] = pd.to_numeric(df[column], errors='coerce', downcast='integer')
+    
+    # If the conversion to integer fails (e.g., due to decimals or NaNs), convert to float
+    if not pd.api.types.is_integer_dtype(df[column]):
+        df[column] = pd.to_numeric(df[column], errors='coerce', downcast='float')
 
     return df
 
+
+# This is applied to regular Object Columns
+def convert_common_alias_nulls(df, column):
+    """
+    Converts common alias null values in a text column to proper NaN values,
+    and prints a summary of how many of each alias null were found and converted.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to process.
+        column (str): The name of the column to convert.
+
+    Returns:
+        pd.DataFrame: The DataFrame with the specified column updated.
+    """
+    # Ensure the column exists
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+
+    # Define traditional alias nulls
+    alias_nulls = {"na", "n/a", "null", "missing", "none", "nan", "not available", "unknown", "empty", "no data", "data missing"}
+
+    # Normalize the column for processing
+    normalized_column = df[column].apply(lambda x: str(x).strip().lower() if isinstance(x, str) else x)
+
+    # Count the occurrences of alias nulls
+    alias_null_counts = Counter(normalized_column[normalized_column.isin(alias_nulls)])
+
+    # Print a summary of alias null counts
+    if alias_null_counts:
+        print("Alias Nulls Summary:")
+        for alias, count in alias_null_counts.items():
+            print(f"  {alias}: {count}")
+    else:
+        print("No alias nulls found.")
+
+    # Replace alias nulls with NaN
+    df.loc[normalized_column.isin(alias_nulls), column] = pd.NA
+
+    return df
+
+
+def display_most_common_unique_entries(df, column, max_display=40):
+    """
+    Displays the most common unique entries in a column, limited to the top `max_display` most common entries.
+    It only shows the entries without counts.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to process.
+        column (str): The name of the column to analyze.
+        max_display (int): The maximum number of unique entries to display (default is 40).
+
+    Returns:
+        list: A list of the top unique entries (without counts), up to `max_display` entries.
+    """
+    # Ensure the column exists
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+    
+    # Get the value counts for the column, sorted by count in descending order
+    value_counts = df[column].value_counts()
+
+    # Limit to the top 'max_display' entries
+    top_entries = value_counts.head(max_display).index.tolist()
+
+    return top_entries
+
+def convert_uncommon_alias_nulls(df, column, alias_nulls_path="json_lib/alias_nulls_list.json"):
+    """
+    Converts all alias null values stored in the JSON file to proper NaN values in the specified column of the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column to process.
+        column (str): The name of the column to convert.
+        alias_nulls_path (str): The path to the JSON file containing the alias nulls list (default is "json_lib/alias_nulls_list.json").
+
+    Returns:
+        pd.DataFrame: The updated DataFrame with the alias nulls converted to NaN.
+    """
+    # Ensure the column exists in the DataFrame
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+
+    try:
+        # Load the list of alias nulls from the JSON file
+        with open(alias_nulls_path, "r") as file:
+            alias_nulls = json.load(file)
+
+        # Normalize the list of alias nulls (convert to lowercase for consistent matching)
+        alias_nulls = [item.strip().lower() for item in alias_nulls]
+
+        # Normalize the column for processing
+        normalized_column = df[column].apply(lambda x: str(x).strip().lower() if isinstance(x, str) else x)
+
+        # Replace alias nulls with NaN
+        df.loc[normalized_column.isin(alias_nulls), column] = pd.NA
+
+        return df
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Alias nulls file not found at {alias_nulls_path}.")
+    except json.JSONDecodeError:
+        raise ValueError(f"Error: Nulls list file at {alias_nulls_path} is not a valid JSON file.")
+    except Exception as e:
+        raise Exception(f"An unexpected error occurred: {e}")
 
 
 #=============================================================================================#

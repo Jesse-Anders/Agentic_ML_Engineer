@@ -11,6 +11,3 @@ df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
 df = data_type_check(df, 'col4')
 df = check_percent_numeric(df, 'col4')
-df = convert_common_alias_nulls(df, 'col4')
-df = display_most_common_unique_entries(df, 'col4')
-df = convert_uncommon_alias_nulls(df, 'col4')

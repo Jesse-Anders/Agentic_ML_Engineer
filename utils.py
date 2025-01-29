@@ -62,10 +62,10 @@ CODE_INST_TROUBLESHOOTING = (
 )
 
 #=============================================================================================#
-#  region                             Column Master Iteration Instructions                    #
+#  region                        CAMEL :) Master START Iteration Instructions                 #
 #=============================================================================================#
 
-def COLUMN_INST_START():
+def CLEANING_AGENT1_START():
     return (
         "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
         "State the column's data type.\n"
@@ -73,18 +73,18 @@ def COLUMN_INST_START():
         "If data type is Float, follow instructions in the IF_FLOAT_INST tool.\n"
         "If data type is Object, follow instructions in the IF_OBJECT_INST tool.\n"
         "If data type is any other type, follow instructions in the IF_UNKNOWN_INST tool.\n"
-        # f"If data type is Float, follow instructions: {IF_FLOAT_INST()}\n"
-        # f"If data type is Object, follow instructions: {IF_OBJECT_INST()}\n"
-        # f"If data type is any other type, follow instructions: {IF_UNKNOWN_INST()}\n"
     )
 
-def OJECT_TO_NUM_INST_START():
+def OJECT_TO_NUM_AND_ALIAS_NULLS_START():
     return (
         "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
         "State the column's data type.\n"
         "If data type is Object, follow instructions in the OBJECT_TO_NUM_INST tool.\n"
         "If data type is any other type, END.\n"
     )
+#=============================================================================================#
+#  region                  OBJECT TO NUM AND ALIAS NULLS LOOP INSTRUCTIONS                    #
+#=============================================================================================#
 
 @tool
 def OBJECT_TO_NUM_INST()-> str:
@@ -93,7 +93,7 @@ def OBJECT_TO_NUM_INST()-> str:
     """
     return (
     "Use exec_stored_func tool to run check_percent_numeric to determine if the column is truly object or if it is numeric.\n"
-    "If column 'is less than 90% numeric', End process\n"
+    "If column 'is less than 90% numeric', use the HANDLE_COMMON_ALIAS_NULLS_IN_TEXT_COLUMN tool.\n"
     "If column 'is 90%+ numeric and can be considered truly numeric', use exec_stored_func tool to run check_for_text_nums.\n"
     "If result from check_for_text_nums comes back as True, use exec_stored_func to run convert_text_nums_to_numeric\n"
     "Continue on and follow instructions in the HANDLE_ALIAS_NULLS_IN_NUMS tool.\n"
@@ -102,17 +102,55 @@ def OBJECT_TO_NUM_INST()-> str:
 @tool
 def HANDLE_ALIAS_NULLS_IN_NUMS()-> str:
     """
-    Instructions for handling mislabeled or alias nulls, like empty, unknown, none, etc.
+    Instructions for handling mislabeled or alias nulls and remaining unidentifiable text to Null.
     """
     return (
-    "Use exec_stored_func tool to run describe_and_clean_non_numeric_entries to find potenital alias nulls and assess the quality of the data.\n"
-    # Below is under construction. Need to work 1 better describing items in list and 2 passing list to convert_review_list_entries_to_null
-    "If 0 items added to the Unique Review List, End Process\n"
-    "If 11 or more items added to the Unique Review List, WARNING: Column Low Quality Data Likely. End Process\n"
-    "If 1-10 items added to the Unique Review List, think about the nature of the entries and decide if the items in the list should be coverted to proper Nulls.\n"
-    "If you decide to convert the list to proper nulls, use the exec_stored_func tool to run convert_review_list_entries_to_null and convert all items to proper nulls\n"
-    "Otherwise Raise WARNING: Column Low Quality Data Likely. End Process\n"
+    "Use exec_stored_func tool to run describe_and_clean_non_numeric_entries to find and covert mislabeled nulls to proper nulls.\n"
+    "If 1 or more items added to the Unique Review List, use the exec_stored_func tool to run convert_all_non_num_to_null to convert all remaining text entries to proper nulls\n"
+    "Use exec_stored_func tool to run convert_column_to_numeric. End Process\n"
 )
+
+@tool
+def HANDLE_COMMON_ALIAS_NULLS_IN_TEXT_COLUMN()-> str:
+    """
+    Instructions for handling common mislabeled or alias nulls, like empty, unknown, none, etc in standard object type/text .
+    """
+    return (
+    "Use exec_stored_func tool to run convert_common_alias_nulls to find and convert mislabeled nulls to proper nulls.\n"
+    "Continue on and follow instructions in the HANDLE_UNCOMMON_ALIAS_NULLS_IN_TEXT_COLUMN tool.\n"
+)
+
+@tool
+def HANDLE_UNCOMMON_ALIAS_NULLS_IN_TEXT_COLUMN()-> str:
+    """
+    Instructions for handling uncommon mislabeled or alias nulls, using LLM logic .
+    """
+    return (
+    "Use exec_stored_func tool to run display_most_common_unique_entries and review the most common unique entries in the column.\n"
+    "Look through the unique entries and try to determine if there are any entries that should be nulls, meaning they are 'very likely mislabeled nulls'.\n"
+    "If any exist, use the JSON_LIST_INSTRUCTIONS tool to format your list of 'very likely mislabeled nulls' and use the add_nulls_to_list tool to save the list.\n"
+    "If you added mislabeled nulls to the list, use the exec_stored_func tool to run convert_uncommon_alias_nulls to convert items in the list to nulls.\n"
+    "If you found no 'very likely mislabeled nulls'. End Process\n"
+
+)
+
+@tool
+def JSON_LIST_INSTRUCTIONS() -> str:
+    """
+    Instructions for creating a well-formatted JSON list of alias nulls.
+    """
+    return (
+        "Here is a simple example of a well-formatted JSON list:\n"
+        '[ "na", "missing", "none", "unknown", "empty" ]\n'
+        "Ensure that:\n"
+        "1. Each entry is a string enclosed in double quotes.\n"
+        "2. Entries are separated by commas.\n"
+        "3. No trailing commas after the last item.\n"
+        "4. The list should not contain any extra characters, comments, or notes.\n"
+        "5. The list must be valid JSON format.\n\n"
+
+    )
+
 
 # endregion
 
@@ -235,6 +273,9 @@ def print_stream(stream):
 instructions_list = [
     OBJECT_TO_NUM_INST,
     HANDLE_ALIAS_NULLS_IN_NUMS,
+    HANDLE_COMMON_ALIAS_NULLS_IN_TEXT_COLUMN,
+    HANDLE_UNCOMMON_ALIAS_NULLS_IN_TEXT_COLUMN,
+    JSON_LIST_INSTRUCTIONS,
     IF_INT_INST,
     INT_NUMERIC_INST,
     INT_CATEGORICAL_INST,

@@ -20,7 +20,19 @@
         "description": ""
     },
     {
-        "function_name": "convert_review_list_entries_to_null",
+        "function_name": "convert_column_to_numeric",
+        "description": ""
+    },
+    {
+        "function_name": "convert_common_alias_nulls",
+        "description": ""
+    },
+    {
+        "function_name": "display_most_common_unique_entries",
+        "description": ""
+    },
+    {
+        "function_name": "convert_uncommon_alias_nulls",
         "description": ""
     },
     {

@@ -424,6 +424,61 @@ def get_coding_instructions() -> str:
     return CODE_INST
 
 
+# Define the path to your task list JSON file
+ALIAS_NULLS_PATH = "json_lib/alias_nulls_list.json"
+
+
+@tool
+def add_nulls_to_list(new_nulls) -> str:
+    '''
+    Appends new alias nulls to the existing list in the JSON file.
+    If the file doesn't exist or is empty, it will initialize with an empty list.
+
+    Args:
+        new_nulls (list): The list of mislabeled nulls to be added to the alias null list.
+
+    Returns:
+        str: A confirmation message indicating the nulls were added successfully.
+
+    Example JSON structure:
+    ["na", "missing", "none", "unknown", "empty"]
+    '''
+    try:
+        # Ensure the input is a list of strings
+        if not isinstance(new_nulls, list):
+            return "Error: The provided data is not a list."
+        if not all(isinstance(item, str) for item in new_nulls):
+            return "Error: All items in the list must be strings."
+
+        # Define the path to your JSON file (ensure it's correct)
+        ALIAS_NULLS_PATH = "json_lib/alias_nulls_list.json"  # Make this Modular Someday
+
+        # Initialize the JSON file with an empty list if it doesn't exist or is empty
+        if not os.path.exists(ALIAS_NULLS_PATH) or os.path.getsize(ALIAS_NULLS_PATH) == 0:
+            with open(ALIAS_NULLS_PATH, "w") as file:
+                json.dump([], file, indent=4)  # Initialize with an empty list
+            print(f"Initialized empty JSON file at {ALIAS_NULLS_PATH}.")
+
+        # Load the existing null list from the JSON file
+        with open(ALIAS_NULLS_PATH, "r") as file:
+            null_list = json.load(file)
+
+        # Append the new nulls to the existing list
+        null_list.extend(new_nulls)
+
+        # Remove duplicates if necessary (optional)
+        null_list = list(set(null_list))  # Removes duplicates while maintaining uniqueness
+
+        # Save the updated null list back to the JSON file
+        with open(ALIAS_NULLS_PATH, "w") as file:
+            json.dump(null_list, file, indent=4)
+
+        return f"Nulls successfully added: {new_nulls}"
+
+    except Exception as e:
+        return f"An unexpected error occurred: {e}"
+
+
 # # Define the path to your task list JSON file
 # TASK_LIST_PATH = "json_lib/task_list.json"
 
@@ -477,19 +532,15 @@ def get_coding_instructions() -> str:
 tools = [
     # search_lib,
     exec_stored_func,
+    add_nulls_to_list,
     *instructions_list, # unpacks instruction list from utils.py
-    # IF_INT_INST,
-    # INT_NUMERIC_INST,
-    # INT_CATEGORICAL_INST,
-    # IF_FLOAT_INST,
-    # IF_OBJECT_INST,
-    # IF_UNKNOWN_INST,
     #get_coding_instructions,
     #write_generated_func,
     #exec_generated_func,
     # add_task_to_list,
     # write_to_pipeline,
 ]
+
 
 
 # endregion
@@ -554,12 +605,12 @@ class Preprocesser:
         #     print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
 
         try:
-            object_to_num_agent = create_react_agent(model, tools)                                                                       
+            object_to_num_and_alias_nulls_agent = create_react_agent(model, tools)                                                                       
         except Exception as e:
             print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
 
         try:
-            column_agent = create_react_agent(model, tools)                                                                       
+            cleaning_agent1 = create_react_agent(model, tools)                                                                       
         except Exception as e:
             print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
         
@@ -624,19 +675,19 @@ class Preprocesser:
                 continue
 
             # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            # COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-            # if column not in COLUMNS_TO_TEST:
-            #     # Skip processing for all columns except 'COLUMNS_TO_TEST'.
-            #     continue
+            COLUMNS_TO_TEST = ["col4"] # Empty to Skip Agent Entirely!
+            if column not in COLUMNS_TO_TEST:
+                # Skip processing for all columns except 'COLUMNS_TO_TEST'.
+                continue
             
             current_column = column
     
             # Construct inputs
-            inputs = {'messages': [('user', OJECT_TO_NUM_INST_START())]}
+            inputs = {'messages': [('user', OJECT_TO_NUM_AND_ALIAS_NULLS_START())]}
 
             try:
                 # Feed the task list into the column_agent
-                stream = object_to_num_agent.stream(inputs, stream_mode='values')
+                stream = object_to_num_and_alias_nulls_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
@@ -645,29 +696,29 @@ class Preprocesser:
         # return self.df
 
         #=======================================================#
-        #        Column Cleaning Agent                          #
+        #        Column Cleaning Agent 1                        #
         #=======================================================#       
 
         # Iterate over Each Column in the DF
         for column in preprocessor.get_df().columns:
-            # TEMP: Jesse knows this 'target' skip needs better global implementation
+            # Code Cop Out: Jesse knows this 'target' skip needs better global implementation
             if column == "target":
                 continue
 
             # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            # COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-            # if column not in COLUMNS_TO_TEST:
-            #     # Skip processing for all columns except 'COLUMNS_TO_TEST'.
-            #     continue
+            COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+            if column not in COLUMNS_TO_TEST:
+                # Skip processing for all columns except 'COLUMNS_TO_TEST'.
+                continue
             
             current_column = column
     
             # Construct inputs
-            inputs = {'messages': [('user', COLUMN_INST_START())]}
+            inputs = {'messages': [('user', CLEANING_AGENT1_START())]}
 
             try:
                 # Feed the task list into the column_agent
-                stream = column_agent.stream(inputs, stream_mode='values')
+                stream = cleaning_agent1.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
