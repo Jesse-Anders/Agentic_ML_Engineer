@@ -69,10 +69,10 @@ def CLEANING_AGENT1_START():
     return (
         "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
         "State the column's data type.\n"
-        "If data type is Integer, follow instructions in the IF_INT_INST tool.\n"
-        "If data type is Float, follow instructions in the IF_FLOAT_INST tool.\n"
-        "If data type is Object, follow instructions in the IF_OBJECT_INST tool.\n"
-        "If data type is any other type, follow instructions in the IF_UNKNOWN_INST tool.\n"
+        "If data type is Float, follow instructions in the FLOAT_INST tool.\n"
+        "If data type is Integer, follow instructions in the NUMERIC_INST tool.\n"
+        "If data type is Object, follow instructions in the OBJECT_INST tool.\n"
+        "If data type is any other type, follow instructions in the UNKNOWN_INST tool.\n"
     )
 
 def OJECT_TO_NUM_AND_ALIAS_NULLS_START():
@@ -82,8 +82,9 @@ def OJECT_TO_NUM_AND_ALIAS_NULLS_START():
         "If data type is Object, follow instructions in the OBJECT_TO_NUM_INST tool.\n"
         "If data type is any other type, END.\n"
     )
+# endregion
 #=============================================================================================#
-#  region                  OBJECT TO NUM AND ALIAS NULLS LOOP INSTRUCTIONS                    #
+#  region             OBJECT TO NUM AND ALIAS NULLS INSTRUCTIONS                              #
 #=============================================================================================#
 
 @tool
@@ -129,6 +130,7 @@ def HANDLE_UNCOMMON_ALIAS_NULLS_IN_TEXT_COLUMN()-> str:
     "Use exec_stored_func tool to run display_most_common_unique_entries and review the most common unique entries in the column.\n"
     "Look through the unique entries and try to determine if there are any entries that should be nulls, meaning they are 'very likely mislabeled nulls'.\n"
     "If any exist, use the JSON_LIST_INSTRUCTIONS tool to format your list of 'very likely mislabeled nulls' and use the add_nulls_to_list tool to save the list.\n"
+    # IMPORTANT: We need a way to send this json list (in this state) to the pipeline.
     "If you added mislabeled nulls to the list, use the exec_stored_func tool to run convert_uncommon_alias_nulls to convert items in the list to nulls.\n"
     "If you found no 'very likely mislabeled nulls'. End Process\n"
 
@@ -151,39 +153,47 @@ def JSON_LIST_INSTRUCTIONS() -> str:
 
     )
 
-
 # endregion
+#=============================================================================================#
+#  region                  Column Type Integer Instructions                                   #
+#=============================================================================================#
+@tool
+def FLOAT_INST()-> str:
+    """
+    Instructions for handling Float data type columns.
+    """
+    return (
+    "Use exec_stored_func tool to run if_float_is_really_int_convert.\n"
+    "Follow instructions in the NUMERIC_INST tool.\n"
 
-#=============================================================================================#
-#  region                              Column Type Integer Instructions                       #
-#=============================================================================================#
+)
 
 @tool
-def IF_INT_INST()-> str:
+def NUMERIC_INST()-> str:
     """
     Instructions for handling Integer data type columns.
     """
     return (
     "Use exec_stored_func tool to run determine_numeric_or_categorical to determine if the column is truly numeric or if it is categroical.\n"
-    "If returned column_type = numeric, use INT_NUMERIC_INST tool\n"
-    "If returned column_type = categorical, use INT_CATEGORICAL_INST tool\n"
+    "If returned column_type = numeric, use NUMERIC_NULL_AND_OUTLIER_INST tool\n"
+    "If returned column_type = categorical, use CATEGORICAL_NULL_AND_OUTLIER_INST tool\n"
 )
 
-
 @tool
-def INT_NUMERIC_INST()-> str:
+def NUMERIC_NULL_AND_OUTLIER_INST()-> str:
     """
-    Instructions for handling Numeric Integer columns.
+    Instructions for handling numeric columns.
     """
     return (
     "Use exec_stored_func tool to run check_outliers_and_nulls to find and describe outliers and or nulls \n"
     # "If Warnings are Present use exec_stored_func tool to run SOMETHING to record the issue for human review!!\n"
     "If outliers AND OR nulls are present, use exec_stored_func tool to run cap_outliers_and_impute_nulls.\n"
 )
+
 @tool
-def INT_CATEGORICAL_INST()-> str:
+def CATEGORICAL_NULL_AND_OUTLIER_INST()-> str:
     """
-    Instructions for handling Categorical Integer columns.
+    Instructions for handling Categorical numeric columns.
     """
     return (
     "Say that this integer column is categorical in nature. \n"
@@ -191,49 +201,13 @@ def INT_CATEGORICAL_INST()-> str:
     #"Use exec_stored_func tool to run SOMETHING ABOUT CATEGORIES to work with \n"
     #"If nulls are present, Use exec_stored_func tool to run impute_mode_or_create_exnulls_cat \n"
 )
-# endregion
-#=============================================================================================#
-#  region                              Column Type Float Instructions                         #
-#=============================================================================================#
-@tool
-def IF_FLOAT_INST()-> str:
-    """
-    Instructions for handling Float data type columns.
-    """
-    return (
-    "Use exec_stored_func tool to run if_float_is_really_int_convert.\n"
-    "If column was 'converted to integer', run the IF_INT_INST tool\n"
-    "If column 'remains as float', Use exec_stored_func tool to run determine_numeric_or_categorical to determine if the column is truly numeric or if it is categroical.\n"
-    "If returned column_type = numeric, use FLOAT_NUMERIC_INST tool\n"
-    "If returned column_type = categorical, use FLOAT_CATEGORICAL_INST tool\n"
-)
-@tool
-def FLOAT_NUMERIC_INST()-> str:
-    """
-    Instructions for handling Numeric Float columns.
-    """
-    return (
-    "Use exec_stored_func tool to run check_outliers_and_nulls to find and describe outliers and or nulls \n"
-    # "If Warnings are Present use exec_stored_func tool to run SOMETHING to record the issue for human review!!\n"
-    "If outliers AND OR nulls are present, use exec_stored_func tool to run cap_outliers_and_impute_nulls.\n"
-)
-@tool
-def FLOAT_CATEGORICAL_INST()-> str:
-    """
-    Instructions for handling Categorical Float columns.
-    """
-    return (
-    "Say that this Float column is categorical in nature"
-    # "Use exec_stored_func tool to run is_null to detrmine if \n"
-    # "If outliers are present, use exec_stored_func tool to run cap_outliers.\n"
-    # f"If nulls are present, follow instructions: {INT_NULLS_INST()}\n"
-)
+
 # endregion
 #=============================================================================================#
 #  region                              Column Type Object Instructions                        #
 #=============================================================================================#
 @tool
-def IF_OBJECT_INST()-> str:
+def OBJECT_INST()-> str:
     """
     Instructions for handling Object data type columns.
     """
@@ -245,7 +219,7 @@ def IF_OBJECT_INST()-> str:
 #  region                              Column Type Unknown Instructions                       #
 #=============================================================================================#
 @tool
-def IF_UNKNOWN_INST()-> str:
+def UNKNOWN_INST()-> str:
     """
     Instructions for handling Unknown data type columns.
     """
@@ -255,7 +229,7 @@ def IF_UNKNOWN_INST()-> str:
 
 #endregion
 #=============================================================================================#
-#                                      Util Functions                                         #
+#  region                                    Util Functions                                   #
 #=============================================================================================#
 
 def print_stream(stream):
@@ -265,23 +239,24 @@ def print_stream(stream):
             print(message)
         else:
             message.pretty_print()
-
+# endregion
 #=============================================================================================#
-#                                      Agent Instruction @tool List                           #
+#  region                                    Agent Instruction @tool List                     #
 #=============================================================================================#
 
 instructions_list = [
+    # Agent is OJECT_TO_NUM_AND_ALIAS_NULLS
     OBJECT_TO_NUM_INST,
     HANDLE_ALIAS_NULLS_IN_NUMS,
     HANDLE_COMMON_ALIAS_NULLS_IN_TEXT_COLUMN,
     HANDLE_UNCOMMON_ALIAS_NULLS_IN_TEXT_COLUMN,
     JSON_LIST_INSTRUCTIONS,
-    IF_INT_INST,
-    INT_NUMERIC_INST,
-    INT_CATEGORICAL_INST,
-    IF_FLOAT_INST,
-    FLOAT_NUMERIC_INST,
-    FLOAT_CATEGORICAL_INST,
-    IF_OBJECT_INST,
-    IF_UNKNOWN_INST,
+    # Agent is CLEANING_AGENT1 
+    FLOAT_INST,
+    NUMERIC_INST,
+    NUMERIC_NULL_AND_OUTLIER_INST,
+    CATEGORICAL_NULL_AND_OUTLIER_INST,
+    OBJECT_INST,
+    UNKNOWN_INST,
 ]
+# endregion

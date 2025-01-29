@@ -82,4 +82,13 @@ Afternoon 1hr Coding session<br>
 Working towards handling alias nulls (NA, None, Missing, etc)<br><br>
 
 Evening 3hr Coding Session<br>
-Continued work on handling alias nulls and edge cases, when handling a numeric column with some limited text entries that are bad data, nulls, etc.
+Continued work on handling alias nulls and edge cases, when handling a numeric column with some limited text entries that are bad data, nulls, etc.<br><br>
+
+1/28/25<br>
+Evening 3hr Coding Session<br>
+Completed the Column Object to Num and Alias Null Agent!<br>
+This is the first column loop agent and it handles, a few critical tasks. It iterates over object columns only.<br>
+1. The agent determines if the object column is truly object or in fact numeric. 90% numeric data columns have random junk text and mislabeled nulls all converted to proper nulls AND the column is converted to Foat or Int tpye<br>
+2. The agent handles regular object/text columns and converts common mislabeled nulls to proper null type.<br>
+3. Lastly the agent receives a list of the top 40 most common unique entries and determines if there are any remaining mislabeled nulls based on its own judgement.
+

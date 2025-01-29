@@ -532,7 +532,7 @@ def add_nulls_to_list(new_nulls) -> str:
 tools = [
     # search_lib,
     exec_stored_func,
-    add_nulls_to_list,
+    add_nulls_to_list, # Just the Column Object to Num and Alias Null agent
     *instructions_list, # unpacks instruction list from utils.py
     #get_coding_instructions,
     #write_generated_func,
@@ -618,7 +618,7 @@ class Preprocesser:
 
 
         #=======================================================#
-        #           Task Creation Agent            #
+        #           Task Creation Agent                   #
         #=======================================================#
 
         
@@ -660,9 +660,9 @@ class Preprocesser:
         # # Return the most recent dataframe (assuming it's updated elsewhere in the class)
         # return self.df
 
-        #=======================================================#
-        #        Column Object to Num and Alias Null Agent      #
-        #=======================================================#       
+        #=============================================================#
+        #  region      Agent Column Object to Num and Alias Null      #
+        #=============================================================#       
 
         # Iterate over Each Column in the DF
         for column in preprocessor.get_df().columns:
@@ -675,10 +675,10 @@ class Preprocesser:
                 continue
 
             # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            COLUMNS_TO_TEST = ["col4"] # Empty to Skip Agent Entirely!
-            if column not in COLUMNS_TO_TEST:
-                # Skip processing for all columns except 'COLUMNS_TO_TEST'.
-                continue
+            # COLUMNS_TO_TEST = ["col4"] # Empty to Skip Agent Entirely!
+            # if column not in COLUMNS_TO_TEST:
+            #     # Skip processing for all columns except 'COLUMNS_TO_TEST'.
+            #     continue
             
             current_column = column
     
@@ -696,7 +696,7 @@ class Preprocesser:
         # return self.df
 
         #=======================================================#
-        #        Column Cleaning Agent 1                        #
+        #  region     Agent Column Cleaning                     #
         #=======================================================#       
 
         # Iterate over Each Column in the DF
@@ -706,10 +706,10 @@ class Preprocesser:
                 continue
 
             # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-            if column not in COLUMNS_TO_TEST:
-                # Skip processing for all columns except 'COLUMNS_TO_TEST'.
-                continue
+            # COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+            # if column not in COLUMNS_TO_TEST:
+            #     # Skip processing for all columns except 'COLUMNS_TO_TEST'.
+            #     continue
             
             current_column = column
     
