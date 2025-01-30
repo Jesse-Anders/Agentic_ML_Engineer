@@ -261,6 +261,20 @@ def get_inst(
     except Exception as e:
         return f'Error retrieving [{inst_key}] instruction set: {e}'
 
+@tool
+def logger(
+    message: Annotated[str, 'the message, warning, or error to be logged in the pipeline file']
+) -> str:
+    '''
+    Uses comments to document a message in the pipeline.py file
+    '''
+    try:
+        if message.strip()[0] != '#':
+            message = '# ' + message
+        pipeline.write(message)
+        return f'LOGGED Message: {message}'
+    except Exception as e:
+        return f'Error logging message: {e}'
 
 @tool
 def exec_stored_func(
@@ -312,7 +326,6 @@ def exec_stored_func(
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
-
 @tool
 def write_generated_func(
     code: Annotated[str, 'string of the code being fused into dynamic_lib.py for further access']
@@ -327,7 +340,6 @@ def write_generated_func(
         return 'Successfully added function to the sandbox'
     except Exception as e:
         return f'Error writing generated function: {e}'
-
 
 @tool
 def exec_generated_func(
@@ -388,18 +400,13 @@ def exec_generated_func(
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
-
 @tool
-def append_alias_nulls(new_nulls) -> str:
+def append_alias_nulls(
+    new_nulls: Annotated[str, 'the list of mislabeled nulls to be added to the alias null list.']
+) -> str:
     '''
     Appends new alias nulls to the existing list in the JSON file.
     If the file doesn't exist or is empty, it will initialize with an empty list.
-
-    Args:
-        new_nulls (list): The list of mislabeled nulls to be added to the alias null list.
-
-    Returns:
-        str: A confirmation message indicating the nulls were added successfully.
 
     Example JSON structure:
     ["na", "missing", "none", "unknown", "empty"]
@@ -434,9 +441,9 @@ def append_alias_nulls(new_nulls) -> str:
     except Exception as e:
         return f"An unexpected error occurred: {e}"
 
-
 tools = [
     get_inst,
+    logger,
     exec_stored_func,
     append_alias_nulls
 ]

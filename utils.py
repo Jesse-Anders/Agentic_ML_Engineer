@@ -104,7 +104,7 @@ INST_ARCHIVE = {
         "Continue on by using the tool call get_inst(HANDLE_ALIAS_NULLS_IN_NUMS) for instructions.\n"
     ), # Instructions for handling mislabeled or alias nulls and remaining unidentifiable text to Null.
     "HANDLE_ALIAS_NULLS_IN_NUMS": (
-        "Use exec_stored_func tool to run describe_and_clean_non_numeric_entries to find and covert mislabeled nulls to proper nulls.\n"
+        "Use exec_stored_func tool to run describe_and_clean_non_numeric_entries to find and convert mislabeled nulls to proper nulls.\n"
         "If 1 or more items added to the Unique Review List, use the exec_stored_func tool to run convert_all_non_num_to_null to convert all remaining text entries to proper nulls\n"
         "Use exec_stored_func tool to run convert_column_to_numeric. END PROCESS\n"
     ), # Instructions for handling common mislabeled or alias nulls, like empty, unknown, none, etc in standard object type/text.
@@ -145,7 +145,7 @@ INST_ARCHIVE = {
     ), # Instructions for handling numeric columns.
     "NUMERIC_NULL_AND_OUTLIER_INST": (
         "Use exec_stored_func tool to run check_outliers_and_nulls to find and describe outliers and or nulls \n"
-        # "If Warnings are Present use exec_stored_func tool to run SOMETHING to record the issue for human review!!\n"
+        "If Warnings are Present use the logger tool to write the document the warning in the pipeline.\n"
         "If outliers AND OR nulls are present, use exec_stored_func tool to run cap_outliers_and_impute_nulls.\n"
     ), # Instructions for handling Categorical numeric columns.
     "CATEGORICAL_NULL_AND_OUTLIER_INST": (
