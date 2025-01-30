@@ -251,6 +251,20 @@ class PyFile:
 # region                                Tool Functions                                        #
 #=============================================================================================#
 
+@tool
+def get_inst(
+    inst_key: Annotated[str, 'name of the instruction set being retrieved']
+) -> str:
+    '''
+    Returns the instructions paired to the given inst_key instruction set key.
+
+    inst_key: the exact name of the set (examples: "CODE_INST", "CLEANING_AGENT1_START", "OBJECT_INST", etc.)
+    '''
+    try:
+        return INST_ARCHIVE[inst_key]
+    except Exception as e:
+        return f'Error retrieving [{inst_key}] instruction set: {e}'
+
 
 @tool
 def exec_stored_func(
@@ -298,7 +312,7 @@ def exec_stored_func(
             func_call_code = func_call_code.replace('column', f'\'{str(current_column)}\'')
         pipeline.write(func_call_code)
 
-        return f'Successfully executed and saved function: {func_name}\n\nFunction Output: {output}'
+        return f'Successfully executed function: {func_name}\n\nFunction Output: {output}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
@@ -401,9 +415,6 @@ def add_nulls_to_list(new_nulls) -> str:
         if not all(isinstance(item, str) for item in new_nulls):
             return "Error: All items in the list must be strings."
 
-        # Define the path to your JSON file (ensure it's correct)
-        ALIAS_NULLS_PATH = "json_lib/alias_nulls_list.json"  # Make this Modular Someday
-
         # Initialize the JSON file with an empty list if it doesn't exist or is empty
         if not os.path.exists(ALIAS_NULLS_PATH) or os.path.getsize(ALIAS_NULLS_PATH) == 0:
             with open(ALIAS_NULLS_PATH, "w") as file:
@@ -431,11 +442,9 @@ def add_nulls_to_list(new_nulls) -> str:
 
 
 tools = [
+    get_inst,
     exec_stored_func,
-    add_nulls_to_list, # Just the Column Object to Num and Alias Null agent
-    *instructions_list, # unpacks instruction list from utils.py
-    #write_generated_func,
-    #exec_generated_func,
+    add_nulls_to_list
 ]
 
 
@@ -530,7 +539,7 @@ class Preprocesser:
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             current_column = column
-            inputs = {'messages': [('user', OBJECT_TO_NUM_AND_ALIAS_NULLS_START())]}
+            inputs = {'messages': [('user', INST_ARCHIVE["OBJECT_TO_NUM_AND_ALIAS_NULLS_START"])]}
             try:
                 stream = object_to_num_and_alias_nulls_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
@@ -554,14 +563,12 @@ class Preprocesser:
             
             # CLEANING AGENT 1 LOOP
             current_column = column
-            inputs = {'messages': [('user', CLEANING_AGENT1_START())]}
+            inputs = {'messages': [('user', INST_ARCHIVE["CLEANING_AGENT1_START"])]}
             try:
                 stream = cleaning_agent1.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
-
-
         #  endregion
 
         return self.df # Return the most recent dataframe
