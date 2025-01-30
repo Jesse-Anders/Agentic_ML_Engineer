@@ -16,7 +16,7 @@ from utils import *
 from runtime_lib.static_lib import *
 
 #=============================================================================================#
-# region                                Dynamic Globals                                       #
+#  region                                Dynamic Globals                                      #
 #=============================================================================================#
 
 # PyFile objects for managing each individual code library / pipeline
@@ -32,9 +32,8 @@ feature_engineer = None
 # Current Column Name of Column in Iteration Loop
 current_column = None
 
-# endregion
-#=============================================================================================#
-# region                                  OpenAI API                                          #
+#  endregion  ================================================================================#
+#  region                                OpenAI API                                           #
 #=============================================================================================#
 
 try:
@@ -49,9 +48,8 @@ def get_openai_api_key():
     except Exception as e:
         print(f'Error retrieving OpenAI API Key: {e}')
 
-# endregion
-#=============================================================================================#
-# region                                LM Studio API                                         #
+#  endregion  ================================================================================#
+#  region                                LM Studio API                                        #
 #=============================================================================================#
 
 lms_client = OpenAI(base_url="http://localhost:1234/v1", api_key="lm-studio")
@@ -86,9 +84,8 @@ def get_lmstudio_response(model, msg_list, temperature=0.7, stream=False):
 
     return response
 
-# endregion
-#=============================================================================================#
-# region                                    PyFile                                            #
+#  endregion  ================================================================================#
+#  region                                PyFile                                               #
 #=============================================================================================#
 
 class PyFile:
@@ -246,9 +243,8 @@ class PyFile:
         except Exception as e:
             print(f'Error writing to PyFile (PyFile.write): {e}')
 
-# endregion
-#=============================================================================================#
-# region                                Tool Functions                                        #
+#  endregion  ================================================================================#
+#  region                                Tool Functions                                       #
 #=============================================================================================#
 
 @tool
@@ -394,7 +390,7 @@ def exec_generated_func(
 
 
 @tool
-def add_nulls_to_list(new_nulls) -> str:
+def append_alias_nulls(new_nulls) -> str:
     '''
     Appends new alias nulls to the existing list in the JSON file.
     If the file doesn't exist or is empty, it will initialize with an empty list.
@@ -425,11 +421,9 @@ def add_nulls_to_list(new_nulls) -> str:
         with open(ALIAS_NULLS_PATH, "r") as file:
             null_list = json.load(file)
 
-        # Append the new nulls to the existing list
+        # Append the new nulls to the existing list and remove duplicates
         null_list.extend(new_nulls)
-
-        # Remove duplicates if necessary (optional)
-        null_list = list(set(null_list))  # Removes duplicates while maintaining uniqueness
+        null_list = list(set(null_list))
 
         # Save the updated null list back to the JSON file
         with open(ALIAS_NULLS_PATH, "w") as file:
@@ -444,13 +438,12 @@ def add_nulls_to_list(new_nulls) -> str:
 tools = [
     get_inst,
     exec_stored_func,
-    add_nulls_to_list
+    append_alias_nulls
 ]
 
 
-# endregion
-#=============================================================================================#
-# region                                 Preprocessor                                         #
+#  endregion  ================================================================================#
+#  region                                Preprocessor                                         #
 #=============================================================================================#
 
 class Preprocesser:
@@ -518,8 +511,7 @@ class Preprocesser:
         except Exception as e:
             print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
 
-        #  endregion
-        #=============================================================#
+        #  endregion  ================================================#
         #  region   AGENT LOOP: object_to_num_and_alias_nulls_agent   #
         #=============================================================#       
 
@@ -546,8 +538,7 @@ class Preprocesser:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        #  endregion
-        #=======================================================#
+        #  endregion  ==========================================#
         #  region   AGENT LOOP: cleaning_agent1                 #
         #=======================================================#       
 
@@ -582,9 +573,8 @@ class Preprocesser:
         self.backup_df = self.df.copy()
         self.df = altered_df.copy()
 
-# endregion
-#=============================================================================================#
-# region                                FeatureEngineer                                       #
+#  endregion  ================================================================================#
+#  region                                FeatureEngineer                                      #
 #=============================================================================================#
 
 class FeatureEngineer:
@@ -616,9 +606,8 @@ class FeatureEngineer:
         return self.df
 
 
-# endregion
-#=============================================================================================#
-# region                                File Management                                       #
+#  endregion  ================================================================================#
+#  region                                File Management                                      #
 #=============================================================================================#
 
 def save_df_to_csv(args, df, csv_name=None):
@@ -821,9 +810,8 @@ def run_ml_engineer(args):
     # save the final dataframe
     save_df_to_csv(args, feature_engineered_df)
 
-# endregion
-#=============================================================================================#
-# region                            Entry Point w/ Argparser                                  #
+#  endregion  ================================================================================#
+#  region                                Entry Point w/ Argparser                             #
 #=============================================================================================#
 
 if __name__ == "__main__":
@@ -850,4 +838,4 @@ if __name__ == "__main__":
 # Jesse Terminal Run
 # /opt/anaconda3/envs/Agentic-ML-Engineer/bin/python main.py --llm_platform=openai --debug=True
 
-# endregion
+#  endregion

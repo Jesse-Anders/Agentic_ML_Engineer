@@ -115,7 +115,7 @@ INST_ARCHIVE = {
     "HANDLE_UNCOMMON_ALIAS_NULLS_IN_TEXT_COLUMN": (
         "Use exec_stored_func tool to run display_most_common_unique_entries and review the most common unique entries in the column.\n"
         "Look through the unique entries and try to determine if there are any entries that should be nulls, meaning they are 'very likely mislabeled nulls'.\n"
-        "If any exist, call get_inst(JSON_LIST_INST) for instructions on formatting a list of 'very likely mislabeled nulls' and use the add_nulls_to_list tool to save the new list.\n"
+        "If any exist, call get_inst(JSON_LIST_INST) for instructions on formatting a list of 'very likely mislabeled nulls' and use the append_alias_nulls tool to save the new list.\n"
         # IMPORTANT: We need a way to send this json list (in this state) to the pipeline.
         "If you added mislabeled nulls to the list, use the exec_stored_func tool to run convert_uncommon_alias_nulls to convert items in the list to nulls.\n"
         "If you found no 'very likely mislabeled nulls'. End Process\n"
