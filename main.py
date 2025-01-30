@@ -251,15 +251,6 @@ class PyFile:
 # region                                Tool Functions                                        #
 #=============================================================================================#
 
-@tool
-def search_lib() -> str:
-    '''
-    Returns the static function library as a JSON string of all available functions.
-    example function: {'function_name': [val], 'description': [val]}
-    '''
-    with open(f'{JSON_DIR}/{STATIC_JSON_LIB}.json', "r") as json_file:
-        return json_file.read()
-
 
 @tool
 def exec_stored_func(
@@ -272,7 +263,6 @@ def exec_stored_func(
     Executes a static function on the current working dataframe and writes
     the function call to the pipeline file.
     '''
-    # Let us know what function is being applied to what column
     print(f"Agent is attempting to run {func_name} on the '{current_column}' column")
 
     try:
@@ -280,7 +270,7 @@ def exec_stored_func(
     except Exception as e:
         return f'Error loading function from file: {e}'
 
-    if func == -1 or func == None: # error code from lib.get_func
+    if func == -1 or func == None: # -1 is the error code from lib.get_func
         return f'Error loading function from file: {e}'
         
     try:
@@ -308,22 +298,9 @@ def exec_stored_func(
             func_call_code = func_call_code.replace('column', f'\'{str(current_column)}\'')
         pipeline.write(func_call_code)
 
-        # Reset the sandbox file
-        sandbox.reset()
-
         return f'Successfully executed and saved function: {func_name}\n\nFunction Output: {output}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
-
-#=============================================================================================#
-# region                                TEMP - Hide Unused Tools                              #
-#=============================================================================================#
-@tool
-def iteration_wrapper():
-    '''
-    Used to execute a column-wise function on multiple columns.
-    '''
-    pass
 
 
 @tool
@@ -333,9 +310,7 @@ def write_generated_func(
     '''
     Writes the given code to the sandbox.
     '''
-
-    # clear any leftover output
-    sandbox.reset()
+    sandbox.reset() # clear any leftover output
 
     try:
         sandbox.write(code + '\n')
@@ -347,12 +322,16 @@ def write_generated_func(
 @tool
 def exec_generated_func(
     func_name: Annotated[str, 'name of the generated function to be run'],
-    func_call_code: Annotated[str, 'the code (usually one line) to call the function, parameter values included. Always include "output = " before the call to catch return values. format examples: output = func_name(df, param1=value1), output = func_name(df) ']
+    func_call_code: Annotated[str, '''The code (usually one line) to call the function. Include all necessary parameter values except for df and column,
+                              those will be assigned locally--leave them explicity as 'df' and 'column'. Always include "output = " before the call to catch return values. Format examples:
+                              output = func_name(df, column, param1=value1), output = func_name(df, column), output = func_name(df)''']
 ) -> str:
     """
     Executes a dynamically generated function on the current working dataframe
     and writes the function call to the pipeline file.
     """
+    print(f"Agent is attempting to run {func_name} on the '{current_column}' column")
+
     try:
         # Get the function code from the sandbox
         func_code = sandbox.read()
@@ -361,9 +340,6 @@ def exec_generated_func(
         exec(func_code, globals())
         func = globals().get(func_name)
 
-        # Jesse ???? Dynamically define the Column Name in the local context
-        # column_name = globals().get(column_name)
-
         if func is None:
             raise ValueError(f'Function {func_name} could not be defined.')
     except Exception as e:
@@ -371,7 +347,7 @@ def exec_generated_func(
 
     try:
         # Dynamically execute the function call code
-        local_vars = {'df': preprocessor.get_df()}
+        local_vars = {'df': preprocessor.get_df(), 'column': current_column}
         exec(func_call_code, globals(), local_vars)
 
         # Capture the updated DataFrame (if any)
@@ -390,6 +366,8 @@ def exec_generated_func(
         # Write the function call code to the pipeline file
         if func_call_code[:8] == 'output =':
             func_call_code = 'df =' + func_call_code[8:]
+        if 'column' in func_call_code and 'column=' not in func_call_code and 'column =' not in func_call_code:
+            func_call_code = func_call_code.replace('column', f'\'{str(current_column)}\'')
         pipeline.write(func_call_code)
 
         # Save the function code from the sandbox to the pipeline_lib
@@ -399,33 +377,6 @@ def exec_generated_func(
         return f'Successfully executed and saved function: {func_name}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
-
-# Not in Use
-# @tool
-# def write_to_pipeline(
-#     code: Annotated[str, 'string of the code being appended onto the existing pipeline']
-# ) -> str:
-#     '''
-#     Writes the given code to the pipeline.py file
-#     '''
-#     try:
-#         pipeline.write(code)
-#         return 'Successfully wrote code to pipeline'
-#     except Exception as e:
-#         return f'Error writing to pipeline: {e}'
-
- 
-@tool
-def get_coding_instructions() -> str:
-    '''
-    Provides detailed guidance for writing new python functions.
-    Use this tool only when no pre-existing function meet the task requirements.
-    '''
-    return CODE_INST
-
-
-# Define the path to your task list JSON file
-ALIAS_NULLS_PATH = "json_lib/alias_nulls_list.json"
 
 
 @tool
@@ -479,68 +430,13 @@ def add_nulls_to_list(new_nulls) -> str:
         return f"An unexpected error occurred: {e}"
 
 
-# # Define the path to your task list JSON file
-# TASK_LIST_PATH = "json_lib/task_list.json"
-
-# @tool
-# def add_task_to_list(new_task: str) -> str:
-#     '''
-#     Appends a new task to json_lib/task_list.json.
-
-#     Args:
-#         new_task (str): The task to be added to the task list.
-
-#     Returns:
-#         str: A confirmation message indicating the task was added successfully.
-
-#     Example JSON structure:
-#     [
-#         {
-#             "task": "Remove any duplicates from the df."
-#         },
-#         {
-#             "task": "Handle the null values in the df."
-#         }
-#     ]
-#     '''
-#     try:
-#         # Load the existing task list from the JSON file
-#         with open(TASK_LIST_PATH, "r") as file:
-#             task_list = json.load(file)
-
-#         # Append the new task
-#         task_list.append({"task": new_task})
-
-#         # Save the updated task list back to the JSON file
-#         with open(TASK_LIST_PATH, "w") as file:
-#             json.dump(task_list, file, indent=4)
-
-#         return f"Task successfully added: {new_task}"
-
-#     except FileNotFoundError:
-#         return "Error: Task list file not found."
-
-#     except json.JSONDecodeError:
-#         return "Error: Task list file is not in a valid JSON format."
-
-#     except Exception as e:
-#         return f"An unexpected error occurred: {e}"
-
-# endregion
-
-
 tools = [
-    # search_lib,
     exec_stored_func,
     add_nulls_to_list, # Just the Column Object to Num and Alias Null agent
     *instructions_list, # unpacks instruction list from utils.py
-    #get_coding_instructions,
     #write_generated_func,
     #exec_generated_func,
-    # add_task_to_list,
-    # write_to_pipeline,
 ]
-
 
 
 # endregion
@@ -585,24 +481,23 @@ class Preprocesser:
         global current_column
 
         try:
+            # Depending on systems arguments, use either LM Studio's API or OpenAIs'
             is_lms = self.args.llm_platform == 'lm-studio'
             api_key = 'lm-studio' if is_lms else get_openai_api_key()
             model_name = self.args.lms_model if is_lms else self.args.openai_model
 
-            # make sure to connect to the right api (Chat GPT / LM Studio)
             model = ChatOpenAI(
                 openai_api_key=api_key,
                 model_name=model_name,
-                temperature=temperature,
+                temperature=temperature
             )
-
         except Exception as e:
             print(f'Error initializing ChatOpenAI model: {e}')
 
-        # try:
-        #     preprocessor_agent = create_react_agent(model, tools, state_modifier=TASK_INST)                                                                       
-        # except Exception as e:
-        #     print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
+
+        #=======================================================#
+        #  region   INITIALIZE PREPROCESSING AGENTS             #
+        #=======================================================# 
 
         try:
             object_to_num_and_alias_nulls_agent = create_react_agent(model, tools)                                                                       
@@ -613,118 +508,63 @@ class Preprocesser:
             cleaning_agent1 = create_react_agent(model, tools)                                                                       
         except Exception as e:
             print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
-        
 
-
-
-        #=======================================================#
-        #           Task Creation Agent                   #
-        #=======================================================#
-
-        
-        # # for entry in ANALYTICS:
-        # inputs = {'messages': [('user', ANALYTICS_INSTR)]}
-
-        # try:
-        #     # feed the task list into the execution agent
-        #     stream = task_creation_agent.stream(inputs, stream_mode='values')
-        #     print_stream(stream)
-        # except Exception as e:
-        #     print(f'Error during stream: {e}')
-
-        # #return the most recent df
-        # return self.df
-    
-
-        #=======================================================#
-        #        Execution from task_list.json Jand     #
-        #=======================================================#       
-
-        # # Load tasks from task_list.json
-        # with open(f'{JSON_DIR}/{TASK_LIST}.json', "r") as file:
-        #     tasks = json.load(file)
-
-        # # Iterate over each task in the JSON file
-        # for task in tasks:
-    
-        #     # Construct inputs with global instructions and the task
-        #     inputs = {'messages': [('user', f"Task: {task['task']}")]}
-
-        #     try:
-        #         # Feed the task list into the execution agent
-        #         stream = preprocessor_agent.stream(inputs, stream_mode='values')
-        #         print_stream(stream)
-        #     except Exception as e:
-        #         print(f'Error during stream: {e}')
-
-        # # Return the most recent dataframe (assuming it's updated elsewhere in the class)
-        # return self.df
-
+        #  endregion
         #=============================================================#
-        #  region      Agent Column Object to Num and Alias Null      #
+        #  region   AGENT LOOP: object_to_num_and_alias_nulls_agent   #
         #=============================================================#       
 
-        # Iterate over Each Column in the DF
         for column in preprocessor.get_df().columns:
-            # TEMP: Jesse knows this 'target' skip needs better global implementation
-            if column == "target":
+            if column == self.args.target_var:
                 continue
             
             # Skip Numeric Columns: ALIAS NULLS are only present in Object data type Columns.
             if pd.api.types.is_numeric_dtype(preprocessor.get_df()[column]):
                 continue
 
-            # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            # COLUMNS_TO_TEST = ["col4"] # Empty to Skip Agent Entirely!
-            # if column not in COLUMNS_TO_TEST:
-            #     # Skip processing for all columns except 'COLUMNS_TO_TEST'.
-            #     continue
+            # DEBUGGING: Run iteration of small column set or a single column
+            if self.args.debug:
+                COLUMNS_TO_TEST = ["col4"] # Empty to Skip Agent Entirely!
+                if column not in COLUMNS_TO_TEST:
+                    continue
             
+            # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             current_column = column
-    
-            # Construct inputs
-            inputs = {'messages': [('user', OJECT_TO_NUM_AND_ALIAS_NULLS_START())]}
-
+            inputs = {'messages': [('user', OBJECT_TO_NUM_AND_ALIAS_NULLS_START())]}
             try:
-                # Feed the task list into the column_agent
                 stream = object_to_num_and_alias_nulls_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        # Return the most recent dataframe (assuming it's updated elsewhere in the class)
-        # return self.df
-
+        #  endregion
         #=======================================================#
-        #  region     Agent Column Cleaning                     #
+        #  region   AGENT LOOP: cleaning_agent1                 #
         #=======================================================#       
 
-        # Iterate over Each Column in the DF
         for column in preprocessor.get_df().columns:
-            # Code Cop Out: Jesse knows this 'target' skip needs better global implementation
-            if column == "target":
+            if column == self.args.target_var:
                 continue
 
-            # ACTIVATE FOR DEBUGGING!!: Run iteration of small column set or a single column
-            # COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-            # if column not in COLUMNS_TO_TEST:
-            #     # Skip processing for all columns except 'COLUMNS_TO_TEST'.
-            #     continue
+            # DEBUGGING: Run iteration of small column set or a single column
+            if self.args.debug:
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                if column not in COLUMNS_TO_TEST:
+                    continue
             
+            # CLEANING AGENT 1 LOOP
             current_column = column
-    
-            # Construct inputs
             inputs = {'messages': [('user', CLEANING_AGENT1_START())]}
-
             try:
-                # Feed the task list into the column_agent
                 stream = cleaning_agent1.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        # Return the most recent dataframe (assuming it's updated elsewhere in the class)
-        return self.df
+
+        #  endregion
+
+        return self.df # Return the most recent dataframe
     
     def update_df(self, altered_df):
         '''
@@ -741,40 +581,6 @@ class Preprocesser:
 #=============================================================================================#
 
 class FeatureEngineer:
-    def __init__(self, args, df):
-        self.args = args
-        
-        self.original_df = df.copy()
-        self.backup_df = df.copy()
-        self.df = df.copy()
-
-    def get_df(self):
-        '''
-        Return current df
-        '''
-        return self.df
-    
-    def set_df(self, df):
-        '''
-        Reassigns all dataframe variables
-        '''
-        self.original_df = df.copy()
-        self.backup_df = df.copy()
-        self.df = df.copy()
-
-    def run(self):
-        '''
-        Executes feature engineering logic
-        '''
-        return self.df
-    
-
-# endregion
-#=============================================================================================#
-# region                                AnalyticsRunner                                       #
-#=============================================================================================#
-
-class AnalyticsRunner:
     def __init__(self, args, df):
         self.args = args
         
@@ -1026,13 +832,15 @@ if __name__ == "__main__":
     parser.add_argument('--openai_model', type=str, default='gpt-4o-mini')
     parser.add_argument('--llm_platform', type=str, default='openai')
 
-    parser.add_argument('--target_var', type=str)
+    parser.add_argument('--target_var', type=str, default='target')
     parser.add_argument('--id_var', type=str)
+
+    parser.add_argument('--debug', type=bool, default=False)
 
     args = parser.parse_args()
     run_ml_engineer(args)
 
 # Jesse Terminal Run
-# /opt/anaconda3/envs/Agentic-ML-Engineer/bin/python main.py --llm_platform=openai
+# /opt/anaconda3/envs/Agentic-ML-Engineer/bin/python main.py --llm_platform=openai --debug=True
 
 # endregion

@@ -10,9 +10,11 @@ DATA_OUTPUT_DIR = 'data_outputs'
 LIB_DIR = 'runtime_lib'
 SAVED_GENS_DIR = 'saved_generations'
 
+# JSON
 JSON_DIR = 'json_lib'
 STATIC_JSON_LIB = 'static_json_lib'
 TASK_LIST = 'task_list'
+ALIAS_NULLS_PATH = "json_lib/alias_nulls_list.json"
 
 
 # boilerplate file code
@@ -23,6 +25,7 @@ PIPELINE_BOILERPLATE = '''
 
 import pandas as pd
 
+from static_lib import *
 from pipeline_lib import *
 
 '''
@@ -61,6 +64,14 @@ CODE_INST_TROUBLESHOOTING = (
     "This can serve as a trouble shooting guide\n"
 )
 
+@tool
+def get_coding_instructions() -> str:
+    '''
+    Provides detailed guidance for writing new python functions.
+    Use this tool only when no pre-existing function meet the task requirements.
+    '''
+    return CODE_INST
+
 #=============================================================================================#
 #  region                        CAMEL :) Master START Iteration Instructions                 #
 #=============================================================================================#
@@ -75,13 +86,14 @@ def CLEANING_AGENT1_START():
         "If data type is any other type, follow instructions in the UNKNOWN_INST tool.\n"
     )
 
-def OJECT_TO_NUM_AND_ALIAS_NULLS_START():
+def OBJECT_TO_NUM_AND_ALIAS_NULLS_START():
     return (
         "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
         "State the column's data type.\n"
         "If data type is Object, follow instructions in the OBJECT_TO_NUM_INST tool.\n"
         "If data type is any other type, END.\n"
     )
+
 # endregion
 #=============================================================================================#
 #  region             OBJECT TO NUM AND ALIAS NULLS INSTRUCTIONS                              #

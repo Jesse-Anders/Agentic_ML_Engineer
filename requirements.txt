@@ -4,4 +4,4 @@ langgraph
 openai
 pandas
 python-dotenv
-text2num
+word2number
