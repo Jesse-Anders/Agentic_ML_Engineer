@@ -79,6 +79,7 @@ INST_ARCHIVE = {
 #    region                            CAMEL CARAVAN :) Master START Iteration Instructions   #
 #=============================================================================================#
     "OBJECT_TO_NUM_AND_ALIAS_NULLS_START": (
+        # FIX - THIS IS DONE IN PYTHON LOOP IN ADVANCE
         "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
         "State the column's data type.\n"
         "If data type is Object, use the tool call get_inst(OBJECT_TO_NUM_INST) for instructions.\n"
@@ -144,12 +145,13 @@ INST_ARCHIVE = {
         "If returned column_type = categorical, use the tool call get_inst(CATEGORICAL_NULL_AND_OUTLIER_INST) for instructions.\n"
     ), # Instructions for handling numeric columns.
     "NUMERIC_NULL_AND_OUTLIER_INST": (
+        # Scattered winsorizing?
         "Use exec_stored_func tool to run check_outliers_and_nulls to find and describe outliers and or nulls \n"
         "If Warnings are Present use the logger tool to write the document the warning in the pipeline.\n"
         "If outliers AND OR nulls are present, use exec_stored_func tool to run cap_outliers_and_impute_nulls.\n"
     ), # Instructions for handling Categorical numeric columns.
     "CATEGORICAL_NULL_AND_OUTLIER_INST": (
-        "Say that this integer column is categorical in nature. \n"
+        "Say that this numeric column is categorical in nature. \n"
             #THESE ARE IN PROCESS - Jesse 1/27/25
         #"Use exec_stored_func tool to run SOMETHING ABOUT CATEGORIES to work with \n"
         #"If nulls are present, Use exec_stored_func tool to run impute_mode_or_create_exnulls_cat \n"
