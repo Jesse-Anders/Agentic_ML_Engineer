@@ -511,12 +511,18 @@ class Preprocesser:
         try:
             object_to_num_and_alias_nulls_agent = create_react_agent(model, tools)                                                                       
         except Exception as e:
-            print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
+            print(f'Error creating object_to_num_and_alias_nulls_agent : A LanGraph prebuit ReAct agent: {e}')
 
         try:
             cleaning_agent1 = create_react_agent(model, tools)                                                                       
         except Exception as e:
-            print(f'Error creating preprocessor_agent : A LanGraph prebuit ReAct agent: {e}')
+            print(f'Error creating cleaning_agent1 : A LanGraph prebuit ReAct agent: {e}')
+
+        if self.args.handwash:
+            try:
+                handwashing_agent = create_react_agent(model, tools)                                                                       
+            except Exception as e:
+                print(f'Error creating handwashing_agent : A LanGraph prebuit ReAct agent: {e}')
 
         #  endregion  ================================================#
         #  region   AGENT LOOP: object_to_num_and_alias_nulls_agent   #
@@ -567,6 +573,30 @@ class Preprocesser:
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+
+        #  endregion  ==========================================#
+        #  region   AGENT LOOP: handwashing_agent               #
+        #=======================================================#       
+
+        if self.args.handwash:
+            for column in preprocessor.get_df().columns:
+                if column == self.args.target_var:
+                    continue
+
+                # DEBUGGING: Run iteration of small column set or a single column
+                if self.args.debug:
+                    COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                    if column not in COLUMNS_TO_TEST:
+                        continue
+                
+                # HANDWASHING AGENT LOOP
+                current_column = column
+                inputs = {'messages': [('user', INST_ARCHIVE['HANDWASHING_AGENT_START'])]}
+                try:
+                    stream = handwashing_agent.stream(inputs, stream_mode='values')
+                    print_stream(stream)
+                except Exception as e:
+                    print(f'Error during stream: {e}')
         #  endregion
 
         return self.df # Return the most recent dataframe
@@ -838,6 +868,7 @@ if __name__ == "__main__":
     parser.add_argument('--id_var', type=str)
 
     parser.add_argument('--debug', type=bool, default=False)
+    parser.add_argument('--handwash', type=bool, default=False)
 
     args = parser.parse_args()
     run_ml_engineer(args)
