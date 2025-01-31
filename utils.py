@@ -78,13 +78,21 @@ INST_ARCHIVE = {
 #    endregion  ==============================================================================#
 #    region                            CAMEL CARAVAN :) Master START Iteration Instructions   #
 #=============================================================================================#
+    # Instructions for finding Integer or Float cloumns that are currently Object data type columns.
     "OBJECT_TO_NUM_AND_ALIAS_NULLS_START": (
-        # FIX - THIS IS DONE IN PYTHON LOOP IN ADVANCE
-        "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
-        "State the column's data type.\n"
-        "If data type is Object, use the tool call get_inst(OBJECT_TO_NUM_INST) for instructions.\n"
-        "If data type is any other type, END.\n"
-    ),
+        "Use exec_stored_func tool to run check_percent_numeric to determine if the column is truly object or if it is numeric.\n"
+        "If column 'is less than 90% numeric', use the tool call get_inst(HANDLE_COMMON_ALIAS_NULLS_IN_TEXT_COLUMN) for instructions.\n"
+        "If column 'is 90%+ numeric and can be considered truly numeric', use exec_stored_func tool to run check_for_text_nums.\n"
+        "If the result from check_for_text_nums comes back as True, use exec_stored_func to run convert_text_nums_to_numeric\n"
+        "Continue on by using the tool call get_inst(HANDLE_ALIAS_NULLS_IN_NUMS) for instructions.\n"
+    ), 
+    # "OBJECT_TO_NUM_AND_ALIAS_NULLS_START": (
+    #     # FIX - THIS IS DONE IN PYTHON LOOP IN ADVANCE
+    #     "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
+    #     "State the column's data type.\n"
+    #     "If data type is Object, use the tool call get_inst(OBJECT_TO_NUM_INST) for instructions.\n"
+    #     "If data type is any other type, END.\n"
+    # ),
     "CLEANING_AGENT1_START": (
         "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
         "State the column's data type.\n"
@@ -96,14 +104,7 @@ INST_ARCHIVE = {
 #    endregion  ==============================================================================#
 #    region                            OBJECT TO NUM AND ALIAS NULLS INSTRUCTIONS             #
 #=============================================================================================#
-    # Instructions for finding Integer or Float cloumns that are currently Object data type columns.
-    "OBJECT_TO_NUM_INST": (
-        "Use exec_stored_func tool to run check_percent_numeric to determine if the column is truly object or if it is numeric.\n"
-        "If column 'is less than 90% numeric', use the tool call get_inst(HANDLE_COMMON_ALIAS_NULLS_IN_TEXT_COLUMN) for instructions.\n"
-        "If column 'is 90%+ numeric and can be considered truly numeric', use exec_stored_func tool to run check_for_text_nums.\n"
-        "If the result from check_for_text_nums comes back as True, use exec_stored_func to run convert_text_nums_to_numeric\n"
-        "Continue on by using the tool call get_inst(HANDLE_ALIAS_NULLS_IN_NUMS) for instructions.\n"
-    ), # Instructions for handling mislabeled or alias nulls and remaining unidentifiable text to Null.
+# Instructions for handling mislabeled or alias nulls and remaining unidentifiable text to Null.
     "HANDLE_ALIAS_NULLS_IN_NUMS": (
         "Use exec_stored_func tool to run describe_and_clean_non_numeric_entries to find and convert mislabeled nulls to proper nulls.\n"
         "If 1 or more items added to the Unique Review List, use the exec_stored_func tool to run convert_all_non_num_to_null to convert all remaining text entries to proper nulls\n"
@@ -132,7 +133,7 @@ INST_ARCHIVE = {
         "5. The list must be valid JSON format.\n\n"
     ),
 #    endregion  ==============================================================================#
-#    region                            COLUMN TYPE INTEGER INSTRUCTIONS                       #
+#    region                            COLUMN TYPE INT or FLOAT INSTRUCTIONS                  #
 #=============================================================================================#
     # Instructions for handling Float data type columns.
     "FLOAT_INST": (
