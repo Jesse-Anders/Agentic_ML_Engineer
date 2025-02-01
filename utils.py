@@ -101,6 +101,9 @@ INST_ARCHIVE = {
         "If data type is Object, use the tool call get_inst(OBJECT_INST) for instructions.\n"
         "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions.\n"
     ),
+    "HANDWASHING_AGENT_START": (
+        "Tell me that you have successfully handwashed the data. END.\n"
+    ),
 #    endregion  ==============================================================================#
 #    region                            OBJECT TO NUM AND ALIAS NULLS INSTRUCTIONS             #
 #=============================================================================================#
