@@ -402,7 +402,7 @@ def exec_generated_func(
 
 @tool
 def append_alias_nulls(
-    new_nulls: Annotated[str, 'the list of mislabeled nulls to be added to the alias null list.']
+    new_nulls: Annotated[list, 'the list of mislabeled nulls to be added to the alias null list.']
 ) -> str:
     '''
     Appends new alias nulls to the existing list in the JSON file.
@@ -844,5 +844,6 @@ if __name__ == "__main__":
 
 # Jesse Terminal Run
 # /opt/anaconda3/envs/Agentic-ML-Engineer/bin/python main.py --llm_platform=openai --debug=True
+
 
 #  endregion

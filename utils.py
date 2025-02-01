@@ -147,13 +147,13 @@ INST_ARCHIVE = {
     ), # Instructions for handling numeric columns.
     "NUMERIC_NULL_AND_OUTLIER_INST": (
         # Scattered winsorizing?
+        # Use new KNN and Stochastic Median chain when ready.
         "Use exec_stored_func tool to run check_outliers_and_nulls to find and describe outliers and or nulls \n"
         "If Warnings are Present use the logger tool to write the document the warning in the pipeline.\n"
         "If outliers AND OR nulls are present, use exec_stored_func tool to run cap_outliers_and_impute_nulls.\n"
     ), # Instructions for handling Categorical numeric columns.
     "CATEGORICAL_NULL_AND_OUTLIER_INST": (
         "Say that this numeric column is categorical in nature. \n"
-            #THESE ARE IN PROCESS - Jesse 1/27/25
         #"Use exec_stored_func tool to run SOMETHING ABOUT CATEGORIES to work with \n"
         #"If nulls are present, Use exec_stored_func tool to run impute_mode_or_create_exnulls_cat \n"
     ),

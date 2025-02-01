@@ -6,6 +6,7 @@ from word2number import w2n
 from collections import Counter
 import pandas as pd
 import numpy as np
+from sklearn.impute import KNNImputer
 import json
 
 
@@ -182,7 +183,6 @@ def describe_and_clean_non_numeric_entries(df, column):
     }
 
 
-
 def convert_column_to_numeric(df, column):
     """
     Converts the column to numeric (either int or float) based on the data.
@@ -302,6 +302,7 @@ def convert_uncommon_alias_nulls(df, column, alias_nulls_path="json_lib/alias_nu
 
         # Replace alias nulls with NaN
         df.loc[normalized_column.isin(alias_nulls), column] = pd.NA
+        print(f"Converted {alias_nulls} to proper null data type")
 
         return df
 
@@ -531,7 +532,7 @@ def cap_outliers_and_impute_nulls(df, column):
 
 # endregion
     #=============================================================================#
-    #  region              INTEGER Column CATEGORICAL Functions                   #
+    #  region              NUMERIC Column CATEGORICAL Functions                   #
     #=============================================================================#
 # Import Categorical Nulls as Mode or Create Unique ex_null Category
 def impute_mode_or_create_exnulls_cat(df, column):
