@@ -1,5 +1,9 @@
 from langchain_core.tools import tool
 
+from agent_instructions.agent1_inst import *
+from agent_instructions.agent2_inst import *
+from agent_instructions.agent3_inst import *
+
 #=============================================================================================#
 #  region                              STATIC GlOBALS                                         #
 #=============================================================================================#
