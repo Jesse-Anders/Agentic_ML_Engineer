@@ -15,6 +15,10 @@ from typing import Annotated
 from utils import *
 from runtime_lib.static_lib import *
 
+
+# INSTRUCTION ARCHIVE LIST: Used in the get_inst tool
+IA_LIST = [INST_ARCHIVE, AGENT1_IA, AGENT2_IA, AGENT3_IA]
+
 #=============================================================================================#
 #  region                                Dynamic Globals                                      #
 #=============================================================================================#
@@ -256,10 +260,10 @@ def get_inst(
 
     inst_key: the exact name of the set (examples: "CODE_INST", "CLEANING_AGENT1_START", "OBJECT_INST", etc.)
     '''
-    try:
-        return INST_ARCHIVE[inst_key]
-    except Exception as e:
-        return f'Error retrieving [{inst_key}] instruction set: {e}'
+    for instruction_set in IA_LIST:
+        if inst_key in instruction_set:
+            return instruction_set[inst_key]
+    return f'Error: Cannot find instruction set {inst_key}'
 
 @tool
 def logger(
@@ -475,6 +479,24 @@ class Preprocesser:
         self.backup_df = df.copy()
         self.df = df.copy()
 
+    def save_stage_df(self, stage_name):
+        '''
+        Creates a dataframe backup of a specific stage of the workflow for later use.
+        '''
+        self.stages.append({
+            "stage_name": stage_name,
+            "df": self.df.copy()
+        })
+
+    def get_stage_df(self, stage_name):
+        '''
+        Returns the specified stage's dataframe if it exists.
+        '''
+        for stage in self.stages:
+            if stage["stage_name"] == stage_name:
+                return stage["df"]
+        raise Exception(f'Error: Stage Name {stage_name} doesn\'t exist')
+
     def restore_backup_df(self):
         '''
         Rolls the working dataframe back to its last saved version
@@ -551,6 +573,8 @@ class Preprocesser:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
+        preprocessor.save_stage_df('POST_AGENT_1')
+
         #  endregion  ==========================================#
         #  region   AGENT LOOP: cleaning_agent1                 #
         #=======================================================#       
@@ -573,6 +597,8 @@ class Preprocesser:
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+
+        preprocessor.save_stage_df('POST_AGENT_2')
 
         #  endregion  ==========================================#
         #  region   AGENT LOOP: handwashing_agent               #
@@ -597,6 +623,8 @@ class Preprocesser:
                     print_stream(stream)
                 except Exception as e:
                     print(f'Error during stream: {e}')
+
+        preprocessor.save_stage_df('POST_AGENT_3')
         #  endregion
 
         return self.df # Return the most recent dataframe
