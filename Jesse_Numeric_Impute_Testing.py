@@ -254,8 +254,6 @@ def dynamic_stochastic_median_impute(
     return df
 
 
-
-
 # Used to round imputed numbers appropriate to column data
 def determine_max_decimal_places(series):
     """
