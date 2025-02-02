@@ -59,8 +59,8 @@ def check_percent_numeric(df, column, numeric_threshold=0.9):
 
     # Count numeric and non-numeric entries
     numeric_count = df[column].apply(is_numeric).sum()
-    total_count = len(df[column])
-    numeric_ratio = numeric_count / total_count if total_count > 0 else 0
+    total_exluding_nulls_count = df[column].notnull().sum()  # Total length of column excluding nulls
+    numeric_ratio = numeric_count / total_exluding_nulls_count if total_exluding_nulls_count > 0 else 0
 
     # Determine classification
     if numeric_ratio >= numeric_threshold:
