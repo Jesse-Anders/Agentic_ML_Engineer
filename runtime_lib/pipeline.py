@@ -10,10 +10,9 @@ from pipeline_lib import *
 
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
-df = check_percent_numeric(df, 'col3')
-df = check_for_text_nums(df, 'col3')
-df = convert_text_nums_to_numeric(df, 'col3')
-df = convert_'col3'_to_numeric(df, 'col3')
-df = check_percent_numeric(df, 'col5')
-df = check_for_text_nums(df, 'col5')
-df = convert_'col5'_to_numeric(df, 'col5')
+df = check_percent_numeric(df, "col3")
+df = check_for_text_nums(df, "col3")
+df = convert_text_nums_to_numeric(df, "col3")
+df = describe_and_clean_non_numeric_entries(df, "col3")
+df = convert_column_to_numeric(df, "col3")
+df = check_percent_numeric(df, "col5")

@@ -3,6 +3,7 @@ import ast
 import importlib
 import json
 import os
+import re
 import pandas as pd
 import shutil
 
@@ -323,8 +324,17 @@ def exec_stored_func(
         # Write the function call code to the pipeline file
         if func_call_code[:8] == 'output =':
             func_call_code = 'df =' + func_call_code[8:]
-        if 'column' in func_call_code and 'column=' not in func_call_code and 'column =' not in func_call_code:
-            func_call_code = func_call_code.replace('column', f'\'{str(current_column)}\'')
+
+        # Regex to identify 'column' and 'target' as arguments without explicit values
+        column_pattern = r'\bcolumn\b(?=(\s*,|\s*\)|$))'
+        target_pattern = r'\btarget\b(?=(\s*,|\s*\)|$))'
+
+        # Replace 'column' with the current_column when it's used as a parameter without an explicit value
+        func_call_code = re.sub(column_pattern, f'"{str(current_column)}"', func_call_code)
+
+        # Replace 'target' with TARGET_VAR_NAME when it's used as a parameter without an explicit value
+        func_call_code = re.sub(target_pattern, f'"{str(TARGET_VAR_NAME)}"', func_call_code)
+
         pipeline.write(func_call_code)
 
         return f'Successfully executed function: {func_name}\n\nFunction Output: {output}'
@@ -393,8 +403,17 @@ def exec_generated_func(
         # Write the function call code to the pipeline file
         if func_call_code[:8] == 'output =':
             func_call_code = 'df =' + func_call_code[8:]
-        if 'column' in func_call_code and 'column=' not in func_call_code and 'column =' not in func_call_code:
-            func_call_code = func_call_code.replace('column', f'\'{str(current_column)}\'')
+        
+        # Regex to identify 'column' and 'target' as arguments without explicit values
+        column_pattern = r'\bcolumn\b(?=(\s*,|\s*\)|$))'
+        target_pattern = r'\btarget\b(?=(\s*,|\s*\)|$))'
+
+        # Replace 'column' with the current_column when it's used as a parameter without an explicit value
+        func_call_code = re.sub(column_pattern, f'"{str(current_column)}"', func_call_code)
+
+        # Replace 'target' with TARGET_VAR_NAME when it's used as a parameter without an explicit value
+        func_call_code = re.sub(target_pattern, f'"{str(TARGET_VAR_NAME)}"', func_call_code)
+        
         pipeline.write(func_call_code)
 
         # Save the function code from the sandbox to the pipeline_lib
