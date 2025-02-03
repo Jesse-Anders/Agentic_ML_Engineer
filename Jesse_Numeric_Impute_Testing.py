@@ -4,13 +4,251 @@ from sklearn.impute import KNNImputer
 from scipy.stats import chi2_contingency
 
 # ============================================================================================#
+# region                   Evaluate for Drop Null Heavy Column                                #
+#=============================================================================================#
+
+def evaluate_column_for_drop(df, column, target, drop_null_threshold=0.5, target_corr_threshold=0.3):
+    """
+    Evaluates a column for potential dropping based on its missingness and data relationships.
+    
+    Args:
+        df (pd.DataFrame): The DataFrame containing the data.
+        column (str): The column to evaluate.
+        target (str, optional): The target column name for assessing whether missingness is predictive.
+        drop_null_threshold (float): The threshold proportion (0-1) of missing values among non-null rows
+                                     above which the column is considered for dropping.
+        target_corr_threshold (float): If target is provided, the minimum absolute correlation between the 
+                                       missingness indicator and target needed to override a high null rate.
+    
+    Returns:
+        dict: A dictionary containing:
+            - 'total_count': Total number of rows.
+            - 'non_null_count': Count of non-null entries.
+            - 'null_percentage': Percentage of missing values relative to non-null count.
+            - 'unique_value_ratio': Ratio of unique non-null values to non-null count.
+            - 'missing_target_corr': (If target provided) Correlation between missing indicator and target.
+            - 'recommended_action': "drop" or "keep", with an explanation.
+            - 'details': All computed metrics.
+    """
+    # Basic counts and null percentage (based on non-null entries)
+    total_count = len(df)
+    non_null_count = df[column].notnull().sum()
+    if non_null_count == 0:
+        # If there are no non-null entries, it's a clear candidate for dropping.
+        return {
+            "total_count": total_count,
+            "non_null_count": non_null_count,
+            "null_percentage": 1.0,
+            "unique_value_ratio": 0,
+            "recommended_action": "drop",
+            "details": "Column contains only null values."
+        }
+    
+    # Compute null percentage relative to non-null count:
+    # (The logic here is: if you consider only the non-null values,
+    #  what percentage is missing? In practice, you may simply use total_count,
+    #  but here we subtract the missing values.)
+    # Actually, if you want to consider "numeric vs. non-null", you might do:
+    # null_percentage = (total_count - non_null_count) / total_count
+    # But the user requested "against all entries - null entries", meaning:
+    null_percentage = (total_count - non_null_count) / total_count
+    
+    # For additional insight, compute the unique value ratio among non-null values.
+    unique_values = df[column].dropna().unique()
+    unique_value_ratio = len(unique_values) / non_null_count
+    
+    # Initialize the dictionary of metrics.
+    metrics = {
+        "total_count": total_count,
+        "non_null_count": non_null_count,
+        "null_percentage": null_percentage,
+        "unique_value_ratio": unique_value_ratio
+    }
+    
+    # If a target column is provided, compute the correlation between the missing indicator and target.
+    missing_target_corr = None
+    if target is not None:
+        if target not in df.columns:
+            raise ValueError(f"Target column '{target}' not found in the DataFrame.")
+        # Create a binary indicator for missingness in the column
+        missing_indicator = df[column].isnull().astype(int)
+        # Attempt to compute Pearson correlation if target is numeric.
+        # (For non-numeric targets, more sophisticated methods might be needed.)
+        if pd.api.types.is_numeric_dtype(df[target]):
+            missing_target_corr = missing_indicator.corr(df[target])
+        else:
+            # For non-numeric targets, we can compute the point-biserial correlation,
+            # or simply mark it as not applicable.
+            missing_target_corr = np.nan
+        metrics["missing_target_corr"] = missing_target_corr
+    
+    # Decision logic:
+    # - If the null_percentage is above the threshold AND (if target provided, the absolute correlation
+    #   between missingness and target is below the target_corr_threshold), recommend drop.
+    # - Otherwise, recommend keep.
+    if null_percentage >= drop_null_threshold:
+        if target is not None and pd.notnull(missing_target_corr):
+            if abs(missing_target_corr) >= target_corr_threshold:
+                recommended_action = "keep"
+                explanation = (f"Although {null_percentage:.2%} of rows are missing, the missingness is "
+                               f"strongly correlated with the target (corr = {missing_target_corr:.2f}).")
+            else:
+                recommended_action = "drop"
+                explanation = (f"{null_percentage:.2%} of rows are missing and missingness is not strongly correlated "
+                               f"with the target (corr = {missing_target_corr:.2f}).")
+        else:
+            recommended_action = "drop"
+            explanation = f"{null_percentage:.2%} of rows are missing; no target correlation to mitigate this."
+    else:
+        recommended_action = "keep"
+        explanation = f"Missingness ({null_percentage:.2%}) is within acceptable limits."
+    
+    metrics["recommended_action"] = recommended_action
+    metrics["explanation"] = explanation
+    
+    return metrics
+
+
+def drop_column(df, column):
+    """
+    Drops a specified column from the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame from which the column will be dropped.
+        column (str): The name of the column to drop.
+
+    Returns:
+        pd.DataFrame: The DataFrame with the specified column removed.
+    """
+    # Ensure the column exists in the DataFrame.
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+    
+    # Drop the column (using inplace=False to return a new DataFrame)
+    df_dropped = df.drop(columns=[column])
+    print(f"Column '{column}' has been dropped from the DataFrame.")
+    
+    return df_dropped
+
+# endregion
+# ============================================================================================#
+# region            OUTLIER HANDLING                                                          #
+#=============================================================================================#
+
+def evaluate_outliers(df, column, iqr_multiplier=1.5):
+    """
+    Evaluates a numeric column to assess the presence and severity of outliers.
+    
+    Computes the Q1, Q3, IQR, and percentage of values outside the [Q1 - iqr_multiplier * IQR, Q3 + iqr_multiplier * IQR] range.
+    Based on these statistics, recommends a handling strategy.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing the column.
+        column (str): The name of the numeric column.
+        iqr_multiplier (float): Multiplier for the IQR to define outlier boundaries (default is 1.5).
+    
+    Returns:
+        dict: A dictionary with the following keys:
+            - q1: First quartile.
+            - q3: Third quartile.
+            - iqr: Interquartile range.
+            - lower_bound: Lower cutoff.
+            - upper_bound: Upper cutoff.
+            - outlier_percentage: Proportion of values outside the cutoff.
+            - recommended_action: Recommendation string (e.g., "remove", "winsorize", "transform", "keep").
+    """
+    # Drop nulls for computation
+    data = df[column].dropna()
+    q1 = data.quantile(0.25)
+    q3 = data.quantile(0.75)
+    iqr = q3 - q1
+    
+    lower_bound = q1 - iqr_multiplier * iqr
+    upper_bound = q3 + iqr_multiplier * iqr
+    
+    # Count outliers
+    outliers = data[(data < lower_bound) | (data > upper_bound)]
+    outlier_percentage = len(outliers) / len(data) if len(data) > 0 else 0
+
+    # Make a recommendation:
+    #   - If <5% outliers: "keep" (or minimal action needed)
+    #   - If 5-15%: "winsorize" might be sufficient
+    #   - If >15%: consider "transform" or further investigation; removal may be warranted if feature is unreliable.
+    if outlier_percentage < 0.05:
+        recommended_action = "keep"
+    elif outlier_percentage < 0.15:
+        recommended_action = "winsorize"
+    else:
+        recommended_action = "transform or remove"
+
+    return {
+        "q1": q1,
+        "q3": q3,
+        "iqr": iqr,
+        "lower_bound": lower_bound,
+        "upper_bound": upper_bound,
+        "outlier_percentage": outlier_percentage,
+        "recommended_action": recommended_action
+    }
+
+def winsorize_column(df, column, iqr_multiplier=1.5):
+    """
+    Applies winsorization to a numeric column, capping values at the lower and upper bounds defined by IQR.
+    
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+        column (str): The numeric column to winsorize.
+        iqr_multiplier (float): Multiplier for the IQR to define outlier bounds.
+    
+    Returns:
+        pd.DataFrame: DataFrame with the specified column winsorized.
+    """
+    # Compute bounds from non-null values
+    data = df[column].dropna()
+    q1 = data.quantile(0.25)
+    q3 = data.quantile(0.75)
+    iqr = q3 - q1
+    lower_bound = q1 - iqr_multiplier * iqr
+    upper_bound = q3 + iqr_multiplier * iqr
+    
+    # Winsorize: cap values outside the bounds
+    df[column] = df[column].clip(lower=lower_bound, upper=upper_bound)
+    print(f"Column '{column}' winsorized with bounds: [{lower_bound}, {upper_bound}].")
+    return df
+
+def log_transform_column(df, column):
+    """
+    Applies a log transformation to a numeric column. 
+    Assumes all values are positive; if not, shifts the column so that all values are positive.
+    
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+        column (str): The numeric column to transform.
+    
+    Returns:
+        pd.DataFrame: DataFrame with the column log-transformed.
+    """
+    # Check if any value is <= 0
+    if (df[column] <= 0).any():
+        # Shift by the absolute minimum + a small constant to avoid log(0)
+        shift = abs(df[column].min()) + 1e-6
+        print(f"Shifting column '{column}' by {shift} to ensure positivity for log transform.")
+        df[column] = df[column] + shift
+    
+    df[column] = np.log(df[column])
+    print(f"Column '{column}' log-transformed.")
+    return df
+
+# endregion
+# ============================================================================================#
 #    region            THIS IS A COMPLEX NULL HANDLING CHAIN (Numeric as Numeric) 
 #                         IT EVALUATE KNN VS STOCHASTIC MEDIAN BEFORE EXECUTING ACTIONS       #
 #=============================================================================================#
 
-# This def decides if imputes Should be done with KNN or Stochastic Median
+# This def decides if numeric imputes Should be done with KNN or Stochastic Median
 # It checks KNN viabilty only with features that are correlated to the current column.
 
+# IMPORTANT! This needs to be updated to calculate KNN based on preprocessor.save_stage_df('POST_AGENT_1')
 def evaluate_imputation_strategy(df, column, 
                                  correlation_threshold=0.3, 
                                  null_threshold=0.5, 
@@ -107,7 +345,8 @@ def evaluate_imputation_strategy(df, column,
         "recommended_imputation": recommended_imputation
     }
 
-
+# This needs to be updated to calculate KNN based on preprocessor.save_stage_df('POST_AGENT_1')
+# BUT MUST SAVE CHANGES TO MAIN DF!!!
 def knn_impute_with_rounding(df, column, 
                              correlation_threshold=0.3, 
                              min_strong_features=2, 
@@ -277,7 +516,7 @@ def determine_max_decimal_places(series):
 
     return max_decimals
 
-
+# endregion
 
 # ============================================================================================#
 #    region            THIS IS A numbers as Categorical impute chain                          #
@@ -467,3 +706,4 @@ def impute_categorical_numeric_mode(df, column):
 
     print(f"Column '{column}': Missing values imputed using mode ({mode_value}).")
     return df
+# endregion

@@ -36,6 +36,7 @@ feature_engineer = None
 # Current Column Name of Column in Iteration Loop
 current_column = None
 
+
 #  endregion  ================================================================================#
 #  region                                OpenAI API                                           #
 #=============================================================================================#
@@ -258,7 +259,7 @@ def get_inst(
     '''
     Returns the instructions paired to the given inst_key instruction set key.
 
-    inst_key: the exact name of the set (examples: "CODE_INST", "CLEANING_AGENT1_START", "OBJECT_INST", etc.)
+    inst_key: the exact name of the set (examples: "CODE_INST", "CLEANING_AGENT2_START", "OBJECT_INST", etc.)
     '''
     for instruction_set in IA_LIST:
         if inst_key in instruction_set:
@@ -531,14 +532,16 @@ class Preprocesser:
         #=======================================================# 
 
         try:
-            object_to_num_and_alias_nulls_agent = create_react_agent(model, tools)                                                                       
+            # AGENT1 = object to number and alias nulls handler
+            agent1 = create_react_agent(model, tools)                                                                       
         except Exception as e:
-            print(f'Error creating object_to_num_and_alias_nulls_agent : A LanGraph prebuit ReAct agent: {e}')
+            print(f'Error creating agent1 : A LanGraph prebuit ReAct agent: {e}')
 
         try:
-            cleaning_agent1 = create_react_agent(model, tools)                                                                       
+            # AGENT2 = outlier and impute handler
+            agent2 = create_react_agent(model, tools)                                                                       
         except Exception as e:
-            print(f'Error creating cleaning_agent1 : A LanGraph prebuit ReAct agent: {e}')
+            print(f'Error creating agent2 : A LanGraph prebuit ReAct agent: {e}')
 
         if self.args.handwash:
             try:
@@ -547,36 +550,36 @@ class Preprocesser:
                 print(f'Error creating handwashing_agent : A LanGraph prebuit ReAct agent: {e}')
 
         #  endregion  ================================================#
-        #  region   AGENT LOOP: object_to_num_and_alias_nulls_agent   #
+        #  region  AGENT1 LOOP: object to num and alias nulls handler #
         #=============================================================#       
 
         for column in preprocessor.get_df().columns:
             if column == self.args.target_var:
                 continue
             
-            # Skip Numeric Columns: ALIAS NULLS are only present in Object data type Columns.
-            if pd.api.types.is_numeric_dtype(preprocessor.get_df()[column]):
-                continue
+            # Skip Numeric Columns: REMOVED THIS FOR ALL COLUMN PREPROCESSING 2/2/25 JESSE
+            # if pd.api.types.is_numeric_dtype(preprocessor.get_df()[column]):
+            #     continue
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ["col4"] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ["col3", "col5"] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             current_column = column
-            inputs = {'messages': [('user', INST_ARCHIVE["OBJECT_TO_NUM_AND_ALIAS_NULLS_START"])]}
+            inputs = {'messages': [('user', AGENT1_IA["AGENT1_START"])]}
             try:
-                stream = object_to_num_and_alias_nulls_agent.stream(inputs, stream_mode='values')
+                stream = agent1.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_1')
+        #preprocessor.save_stage_df('POST_AGENT_1')
 
         #  endregion  ==========================================#
-        #  region   AGENT LOOP: cleaning_agent1                 #
+        #  region   AGENT LOOP: agent2                 #
         #=======================================================#       
 
         for column in preprocessor.get_df().columns:
@@ -591,14 +594,14 @@ class Preprocesser:
             
             # CLEANING AGENT 1 LOOP
             current_column = column
-            inputs = {'messages': [('user', INST_ARCHIVE["CLEANING_AGENT1_START"])]}
+            inputs = {'messages': [('user', AGENT2_IA["AGENT2_START"])]}
             try:
-                stream = cleaning_agent1.stream(inputs, stream_mode='values')
+                stream = agent2.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_2')
+        #preprocessor.save_stage_df('POST_AGENT_2')
 
         #  endregion  ==========================================#
         #  region   AGENT LOOP: handwashing_agent               #
@@ -624,7 +627,7 @@ class Preprocesser:
                 except Exception as e:
                     print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_3')
+        #preprocessor.save_stage_df('POST_AGENT_3')
         #  endregion
 
         return self.df # Return the most recent dataframe

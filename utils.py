@@ -79,91 +79,12 @@ INST_ARCHIVE = {
         "When LLM ENCOUNTERS ERRORS running the code on the first attempt...\n"
         "This can serve as a trouble shooting guide\n"
     ),
-#    endregion  ==============================================================================#
-#    region                            CAMEL CARAVAN :) Master START Iteration Instructions   #
-#=============================================================================================#
-    # Instructions for finding Integer or Float cloumns that are currently Object data type columns.
-    "OBJECT_TO_NUM_AND_ALIAS_NULLS_START": (
-        "Use exec_stored_func tool to run check_percent_numeric to determine if the column is truly object or if it is numeric.\n"
-        "If column 'is less than 90% numeric', use the tool call get_inst(HANDLE_COMMON_ALIAS_NULLS_IN_TEXT_COLUMN) for instructions.\n"
-        "If column 'is 90%+ numeric and can be considered truly numeric', use exec_stored_func tool to run check_for_text_nums.\n"
-        "If the result from check_for_text_nums comes back as True, use exec_stored_func to run convert_text_nums_to_numeric\n"
-        "Continue on by using the tool call get_inst(HANDLE_ALIAS_NULLS_IN_NUMS) for instructions.\n"
-    ), 
-    # "OBJECT_TO_NUM_AND_ALIAS_NULLS_START": (
-    #     # FIX - THIS IS DONE IN PYTHON LOOP IN ADVANCE
-    #     "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
-    #     "State the column's data type.\n"
-    #     "If data type is Object, use the tool call get_inst(OBJECT_TO_NUM_INST) for instructions.\n"
-    #     "If data type is any other type, END.\n"
-    # ),
-    "CLEANING_AGENT1_START": (
-        "Use the exec_stored_func tool to run the data_type_check function to determine the Column's data type.\n"
-        "State the column's data type.\n"
-        "If data type is Float, use the tool call get_inst(FLOAT_INST) for instructions.\n"
-        "If data type is Integer, use the tool call get_inst(NUMERIC_INST) for instructions.\n"
-        "If data type is Object, use the tool call get_inst(OBJECT_INST) for instructions.\n"
-        "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions.\n"
-    ),
+
     "HANDWASHING_AGENT_START": (
         "Tell me that you have successfully handwashed the data. END.\n"
     ),
-#    endregion  ==============================================================================#
-#    region                            OBJECT TO NUM AND ALIAS NULLS INSTRUCTIONS             #
-#=============================================================================================#
-# Instructions for handling mislabeled or alias nulls and remaining unidentifiable text to Null.
-    "HANDLE_ALIAS_NULLS_IN_NUMS": (
-        "Use exec_stored_func tool to run describe_and_clean_non_numeric_entries to find and convert mislabeled nulls to proper nulls.\n"
-        "If 1 or more items added to the Unique Review List, use the exec_stored_func tool to run convert_all_non_num_to_null to convert all remaining text entries to proper nulls\n"
-        "Use exec_stored_func tool to run convert_column_to_numeric. END PROCESS\n"
-    ), # Instructions for handling common mislabeled or alias nulls, like empty, unknown, none, etc in standard object type/text.
-    "HANDLE_COMMON_ALIAS_NULLS_IN_TEXT_COLUMN": (
-        "Use exec_stored_func tool to run convert_common_alias_nulls to find and convert mislabeled nulls to proper nulls.\n"
-        "Continue on by using the tool call get_inst(HANDLE_UNCOMMON_ALIAS_NULLS_IN_TEXT_COLUMN) for instructions.\n"
-    ), # Instructions for handling uncommon mislabeled or alias nulls, using LLM logic.
-    "HANDLE_UNCOMMON_ALIAS_NULLS_IN_TEXT_COLUMN": (
-        "Use exec_stored_func tool to run display_most_common_unique_entries and review the most common unique entries in the column.\n"
-        "Look through the unique entries and try to determine if there are any entries that should be nulls, meaning they are 'very likely mislabeled nulls'.\n"
-        "If any exist, call get_inst(JSON_LIST_INST) for instructions on formatting a list of 'very likely mislabeled nulls' and use the append_alias_nulls tool to save the new list.\n"
-        # IMPORTANT: We need a way to send this json list (in this state) to the pipeline.
-        "If you added mislabeled nulls to the list, use the exec_stored_func tool to run convert_uncommon_alias_nulls to convert items in the list to nulls, then End Process.\n"
-        "If you found no 'very likely mislabeled nulls'. End Process\n"
-    ), # Instructions for creating a well-formatted JSON list of alias nulls.
-    "JSON_LIST_INST": (
-        "Here is a simple example of a well-formatted JSON list:\n"
-        '[ "na", "missing", "none", "unknown", "empty" ]\n'
-        "Ensure that:\n"
-        "1. Each entry is a string enclosed in double quotes.\n"
-        "2. Entries are separated by commas.\n"
-        "3. No trailing commas after the last item.\n"
-        "4. The list should not contain any extra characters, comments, or notes.\n"
-        "5. The list must be valid JSON format.\n\n"
-    ),
-#    endregion  ==============================================================================#
-#    region                            COLUMN TYPE INT or FLOAT INSTRUCTIONS                  #
-#=============================================================================================#
-    # Instructions for handling Float data type columns.
-    "FLOAT_INST": (
-        "Use exec_stored_func tool to run if_float_is_really_int_convert.\n"
-        "Follow instructions from the call get_inst(NUMERIC_INST).\n"
-    ), # Instructions for handling Integer data type columns.
-    "NUMERIC_INST": (
-        "Use exec_stored_func tool to run determine_numeric_or_categorical to determine if the column is truly numeric or if it is categroical.\n"
-        "If returned column_type = numeric, use the tool call get_inst(NUMERIC_NULL_AND_OUTLIER_INST) for instructions.\n"
-        "If returned column_type = categorical, use the tool call get_inst(CATEGORICAL_NULL_AND_OUTLIER_INST) for instructions.\n"
-    ), # Instructions for handling numeric columns.
-    "NUMERIC_NULL_AND_OUTLIER_INST": (
-        # Scattered winsorizing?
-        # Use new KNN and Stochastic Median chain when ready.
-        "Use exec_stored_func tool to run check_outliers_and_nulls to find and describe outliers and or nulls \n"
-        "If Warnings are Present use the logger tool to write the document the warning in the pipeline.\n"
-        "If outliers AND OR nulls are present, use exec_stored_func tool to run cap_outliers_and_impute_nulls.\n"
-    ), # Instructions for handling Categorical numeric columns.
-    "CATEGORICAL_NULL_AND_OUTLIER_INST": (
-        "Say that this numeric column is categorical in nature. \n"
-        #"Use exec_stored_func tool to run SOMETHING ABOUT CATEGORIES to work with \n"
-        #"If nulls are present, Use exec_stored_func tool to run impute_mode_or_create_exnulls_cat \n"
-    ),
+
+
 #    endregion  ==============================================================================#
 #    region                            COLUMN TYPE OBJECT INSTRUCTIONS                        #
 #=============================================================================================#

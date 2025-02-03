@@ -3,5 +3,7 @@ langchain_openai
 langgraph
 openai
 pandas
+scikit-learn
+scipy
 python-dotenv
 word2number
