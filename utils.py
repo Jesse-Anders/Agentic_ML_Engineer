@@ -126,7 +126,7 @@ INST_ARCHIVE = {
         "Look through the unique entries and try to determine if there are any entries that should be nulls, meaning they are 'very likely mislabeled nulls'.\n"
         "If any exist, call get_inst(JSON_LIST_INST) for instructions on formatting a list of 'very likely mislabeled nulls' and use the append_alias_nulls tool to save the new list.\n"
         # IMPORTANT: We need a way to send this json list (in this state) to the pipeline.
-        "If you added mislabeled nulls to the list, use the exec_stored_func tool to run convert_uncommon_alias_nulls to convert items in the list to nulls.\n"
+        "If you added mislabeled nulls to the list, use the exec_stored_func tool to run convert_uncommon_alias_nulls to convert items in the list to nulls, then End Process.\n"
         "If you found no 'very likely mislabeled nulls'. End Process\n"
     ), # Instructions for creating a well-formatted JSON list of alias nulls.
     "JSON_LIST_INST": (

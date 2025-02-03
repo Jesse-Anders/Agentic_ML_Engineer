@@ -92,3 +92,10 @@ This is the first column loop agent and it handles, a few critical tasks. It ite
 2. The agent handles regular object/text columns and converts common mislabeled nulls to proper null type.<br>
 3. Lastly the agent receives a list of the top 40 most common unique entries and determines if there are any remaining mislabeled nulls based on its own judgement.
 
+1/31/25
+4 Hour Coding Session
+Working to create comprehensive Impute functions. Trying to figure out robust impute options and decisions that handle outlier cases.
+
+2/1/25
+3 Hour Coding Session
+Gpto1 Code Review of impute functions. Refining and rebuilding functions from 1/31/25 coding session.
