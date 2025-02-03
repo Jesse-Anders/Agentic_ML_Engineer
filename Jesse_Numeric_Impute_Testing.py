@@ -3,134 +3,7 @@ import numpy as np
 from sklearn.impute import KNNImputer
 from scipy.stats import chi2_contingency
 
-# ============================================================================================#
-# region                   Evaluate for Drop Null Heavy Column                                #
-#=============================================================================================#
 
-def evaluate_column_for_drop(df, column, target, drop_null_threshold=0.5, target_corr_threshold=0.3):
-    """
-    Evaluates a column for potential dropping based on its missingness and data relationships.
-    
-    Args:
-        df (pd.DataFrame): The DataFrame containing the data.
-        column (str): The column to evaluate.
-        target (str, optional): The target column name for assessing whether missingness is predictive.
-        drop_null_threshold (float): The threshold proportion (0-1) of missing values among non-null rows
-                                     above which the column is considered for dropping.
-        target_corr_threshold (float): If target is provided, the minimum absolute correlation between the 
-                                       missingness indicator and target needed to override a high null rate.
-    
-    Returns:
-        dict: A dictionary containing:
-            - 'total_count': Total number of rows.
-            - 'non_null_count': Count of non-null entries.
-            - 'null_percentage': Percentage of missing values relative to non-null count.
-            - 'unique_value_ratio': Ratio of unique non-null values to non-null count.
-            - 'missing_target_corr': (If target provided) Correlation between missing indicator and target.
-            - 'recommended_action': "drop" or "keep", with an explanation.
-            - 'details': All computed metrics.
-    """
-    # Basic counts and null percentage (based on non-null entries)
-    total_count = len(df)
-    non_null_count = df[column].notnull().sum()
-    if non_null_count == 0:
-        # If there are no non-null entries, it's a clear candidate for dropping.
-        return {
-            "total_count": total_count,
-            "non_null_count": non_null_count,
-            "null_percentage": 1.0,
-            "unique_value_ratio": 0,
-            "recommended_action": "drop",
-            "details": "Column contains only null values."
-        }
-    
-    # Compute null percentage relative to non-null count:
-    # (The logic here is: if you consider only the non-null values,
-    #  what percentage is missing? In practice, you may simply use total_count,
-    #  but here we subtract the missing values.)
-    # Actually, if you want to consider "numeric vs. non-null", you might do:
-    # null_percentage = (total_count - non_null_count) / total_count
-    # But the user requested "against all entries - null entries", meaning:
-    null_percentage = (total_count - non_null_count) / total_count
-    
-    # For additional insight, compute the unique value ratio among non-null values.
-    unique_values = df[column].dropna().unique()
-    unique_value_ratio = len(unique_values) / non_null_count
-    
-    # Initialize the dictionary of metrics.
-    metrics = {
-        "total_count": total_count,
-        "non_null_count": non_null_count,
-        "null_percentage": null_percentage,
-        "unique_value_ratio": unique_value_ratio
-    }
-    
-    # If a target column is provided, compute the correlation between the missing indicator and target.
-    missing_target_corr = None
-    if target is not None:
-        if target not in df.columns:
-            raise ValueError(f"Target column '{target}' not found in the DataFrame.")
-        # Create a binary indicator for missingness in the column
-        missing_indicator = df[column].isnull().astype(int)
-        # Attempt to compute Pearson correlation if target is numeric.
-        # (For non-numeric targets, more sophisticated methods might be needed.)
-        if pd.api.types.is_numeric_dtype(df[target]):
-            missing_target_corr = missing_indicator.corr(df[target])
-        else:
-            # For non-numeric targets, we can compute the point-biserial correlation,
-            # or simply mark it as not applicable.
-            missing_target_corr = np.nan
-        metrics["missing_target_corr"] = missing_target_corr
-    
-    # Decision logic:
-    # - If the null_percentage is above the threshold AND (if target provided, the absolute correlation
-    #   between missingness and target is below the target_corr_threshold), recommend drop.
-    # - Otherwise, recommend keep.
-    if null_percentage >= drop_null_threshold:
-        if target is not None and pd.notnull(missing_target_corr):
-            if abs(missing_target_corr) >= target_corr_threshold:
-                recommended_action = "keep"
-                explanation = (f"Although {null_percentage:.2%} of rows are missing, the missingness is "
-                               f"strongly correlated with the target (corr = {missing_target_corr:.2f}).")
-            else:
-                recommended_action = "drop"
-                explanation = (f"{null_percentage:.2%} of rows are missing and missingness is not strongly correlated "
-                               f"with the target (corr = {missing_target_corr:.2f}).")
-        else:
-            recommended_action = "drop"
-            explanation = f"{null_percentage:.2%} of rows are missing; no target correlation to mitigate this."
-    else:
-        recommended_action = "keep"
-        explanation = f"Missingness ({null_percentage:.2%}) is within acceptable limits."
-    
-    metrics["recommended_action"] = recommended_action
-    metrics["explanation"] = explanation
-    
-    return metrics
-
-
-def drop_column(df, column):
-    """
-    Drops a specified column from the DataFrame.
-
-    Args:
-        df (pd.DataFrame): The DataFrame from which the column will be dropped.
-        column (str): The name of the column to drop.
-
-    Returns:
-        pd.DataFrame: The DataFrame with the specified column removed.
-    """
-    # Ensure the column exists in the DataFrame.
-    if column not in df.columns:
-        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
-    
-    # Drop the column (using inplace=False to return a new DataFrame)
-    df_dropped = df.drop(columns=[column])
-    print(f"Column '{column}' has been dropped from the DataFrame.")
-    
-    return df_dropped
-
-# endregion
 # ============================================================================================#
 # region            OUTLIER HANDLING                                                          #
 #=============================================================================================#
@@ -179,7 +52,7 @@ def evaluate_outliers(df, column, iqr_multiplier=1.5):
     elif outlier_percentage < 0.15:
         recommended_action = "winsorize"
     else:
-        recommended_action = "transform or remove"
+        recommended_action = "transform"
 
     return {
         "q1": q1,

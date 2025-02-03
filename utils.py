@@ -88,18 +88,6 @@ INST_ARCHIVE = {
     ),
 
 
-#    endregion  ==============================================================================#
-#    region                            COLUMN TYPE OBJECT INSTRUCTIONS                        #
-#=============================================================================================#
-    # Instructions for handling Object data type columns.
-    "OBJECT_INST": (
-        "Tell me you have read the Object instructions. And say Thank You. \n"
-    ),
-#    endregion  ==============================================================================#
-#    region                            COLUMN TYPE UNKNOWN INSTRUCTIONS                       #
-#=============================================================================================#
-    # Instructions for handling Unknown data type columns.
-    "UNKNOWN_INST": (
-        "Tell me you have read the Unknown instructions. And say Thank You. \n"
-    )
-} #endregion
+# endregion
+
+} 

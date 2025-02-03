@@ -14,7 +14,8 @@ import json
 # region                   Evaluate for Drop Null Heavy Column                                #
 #=============================================================================================#
 
-def evaluate_column_for_drop(df, column, target, drop_null_threshold=0.5, target_corr_threshold=0.3):
+# Working out 'target' issues. Looking to replace target='target' with just target
+def evaluate_column_for_drop(df, column, target='target', drop_null_threshold=0.5, target_corr_threshold=0.3):
     """
     Evaluates a column for potential dropping based on its missingness and data relationships.
     

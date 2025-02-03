@@ -5,14 +5,11 @@ AGENT1_IA = {
     
 # AGENT1 Kickoff Instructions (Evaluate if High Null Percentage Dictates Column Drop)
     "AGENT1_START": (
-        # "Use exec_stored_func tool to run evaluate_column_for_drop to deternime if the column should be dropped.\n"
-        # "If recommended_action is 'drop', exec_stored_func to run drop_column to drop the column from the df. END PROCESS.\n"
-        # "If recommended_action is 'keep' use the exec_stored_func to run data_type_check.\n"
-        # "If data type is 'object' call tool get_inst(CONFIRM_TRULY_OBJECT) for further instructions.\n"
-        # "If data type is not 'object', END PROCESS.\n"
-        # ABOVE IS WAITING FOR "TARGET FEATURE" GLOBAL TO PASS TO FUNCTIONS
-        # TEMP: Skipping to step 2
-        "Use tool call get_inst(CONFIRM_TRULY_OBJECT) for further instructions.\n"
+        "Use exec_stored_func tool to run evaluate_column_for_drop to deternime if the column should be dropped.\n"
+        "If recommended_action is 'drop', exec_stored_func to run drop_column to drop the column from the df. END PROCESS.\n"
+        "If recommended_action is 'keep' use the exec_stored_func to run data_type_check.\n"
+        "If data type is 'object' call tool get_inst(CONFIRM_TRULY_OBJECT) for further instructions.\n"
+        "If data type is not 'object', END PROCESS.\n"
     ), 
 # Confirms that the column data type is truly text and not a truly numeric column with sparse text items.
     "CONFIRM_TRULY_OBJECT": (
