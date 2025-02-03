@@ -304,7 +304,7 @@ def exec_stored_func(
         
     try:
         # Dynamically execute the function call code
-        local_vars = {'df': preprocessor.get_df(), 'column': current_column}
+        local_vars = {'df': preprocessor.get_df(), 'column': current_column, 'target': TARGET_VAR_NAME}
         exec(func_call_code, globals(), local_vars)
 
         # Capture the updated DataFrame (if any)
@@ -374,7 +374,7 @@ def exec_generated_func(
 
     try:
         # Dynamically execute the function call code
-        local_vars = {'df': preprocessor.get_df(), 'column': current_column}
+        local_vars = {'df': preprocessor.get_df(), 'column': current_column, 'target': TARGET_VAR_NAME}
         exec(func_call_code, globals(), local_vars)
 
         # Capture the updated DataFrame (if any)
@@ -465,6 +465,8 @@ class Preprocesser:
         self.original_df = df.copy()
         self.backup_df = df.copy()
         self.df = df.copy()
+        
+        self.stages = []
 
     def get_df(self):
         '''
@@ -576,7 +578,7 @@ class Preprocesser:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        #preprocessor.save_stage_df('POST_AGENT_1')
+        preprocessor.save_stage_df('POST_AGENT_1')
 
         #  endregion  ==========================================#
         #  region   AGENT LOOP: agent2                 #
@@ -601,7 +603,7 @@ class Preprocesser:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        #preprocessor.save_stage_df('POST_AGENT_2')
+        preprocessor.save_stage_df('POST_AGENT_2')
 
         #  endregion  ==========================================#
         #  region   AGENT LOOP: handwashing_agent               #
@@ -627,8 +629,10 @@ class Preprocesser:
                 except Exception as e:
                     print(f'Error during stream: {e}')
 
-        #preprocessor.save_stage_df('POST_AGENT_3')
+        preprocessor.save_stage_df('POST_AGENT_3')
         #  endregion
+
+        print('STAGES', self.stages)
 
         return self.df # Return the most recent dataframe
     
@@ -738,10 +742,12 @@ def init_global_objects(args, df):
     args: system arguments
     df: pandas dataframe
     '''
-    global preprocessor, feature_engineer
+    global preprocessor, feature_engineer, TARGET_VAR_NAME
 
     preprocessor = Preprocesser(args, df)
     feature_engineer = FeatureEngineer(args, df)
+
+    TARGET_VAR_NAME = args.target_var
 
 
 def save_pipeline_generation(args):

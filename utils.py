@@ -8,6 +8,9 @@ from agent_instructions.agent3_inst import *
 #  region                              STATIC GlOBALS                                         #
 #=============================================================================================#
 
+# Column Vars
+TARGET_VAR_NAME = None
+
 # directory path globals
 DATA_INPUT_DIR = 'data_inputs'
 DATA_OUTPUT_DIR = 'data_outputs'
