@@ -6,11 +6,15 @@ from sklearn.impute import KNNImputer
 from scipy.stats import chi2_contingency
 import json
 
+# Shared State Getters
+from utils import get_dataframe_stage, get_target_column, get_current_column
+
+
 #=============================================================================================#
 #  region              DETERMINE COLUMN DATA TYPE                                             #
 #=============================================================================================#
 
-def data_type_check(df, column) -> str:
+def data_type_check(df) -> str:
     """
     Checks the data type of the given column in the DataFrame.
 
@@ -21,6 +25,8 @@ def data_type_check(df, column) -> str:
     Returns:
         str: A message describing the column's data type.
     """
+    column=get_current_column()
+
     column_dtype = df[column].dtype # Access the column dynamically
 
     # Handle text data
@@ -55,7 +61,7 @@ def data_type_check(df, column) -> str:
 #=============================================================================================#
 #  region              CONVERT FLOAT TO INTEGER IF POSSIBLE                                   #
 #=============================================================================================#
-def if_float_is_really_int_convert(df, column):
+def if_float_is_really_int_convert(df):
     """
     Checks if a column with a float data type contains only values ending in .0
     and converts it to an integer data type if true.
@@ -68,6 +74,8 @@ def if_float_is_really_int_convert(df, column):
         pd.DataFrame: The updated DataFrame with the column converted if applicable.
         str: A message indicating whether the column was converted or not.
     """
+    column=get_current_column()
+
     # Ensure the column exists and is of float type
     if column not in df.columns:
         return df, f"Column '{column}' does not exist in the DataFrame."
@@ -87,7 +95,7 @@ def if_float_is_really_int_convert(df, column):
 #=============================================================================================#
 #  region              DETERMINE NUMERIC OR CATEGORICAL                                       #
 #=============================================================================================#
-def determine_numeric_or_categorical(df, column, numeric_override_threshold=0.9):
+def determine_numeric_or_categorical(df, numeric_override_threshold=0.9):
     """
     Identifies whether an integer column is numeric or categorical.
     Overrides classification if data is truly numeric despite skewed unique ratios.
@@ -100,6 +108,7 @@ def determine_numeric_or_categorical(df, column, numeric_override_threshold=0.9)
     Returns:
         dict: A dictionary containing the column type, handling strategy, and the updated DataFrame.
     """
+    column=get_current_column()
 
     # Ensure the column exists and is of integer type
     if column not in df.columns:
@@ -139,7 +148,7 @@ def determine_numeric_or_categorical(df, column, numeric_override_threshold=0.9)
 # region               OUTLIER HANDLING                                                       #
 #=============================================================================================#
 
-def evaluate_outliers(df, column, iqr_multiplier=1.5):
+def evaluate_outliers(df, iqr_multiplier=1.5):
     """
     Evaluates a numeric column to assess the presence and severity of outliers.
     
@@ -161,6 +170,8 @@ def evaluate_outliers(df, column, iqr_multiplier=1.5):
             - outlier_percentage: Proportion of values outside the cutoff.
             - recommended_action: Recommendation string (e.g., "remove", "winsorize", "transform", "keep").
     """
+    column=get_current_column()
+
     # Drop nulls for computation
     data = df[column].dropna()
     q1 = data.quantile(0.25)
@@ -195,7 +206,7 @@ def evaluate_outliers(df, column, iqr_multiplier=1.5):
         "recommended_action": recommended_action
     }
 
-def winsorize_column(df, column, iqr_multiplier=1.5):
+def winsorize_column(df, iqr_multiplier=1.5):
     """
     Applies winsorization to a numeric column, capping values at the lower and upper bounds defined by IQR.
     
@@ -207,6 +218,8 @@ def winsorize_column(df, column, iqr_multiplier=1.5):
     Returns:
         pd.DataFrame: DataFrame with the specified column winsorized.
     """
+    column=get_current_column()
+
     # Compute bounds from non-null values
     data = df[column].dropna()
     q1 = data.quantile(0.25)
@@ -220,7 +233,7 @@ def winsorize_column(df, column, iqr_multiplier=1.5):
     print(f"Column '{column}' winsorized with bounds: [{lower_bound}, {upper_bound}].")
     return df
 
-def log_transform_column(df, column):
+def log_transform_column(df):
     """
     Applies a log transformation to a numeric column. 
     Assumes all values are positive; if not, shifts the column so that all values are positive.
@@ -232,6 +245,8 @@ def log_transform_column(df, column):
     Returns:
         pd.DataFrame: DataFrame with the column log-transformed.
     """
+    column=get_current_column()
+
     # Check if any value is <= 0
     if (df[column] <= 0).any():
         # Shift by the absolute minimum + a small constant to avoid log(0)
@@ -252,7 +267,7 @@ def log_transform_column(df, column):
 # It checks KNN viabilty only with features that are correlated to the current column.
 
 # IMPORTANT! This needs to be updated to calculate KNN based on preprocessor.save_stage_df('POST_AGENT_1')
-def evaluate_imputation_strategy(df, column, 
+def evaluate_imputation_strategy(df, 
                                  correlation_threshold=0.3, 
                                  null_threshold=0.5, 
                                  skew_threshold=2.0, 
@@ -286,6 +301,7 @@ def evaluate_imputation_strategy(df, column,
             - 'null_skewness_conspire': Boolean indicating if missingness and skewness together make KNN unreliable.
             - 'recommended_imputation': The recommended imputation method ("stochastic median" or "KNN").
     """
+    column=get_current_column()
 
     # Ensure column exists
     if column not in df.columns:
@@ -350,7 +366,7 @@ def evaluate_imputation_strategy(df, column,
 
 # This needs to be updated to calculate KNN based on preprocessor.save_stage_df('POST_AGENT_1')
 # BUT MUST SAVE CHANGES TO MAIN DF!!!
-def knn_impute_with_rounding(df, column, 
+def knn_impute_with_rounding(df,
                              correlation_threshold=0.3, 
                              min_strong_features=2, 
                              n_neighbors=5):
@@ -368,6 +384,7 @@ def knn_impute_with_rounding(df, column,
     Returns:
         pd.DataFrame: The DataFrame with the target column imputed.
     """
+    column=get_current_column()
 
     # Ensure column exists
     if column not in df.columns:
@@ -422,7 +439,6 @@ def knn_impute_with_rounding(df, column,
 # IN GENERAL: There are a lot of ways to tighten up numeric impute handling. This can be worked on a lot more.
 def dynamic_stochastic_median_impute(
     df,
-    column,
     iqr_factor=0.5,
     clamp_to_min_max=True,
     force_round=False
@@ -440,6 +456,8 @@ def dynamic_stochastic_median_impute(
     => total width of the band is 0.5 * IQR.
     => random draws are in [median - 0.25*IQR, median + 0.25*IQR].
     """
+    column=get_current_column()
+
     # 1) Basic checks
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
@@ -529,8 +547,6 @@ def determine_max_decimal_places(series):
 from scipy.stats import chi2_contingency
 def evaluate_null_correlation_with_target(
     df,
-    column,
-    target,
     numeric_correlation_threshold=0.5,
     chi2_pvalue_threshold=0.05
 ):
@@ -555,7 +571,9 @@ def evaluate_null_correlation_with_target(
             - high_null_association: bool, indicates "strong enough" association.
             - recommended_handling: "convert_to_category" or "impute".
     """
-    
+    column=get_current_column()
+    target=get_target_column()
+
     # 1. Basic validation checks
     if column not in df.columns or target not in df.columns:
         raise ValueError("One or more specified columns do not exist in the DataFrame.")
@@ -655,7 +673,7 @@ def evaluate_null_correlation_with_target(
 
 # Convert Nulls to exNulls if they are highly correlated to the target feature
 # WARNING: This turns the column into object type to accomodate non-encoded "null_category" entries.
-def convert_nulls_to_category(df, column, category_label="null_category"):
+def convert_nulls_to_category(df, category_label="null_category"):
     """
     Converts null values in a column to a categorical label.
 
@@ -667,6 +685,7 @@ def convert_nulls_to_category(df, column, category_label="null_category"):
     Returns:
         pd.DataFrame: The updated DataFrame with nulls converted to a category.
     """
+    column=get_current_column()
 
     # Ensure the column exists
     if column not in df.columns:
@@ -684,7 +703,7 @@ def convert_nulls_to_category(df, column, category_label="null_category"):
 
 
 # Basic Mode Imputation
-def impute_categorical_numeric_mode(df, column):
+def impute_categorical_numeric_mode(df):
     """
     Imputes missing values in a numeric-categorical column using mode.
 
@@ -695,6 +714,8 @@ def impute_categorical_numeric_mode(df, column):
     Returns:
         pd.DataFrame: The updated DataFrame with missing values imputed.
     """
+    column=get_current_column()
+    
     # Ensure column exists
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")

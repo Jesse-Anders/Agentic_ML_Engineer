@@ -7,7 +7,52 @@ from agent_instructions.agent4_inst import AGENT4_IA
 from agent_instructions.agent5_inst import AGENT5_IA
 from agent_instructions.agent6_inst import AGENT6_IA
 
+
 #=============================================================================================#
+#  region                              Shared State Globals                                   #
+#=============================================================================================#
+
+_shared_state = {
+    "current_column": None,
+    "target_column": None,
+    "dataframe_stages": []
+}
+
+#  endregion  ================================================================================#
+#  region                                Shared State Handling                                #
+#=============================================================================================#
+
+def save_dataframe_stage(df, stage_name):
+    for stage in _shared_state["dataframe_stages"]:
+        if stage_name == stage['stage_name']:
+            stage['df'] = df
+            return
+    _shared_state["dataframe_stages"].append({
+        "stage_name": stage_name,
+        "df": df.copy()
+    })
+
+def get_dataframe_stage(stage_name):
+    for stage in _shared_state["dataframe_stages"]:
+        if stage['stage_name'] == stage_name:
+            return stage['df']
+    raise Exception(f"A dataframe stage does not exist with this stage_name: {stage_name}")
+
+# Setters
+def set_current_column(column):
+    _shared_state["current_column"] = column
+
+def set_target_column(column):
+    _shared_state["target_column"] = column
+
+# Getters
+def get_current_column():
+    return _shared_state["current_column"]
+
+def get_target_column():
+    return _shared_state["target_column"]
+
+#  endregion  ================================================================================#
 #  region                              STATIC GlOBALS                                         #
 #=============================================================================================#
 

@@ -13,9 +13,9 @@ from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from openai import OpenAI
 from typing import Annotated
+
 from utils import *
 from runtime_lib.static_lib import *
-
 
 # INSTRUCTION ARCHIVE LIST: Used in the get_inst tool
 IA_LIST = [INST_ARCHIVE, AGENT1_IA, AGENT2_IA, AGENT3_IA, AGENT4_IA, AGENT5_IA, AGENT6_IA]
@@ -33,9 +33,6 @@ pipeline = None
 # Preprocessor and FeatureEngineer objects for global ML Workflow
 preprocessor = None
 feature_engineer = None
-
-# Current Column Var *needs to be accessible across all workflow classes and tools
-current_column = None
 
 #  endregion  ================================================================================#
 #  region                                OpenAI API                                           #
@@ -283,16 +280,20 @@ def logger(
 
 @tool
 def exec_stored_func(
-    func_name: Annotated[str, 'name of the library function to be run'],
-    func_call_code: Annotated[str, '''The code (usually one line) to call the function. Include all necessary parameter values except for the following 3: [df, column, target],
-                              those will be assigned locally--leave them explicity as 'df', 'column', and 'target' if they appear. Always include "output = " before the call to catch return values. Format examples:
-                              output = func_name(df, column, target, param1=value1), output = func_name(df, column, target), output = func_name(df), output = func_name(df, column, param1=value1, param2=value2)''']
+    func_call_code: Annotated[str, '''The line of code to call the function. Include all necessary explicit parameter values except for 'df', the df variable will be passed in locally.
+                              Always include "output = " before the call to catch return values. Format example: output = func_name(df)''']
 ) -> str:
     '''
-    Executes a static function on the current working dataframe and writes
-    the function call to the pipeline file.
+    Executes a static function on the current working dataframe and writes the function call to the pipeline file.
     '''
-    print(f"Agent is attempting to run {func_name} on the '{current_column}' column")
+
+    # Extracting the function name using regex
+    match = re.search(r'output\s*=\s*(\w+)\s*\(', func_call_code)
+    if not match:
+        return 'Error: Could not extract function name from the provided code.'
+    
+    func_name = match.group(1)
+    print(f"Agent is attempting to run {func_name} on the '{get_current_column()}' column")
 
     try:
         func = static_lib.get_func(func_name)
@@ -304,16 +305,16 @@ def exec_stored_func(
         
     try:
         # Regex to identify 'column' and 'target' as arguments without explicit values
-        column_pattern = r'\bcolumn\b(?=(\s*,|\s*\)|$))'
-        target_pattern = r'\btarget\b(?=(\s*,|\s*\)|$))'
+        # column_pattern = r'\bcolumn\b(?=(\s*,|\s*\)|$))'
+        # target_pattern = r'\btarget\b(?=(\s*,|\s*\)|$))'
 
-        # Replace 'column' and 'target' with their respective global values
-        func_call_code = re.sub(column_pattern, f'"{current_column}"', func_call_code)
-        func_call_code = re.sub(target_pattern, f'"{preprocessor.args.target_var}"', func_call_code)
+        # # Replace 'column' and 'target' with their respective global values
+        # func_call_code = re.sub(column_pattern, f'"{get_current_column()}"', func_call_code)
+        # func_call_code = re.sub(target_pattern, f'"{preprocessor.args.target_var}"', func_call_code)
 
         # Dynamically execute the function call code
         local_vars = {'df': preprocessor.get_df()}
-        print(f"Debug: func_call_code = '{func_call_code}'")
+        # print(f'DEBUG: func_call_code: {func_call_code}')
         exec(func_call_code, globals(), local_vars)
 
         # Capture the updated DataFrame (if any)
@@ -335,7 +336,7 @@ def exec_stored_func(
 
         pipeline.write(func_call_code)
 
-        return f'Successfully executed function: {func_name}\n\nFunction Output: {output if not isinstance(output, pd.DataFrame) else '[DF UPDATED]'}'
+        return f'Successfully executed function: {func_name}\n\nFunction Output: {output if not isinstance(output, pd.DataFrame) else '[UPDATED DF]'}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
@@ -416,24 +417,6 @@ class Preprocesser:
         self.backup_df = df.copy()
         self.df = df.copy()
 
-    def save_stage_df(self, stage_name):
-        '''
-        Creates a dataframe backup of a specific stage of the workflow for later use.
-        '''
-        self.stages.append({
-            "stage_name": stage_name,
-            "df": self.df.copy()
-        })
-
-    def get_stage_df(self, stage_name):
-        '''
-        Returns the specified stage's dataframe if it exists.
-        '''
-        for stage in self.stages:
-            if stage["stage_name"] == stage_name:
-                return stage["df"]
-        raise Exception(f'Error: Stage Name {stage_name} doesn\'t exist')
-
     def restore_backup_df(self):
         '''
         Rolls the working dataframe back to its last saved version
@@ -446,8 +429,6 @@ class Preprocesser:
 
         temperature: temp for the ChatOpenAI model used in the react agent
         '''
-        global current_column
-
         try:
             # Depending on systems arguments, use either LM Studio's API or OpenAIs'
             is_lms = self.args.llm_platform == 'lm-studio'
@@ -493,12 +474,12 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ["col1", "col2"] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col1', 'col2'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            current_column = column
+            set_current_column(column)
             inputs = {'messages': [('user', AGENT1_IA["AGENT1_START"])]}
             try:
                 stream = agent1.stream(inputs, stream_mode='values')
@@ -506,7 +487,7 @@ class Preprocesser:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_1')
+        save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_1')
 
         #  endregion  ================================================#
         #  region  AGENT2 LOOP                                        #
@@ -518,12 +499,12 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col1', 'col2'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
             # Outlier and Impute Handler Loop
-            current_column = column
+            set_current_column(column)
             inputs = {'messages': [('user', AGENT2_IA["AGENT2_START"])]}
             try:
                 stream = agent2.stream(inputs, stream_mode='values')
@@ -531,7 +512,7 @@ class Preprocesser:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_2')
+        save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_2')
         #  endregion
 
         return self.df # Return the most recent dataframe
@@ -577,8 +558,6 @@ class FeatureEngineer:
 
         temperature: temp for the ChatOpenAI model used in the react agent
         '''
-        global current_column
-    
         try:
             # Depending on systems arguments, use either LM Studio's API or OpenAIs'
             is_lms = self.args.llm_platform == 'lm-studio'
@@ -637,7 +616,7 @@ class FeatureEngineer:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            current_column = column
+            set_current_column(column)
             inputs = {'messages': [('user', AGENT3_IA["AGENT3_START"])]}
             try:
                 stream = agent3.stream(inputs, stream_mode='values')
@@ -645,7 +624,7 @@ class FeatureEngineer:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_3')
+        save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_3')
 
         #  endregion  ================================================#
         #  region  AGENT4 LOOP                                        #
@@ -662,7 +641,7 @@ class FeatureEngineer:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            current_column = column
+            set_current_column(column)
             inputs = {'messages': [('user', AGENT4_IA["AGENT4_START"])]}
             try:
                 stream = agent4.stream(inputs, stream_mode='values')
@@ -670,7 +649,7 @@ class FeatureEngineer:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_4')
+        save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_4')
 
         #  endregion  ================================================#
         #  region  AGENT5 LOOP                                        #
@@ -687,7 +666,7 @@ class FeatureEngineer:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            current_column = column
+            set_current_column(column)
             inputs = {'messages': [('user', AGENT5_IA["AGENT5_START"])]}
             try:
                 stream = agent5.stream(inputs, stream_mode='values')
@@ -695,7 +674,7 @@ class FeatureEngineer:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_5')
+        save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_5')
 
         #  endregion  ================================================#
         #  region  AGENT6 LOOP                                        #
@@ -712,7 +691,7 @@ class FeatureEngineer:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            current_column = column
+            set_current_column(column)
             inputs = {'messages': [('user', AGENT6_IA["AGENT6_START"])]}
             try:
                 stream = agent6.stream(inputs, stream_mode='values')
@@ -720,7 +699,7 @@ class FeatureEngineer:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        preprocessor.save_stage_df('POST_AGENT_6')
+        save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_6')
         #  endregion
         
         # Return the most recent dataframe after all agent loops are completed
@@ -753,7 +732,6 @@ def save_df_to_csv(args, df, csv_name=None):
         print(f'Dataframe saved to {csv_path}')
     except Exception as e:
         print(f'Error saving dataframe: {e}')
-
 
 def init_pyfiles(args):
     '''
@@ -790,10 +768,12 @@ def init_global_objects(args, df):
     args: system arguments
     df: pandas dataframe
     '''
-    global preprocessor, feature_engineer
+    global preprocessor, feature_engineer, target_column
 
     preprocessor = Preprocesser(args, df)
     feature_engineer = FeatureEngineer(args, df)
+
+    target_column = args.target_var
 
 
 def save_pipeline_generation(args):

@@ -1,8 +1,5 @@
 # No unreviewed generated code is contained in this file
 
-# Every function should ideally have a [description]: field within its docstring
-
-
 from word2number import w2n
 from collections import Counter
 import pandas as pd
@@ -10,11 +7,14 @@ import numpy as np
 from sklearn.impute import KNNImputer
 import json
 
+# Shared State Getters
+from utils import get_dataframe_stage, get_target_column, get_current_column
+
 # ============================================================================================#
 # region                   Evaluate for Drop Null Heavy Column                                #
 #=============================================================================================#
 
-def evaluate_column_for_drop(df, column, target, drop_null_threshold=0.5, target_corr_threshold=0.3):
+def evaluate_column_for_drop(df, drop_null_threshold=0.5, target_corr_threshold=0.3):
     """
     Evaluates a column for potential dropping based on its missingness and data relationships.
     
@@ -37,6 +37,9 @@ def evaluate_column_for_drop(df, column, target, drop_null_threshold=0.5, target
             - 'recommended_action': "drop" or "keep", with an explanation.
             - 'details': All computed metrics.
     """
+    column = get_current_column()
+    target = get_target_column()
+
     # Basic counts and null percentage (based on non-null entries)
     total_count = len(df)
     non_null_count = df[column].notnull().sum()
@@ -116,7 +119,7 @@ def evaluate_column_for_drop(df, column, target, drop_null_threshold=0.5, target
     return metrics
 
 
-def drop_column(df, column):
+def drop_column(df):
     """
     Drops a specified column from the DataFrame.
 
@@ -127,6 +130,8 @@ def drop_column(df, column):
     Returns:
         pd.DataFrame: The DataFrame with the specified column removed.
     """
+    column = get_current_column()
+    
     # Ensure the column exists in the DataFrame.
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
@@ -141,7 +146,7 @@ def drop_column(df, column):
 #  region              COLUMN NUM AND ALIAS NULL CHECKERES                                #
 #=============================================================================================#
 
-def check_percent_numeric(df, column, numeric_threshold=0.9):
+def check_percent_numeric(df, numeric_threshold=0.9):
     """
     Checks whether a column is text/object or if it is 90%+ numeric,
     providing a comment on its classification.
@@ -154,6 +159,8 @@ def check_percent_numeric(df, column, numeric_threshold=0.9):
     Returns:
         str: A comment describing whether the column is text/object or numeric.
     """
+    column = get_current_column()
+
     # Ensure the column exists
     if column not in df.columns:
         return f"Column '{column}' does not exist in the DataFrame."
@@ -180,7 +187,7 @@ def check_percent_numeric(df, column, numeric_threshold=0.9):
         return f"Column '{column}' is less than 90% numeric and should be treated as text/object (Numeric Ratio: {numeric_ratio:.2%})."
 
 
-def check_for_text_nums(df, column):
+def check_for_text_nums(df):
     """
     Checks if a column contains text entries that could represent written numbers.
 
@@ -191,6 +198,8 @@ def check_for_text_nums(df, column):
     Returns:
         bool: True if the column contains text that could represent written numbers, False otherwise.
     """
+    column = get_current_column()
+
     # Ensure the column exists
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
@@ -208,7 +217,7 @@ def check_for_text_nums(df, column):
     return False  # No text numbers found
 
 # PLEASE UPDATE TO INCLUDE LIST OF UPDATEDED/CONVERTED ENTRIES TO NUMBERS 
-def convert_text_nums_to_numeric(df, column):
+def convert_text_nums_to_numeric(df):
     """
     Converts written numbers in a column to numeric values.
 
@@ -219,6 +228,8 @@ def convert_text_nums_to_numeric(df, column):
     Returns:
         pd.DataFrame: The updated DataFrame with written numbers converted.
     """
+    column = get_current_column()
+
     # Ensure the column exists
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
@@ -237,7 +248,7 @@ def convert_text_nums_to_numeric(df, column):
 
 
 
-def describe_and_clean_non_numeric_entries(df, column):
+def describe_and_clean_non_numeric_entries(df):
     """
     Identifies traditional alias nulls, converts them to proper NaN values, and converts
     all remaining non-numeric (text) entries to NaN. It also returns a summary of these changes.
@@ -251,6 +262,8 @@ def describe_and_clean_non_numeric_entries(df, column):
             - 'alias_null_summary': Summary of alias nulls found and converted, including counts of each.
             - 'unique_review_list': List of non-numeric entries that were found and converted.
     """
+    column = get_current_column()
+
     # Ensure the column exists
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
@@ -299,7 +312,7 @@ def describe_and_clean_non_numeric_entries(df, column):
     }
 
 
-def convert_column_to_numeric(df, column):
+def convert_column_to_numeric(df):
     """
     Converts the column to numeric (either int or float) based on the data.
 
@@ -310,6 +323,8 @@ def convert_column_to_numeric(df, column):
     Returns:
         pd.DataFrame: The DataFrame with the converted column.
     """
+    column = get_current_column()
+
     # Ensure the column exists
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
@@ -325,7 +340,7 @@ def convert_column_to_numeric(df, column):
 
 
 # This is applied to regular Object Columns
-def convert_common_alias_nulls(df, column):
+def convert_common_alias_nulls(df):
     """
     Converts common alias null values in a text column to proper NaN values,
     and prints a summary of how many of each alias null were found and converted.
@@ -337,6 +352,8 @@ def convert_common_alias_nulls(df, column):
     Returns:
         pd.DataFrame: The DataFrame with the specified column updated.
     """
+    column = get_current_column()
+
     # Ensure the column exists
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
@@ -364,7 +381,7 @@ def convert_common_alias_nulls(df, column):
     return df
 
 
-def display_most_common_unique_entries(df, column, max_display=40):
+def display_most_common_unique_entries(df, max_display=40):
     """
     Displays the most common unique entries in a column, limited to the top `max_display` most common entries.
     It only shows the entries without counts.
@@ -377,6 +394,8 @@ def display_most_common_unique_entries(df, column, max_display=40):
     Returns:
         list: A list of the top unique entries (without counts), up to `max_display` entries.
     """
+    column = get_current_column()
+
     # Ensure the column exists
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
@@ -389,7 +408,7 @@ def display_most_common_unique_entries(df, column, max_display=40):
 
     return top_entries
 
-def convert_uncommon_alias_nulls(df, column, alias_nulls_path="json_lib/alias_nulls_list.json"):
+def convert_uncommon_alias_nulls(df, alias_nulls_path="json_lib/alias_nulls_list.json"):
     """
     Converts all alias null values stored in the JSON file to proper NaN values in the specified column of the DataFrame.
 
@@ -401,6 +420,8 @@ def convert_uncommon_alias_nulls(df, column, alias_nulls_path="json_lib/alias_nu
     Returns:
         pd.DataFrame: The updated DataFrame with the alias nulls converted to NaN.
     """
+    column = get_current_column()
+    
     # Ensure the column exists in the DataFrame
     if column not in df.columns:
         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")

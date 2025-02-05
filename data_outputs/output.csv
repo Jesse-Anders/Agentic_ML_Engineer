@@ -20,7 +20,7 @@ col1,col2,col3,col4,col5,target
 9.0,4.0,34,Sunflower,,1
 57.0,5.0,23,Tiger,,0
 43.0,3.0,34,Umbrella,,0
-,26.0,56,missing entry,,1
+4.127035663087932,26.0,56,missing entry,,1
 23.0,3.0,67,Watermelon,,0
 54.0,3.0,4,Xylophone,5.0,1
 67.0,4.0,47,Yawn,5.0,1
@@ -29,14 +29,14 @@ col1,col2,col3,col4,col5,target
 89.0,78.0,14,Banana,,0
 8.0,5.0,25,Carrot,,1
 97.0,45.6,36,Dog,2.0,0
-,78.0,47,Elephant,,1
+5.617162431359034,78.0,47,Elephant,,1
 453.0,4.0,58,no data,,0
-,4.0,96,Giraffe,5.0,1
+5.596529420027151,4.0,96,Giraffe,5.0,1
 4.0,4.0,9,Hat,,0
 56.0,5.0,78,Ice cream,,0
 8.0,6.0,67,Jellyfish,5.0,1
 6.0,3.0,564,Kite,,1
-,4.0,122,Lion,,0
+18.79122310944699,4.0,122,Lion,,0
 9.0,5.0,34,missing entry,,0
 34.0,4.0,,Notebook,,1
 76.0,3.0,12,Orange,,0
@@ -44,7 +44,7 @@ col1,col2,col3,col4,col5,target
 34.0,6.0,7,missing entry,5.0,1
 4.0,7.0,89,Rainbow,,0
 57.0,8.0,65,Sunflower,,0
-6.0,,53,Tiger,2.0,0
+6.0,7.964940674804327,53,Tiger,2.0,0
 87.0,76.0,42,Umbrella,,1
 59.0,54.0,31,Volcano,,0
 2.0,3.0,23,Watermelon,,1
@@ -66,9 +66,9 @@ col1,col2,col3,col4,col5,target
 6.0,3.0,Missing,Mountain,5.0,1
 7.0,45.0,89,Notebook,,0
 8.0,6.0,65,Orange,,1
-,7.0,53,Piano,,0
+15.786633008495897,7.0,53,Piano,,0
 76.0,8.0,42,Queen,,1
-54.0,,31,Rainbow,2.0,0
+54.0,4.975953294249825,31,Rainbow,2.0,0
 3.0,76.0,23,Sunflower,,0
 23.0,54.0,16,Tiger,,1
 4.0,3.0,27,Umbrella,,1
@@ -76,7 +76,7 @@ col1,col2,col3,col4,col5,target
 67.0,4.0,84,Watermelon,,0
 6.0,5.0,95,Xylophone,5.0,1
 54.0,67.0,Data missing,Yawn,,0
-,6.0,63,Zebra,5.0,1
+19.578109689845878,6.0,63,Zebra,5.0,1
 56.0,34.0,52,Apple,,1
 7.0,23.0,1,Banana,,0
 8.0,12.0,2,Carrot,,0

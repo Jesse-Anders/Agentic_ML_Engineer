@@ -10,8 +10,17 @@ from pipeline_lib import *
 
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
-df = evaluate_column_for_drop(df, "col1", "target")
-df = data_type_check(df, "col1")
-df = evaluate_column_for_drop(df, "col2", "target")
-df = data_type_check(df, "col2")
-# Column 'col2' has a data type of 'float64', which is not an object type.
+df = evaluate_column_for_drop(df)
+df = data_type_check(df)
+df = evaluate_column_for_drop(df)
+df = data_type_check(df)
+df = data_type_check(df)
+df = determine_numeric_or_categorical(df)
+df = evaluate_outliers(df)
+df = evaluate_imputation_strategy(df)
+df = dynamic_stochastic_median_impute(df)
+df = data_type_check(df)
+df = determine_numeric_or_categorical(df)
+df = evaluate_outliers(df)
+df = evaluate_imputation_strategy(df)
+df = dynamic_stochastic_median_impute(df)
