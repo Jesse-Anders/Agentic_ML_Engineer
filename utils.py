@@ -1,15 +1,15 @@
 from langchain_core.tools import tool
 
-from agent_instructions.agent1_inst import *
-from agent_instructions.agent2_inst import *
-from agent_instructions.agent3_inst import *
+from agent_instructions.agent1_inst import AGENT1_IA
+from agent_instructions.agent2_inst import AGENT2_IA
+from agent_instructions.agent3_inst import AGENT3_IA
+from agent_instructions.agent4_inst import AGENT4_IA
+from agent_instructions.agent5_inst import AGENT5_IA
+from agent_instructions.agent6_inst import AGENT6_IA
 
 #=============================================================================================#
 #  region                              STATIC GlOBALS                                         #
 #=============================================================================================#
-
-# Column Vars
-TARGET_VAR_NAME = None
 
 # directory path globals
 DATA_INPUT_DIR = 'data_inputs'
@@ -25,7 +25,7 @@ ALIAS_NULLS_PATH = "json_lib/alias_nulls_list.json"
 
 # boilerplate file code
 PIPELINE_BOILERPLATE = '''
-# generated_pipeline.py
+# generated_pipeline
 
 # This file is intended to be a reusable data pipeline.
 

@@ -1,9 +1,9 @@
-AGENT3_IA = {
+AGENT6_IA = {
 #=============================================================================================#
-#    region                AGENT3                                                             #
+#    region                AGENT6                                                             #
 #=============================================================================================#
-    "AGENT3_START": (
-        "Tell me that you've read the Agent 3 instructions and END PROCESS.\n"
+    "AGENT6_START": (
+        "Tell me that you've read the Agent 6 instructions and END PROCESS.\n"
     ),
     #endregion
 }

@@ -5,6 +5,9 @@
 from runtime_lib.static_agent_libs.agent1_static_lib import *
 from runtime_lib.static_agent_libs.agent2_static_lib import *
 from runtime_lib.static_agent_libs.agent3_static_lib import *
+from runtime_lib.static_agent_libs.agent4_static_lib import *
+from runtime_lib.static_agent_libs.agent5_static_lib import *
+from runtime_lib.static_agent_libs.agent6_static_lib import *
 
 from word2number import w2n
 from collections import Counter
