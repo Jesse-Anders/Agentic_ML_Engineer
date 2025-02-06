@@ -6,6 +6,11 @@ import pandas as pd
 import numpy as np
 from sklearn.impute import KNNImputer
 import json
+import sys
+import os
+
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Shared State Getters
 from utils import get_dataframe_stage, get_target_column, get_current_column

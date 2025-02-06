@@ -17,6 +17,23 @@ from typing import Annotated
 from utils import *
 from runtime_lib.static_lib import *
 
+from runtime_lib.static_agent_libs.agent1_static_lib import *
+from runtime_lib.static_agent_libs.agent2_static_lib import *
+from runtime_lib.static_agent_libs.agent3_static_lib import *
+from runtime_lib.static_agent_libs.agent4_static_lib import *
+from runtime_lib.static_agent_libs.agent5_static_lib import *
+from runtime_lib.static_agent_libs.agent6_static_lib import *
+
+import runtime_lib.static_agent_libs.agent1_static_lib as agent1
+import runtime_lib.static_agent_libs.agent2_static_lib as agent2
+import runtime_lib.static_agent_libs.agent3_static_lib as agent3
+import runtime_lib.static_agent_libs.agent4_static_lib as agent4
+import runtime_lib.static_agent_libs.agent5_static_lib as agent5
+import runtime_lib.static_agent_libs.agent6_static_lib as agent6
+
+# List of agent modules
+AGENT_MODULES = [agent1, agent2, agent3, agent4, agent5, agent6]
+
 # INSTRUCTION ARCHIVE LIST: Used in the get_inst tool
 IA_LIST = [INST_ARCHIVE, AGENT1_IA, AGENT2_IA, AGENT3_IA, AGENT4_IA, AGENT5_IA, AGENT6_IA]
 
@@ -110,14 +127,14 @@ class PyFile:
         func_name: name of the function to be returned
         '''
         try:
-            module = self.load_module()
-            if not module:
-                print('Module failed to load')
-                return
-            
-            return getattr(module, func_name)
-        except Exception:
-            return -1 # error code to be caught within tool functions
+            for module in AGENT_MODULES:
+                if hasattr(module, func_name):
+                    return getattr(module, func_name)
+            print(f"Function '{func_name}' not found in any module.")
+            return -1
+        except Exception as e:
+            print(f'Error loading function: {e}')
+            return -1  # Error code to be caught within tool functions
 
     def get_func_objects(self):
         '''
@@ -159,31 +176,6 @@ class PyFile:
         except Exception as e:
             print(f'Error extracting function list from libraries: {e}')
             return
-
-    def load_module(self):
-        '''
-        Dynamically loads the module so that code newly generated or static is imported locally
-        '''
-        try:
-            # Generate a module name from the file path (optional, can be arbitrary)
-            module_name = self.path.split("/")[-1].replace(".py", "")
-            
-            # Create a module spec
-            spec = importlib.util.spec_from_file_location(module_name, self.path)
-            if spec is None:
-                raise ImportError(f"Cannot create module spec for file: {self.path}")
-            
-            # Create a module object
-            module = importlib.util.module_from_spec(spec)
-            
-            # Execute the module
-            spec.loader.exec_module(module)
-            
-            return module
-        
-        except Exception as e:
-            print(f"Error loading module from path {self.path}: {e}")
-            return None
 
     def read(self):
         '''
@@ -280,8 +272,8 @@ def logger(
 
 @tool
 def exec_stored_func(
-    func_call_code: Annotated[str, '''The line of code to call the function. Include all necessary explicit parameter values except for 'df', the df variable will be passed in locally.
-                              Always include "output = " before the call to catch return values. Format example: output = func_name(df)''']
+    func_call_code: Annotated[str, '''The line of code to call the function. Only include the df parameter.
+                              Always write "output = " before the function call to catch return values. Format example: output = func_name(df)''']
 ) -> str:
     '''
     Executes a static function on the current working dataframe and writes the function call to the pipeline file.
@@ -293,7 +285,9 @@ def exec_stored_func(
         return 'Error: Could not extract function name from the provided code.'
     
     func_name = match.group(1)
-    print(f"Agent is attempting to run {func_name} on the '{get_current_column()}' column")
+
+    # This line causes errors because it leads agents to pass the column name they read in the print statement as a parameter when they shouldn't.
+    # print(f"Agent is attempting to run {func_name} on the '{get_current_column()}' column")
 
     try:
         func = static_lib.get_func(func_name)
@@ -301,11 +295,11 @@ def exec_stored_func(
         return f'Error loading function from file: {e}'
 
     if func == -1 or func == None: # -1 is the error code from lib.get_func
-        return f'Error loading function from file: {e}'
+        return f'Function is None[{func}] and could not be retrieved'
         
     try:
         # Regex to identify 'column' and 'target' as arguments without explicit values
-        # column_pattern = r'\bcolumn\b(?=(\s*,|\s*\)|$))'
+        # column_pattern = r'\bcolumn\b(?=(\s*,|\s*\)|$))'  
         # target_pattern = r'\btarget\b(?=(\s*,|\s*\)|$))'
 
         # # Replace 'column' and 'target' with their respective global values
@@ -330,11 +324,12 @@ def exec_stored_func(
         return f'Error executing function locally: {e}'
 
     try:
-        # Write the function call code to the pipeline file
-        if func_call_code[:8] == 'output =':
-            func_call_code = 'df =' + func_call_code[8:]
+        # Write the function call code to the pipeline file if it makes changes to the df
+        if func_name in PIPELINE_WRITE_LIST:
+            if func_call_code[:8] == 'output =':
+                func_call_code = 'df =' + func_call_code[8:]
 
-        pipeline.write(func_call_code)
+            pipeline.write(func_call_code)
 
         return f'Successfully executed function: {func_name}\n\nFunction Output: {output if not isinstance(output, pd.DataFrame) else '[UPDATED DF]'}'
     except Exception as e:
@@ -493,6 +488,7 @@ class Preprocesser:
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             set_current_column(column)
+            pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT1_IA["AGENT1_START"])]}
             try:
                 stream = agent1.stream(inputs, stream_mode='values')
@@ -518,6 +514,7 @@ class Preprocesser:
             
             # Outlier and Impute Handler Loop
             set_current_column(column)
+            pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT2_IA["AGENT2_START"])]}
             try:
                 stream = agent2.stream(inputs, stream_mode='values')
@@ -630,6 +627,7 @@ class FeatureEngineer:
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             set_current_column(column)
+            pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT3_IA["AGENT3_START"])]}
             try:
                 stream = agent3.stream(inputs, stream_mode='values')
@@ -655,6 +653,7 @@ class FeatureEngineer:
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             set_current_column(column)
+            pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT4_IA["AGENT4_START"])]}
             try:
                 stream = agent4.stream(inputs, stream_mode='values')
@@ -680,6 +679,7 @@ class FeatureEngineer:
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             set_current_column(column)
+            pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT5_IA["AGENT5_START"])]}
             try:
                 stream = agent5.stream(inputs, stream_mode='values')
@@ -705,6 +705,7 @@ class FeatureEngineer:
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             set_current_column(column)
+            pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT6_IA["AGENT6_START"])]}
             try:
                 stream = agent6.stream(inputs, stream_mode='values')

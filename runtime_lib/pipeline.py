@@ -3,24 +3,29 @@
 
 # This file is intended to be a reusable data pipeline.
 
-import pandas as pd
+import pandas as pd, sys, os
 
 from static_lib import *
 from pipeline_lib import *
 
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+
+from utils import set_current_column
+from runtime_lib.static_agent_libs.agent1_static_lib import *
+from runtime_lib.static_agent_libs.agent2_static_lib import *
+from runtime_lib.static_agent_libs.agent3_static_lib import *
+from runtime_lib.static_agent_libs.agent4_static_lib import *
+from runtime_lib.static_agent_libs.agent5_static_lib import *
+from runtime_lib.static_agent_libs.agent6_static_lib import *
+
+# SYSTEM GENERATION START:
+
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
-df = evaluate_column_for_drop(df)
-df = data_type_check(df)
-df = evaluate_column_for_drop(df)
-df = data_type_check(df)
-df = data_type_check(df)
-df = determine_numeric_or_categorical(df)
-df = evaluate_outliers(df)
-df = evaluate_imputation_strategy(df)
-df = dynamic_stochastic_median_impute(df)
-df = data_type_check(df)
-df = determine_numeric_or_categorical(df)
-df = evaluate_outliers(df)
-df = evaluate_imputation_strategy(df)
+set_current_column("col1")
+set_current_column("col2")
+# The data type of the column is not 'object'. Ending process.
+set_current_column("col1")
+set_current_column("col2")
 df = dynamic_stochastic_median_impute(df)

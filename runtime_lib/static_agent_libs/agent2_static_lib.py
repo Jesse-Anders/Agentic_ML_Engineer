@@ -5,6 +5,11 @@ import numpy as np
 from sklearn.impute import KNNImputer
 from scipy.stats import chi2_contingency
 import json
+import sys
+import os
+
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Shared State Getters
 from utils import get_dataframe_stage, get_target_column, get_current_column
@@ -87,9 +92,11 @@ def if_float_is_really_int_convert(df):
     non_null_values = df[column].dropna()  # Exclude null values
     if (non_null_values % 1 == 0).all():  # Check if all values are whole numbers
         df[column] = df[column].astype("Int64")  # Use pandas nullable integer type
-        return df, f"Column '{column}' has been converted to integer."
+        # return df, f"Column '{column}' has been converted to integer." # cannot return additional values along with df
+        return df
     else:
-        return df, f"Column '{column}' remains as float."
+        # return df, f"Column '{column}' remains as float." # cannot return additional values along with df
+        return df
 
 # endregion
 #=============================================================================================#

@@ -19,6 +19,20 @@ _shared_state = {
     "nlp_columns": []
 }
 
+PIPELINE_WRITE_LIST = [ # They're in chronological order (agent1_static_lib funcs, agent2_static_lib funcs...)
+    "drop_column",
+    "convert_text_nums_to_numeric",
+    "convert_column_to_numeric",
+    "convert_common_alias_nulls",
+    "convert_uncommon_alias_nulls",
+    "winsorize_column",
+    "log_transform_column",
+    "knn_impute_with_rounding",
+    "dynamic_stochastic_median_impute",
+    "convert_nulls_to_category",
+    "impute_categorical_numeric_mode"
+]
+
 #  endregion  ================================================================================#
 #  region                                Shared State Handling                                #
 #=============================================================================================#
@@ -51,11 +65,11 @@ def get_target_column():
 def set_target_column(column):
     _shared_state["target_column"] = column
 
-def add_nlp_column(column):
-    _shared_state["nlp_columns"].append(column)
-    
 def get_nlp_columns():
     return _shared_state["nlp_columns"]
+
+def add_nlp_column(column):
+    _shared_state["nlp_columns"].append(column)
 
 #  endregion  ================================================================================#
 #  region                              STATIC GlOBALS                                         #
@@ -79,10 +93,23 @@ PIPELINE_BOILERPLATE = '''
 
 # This file is intended to be a reusable data pipeline.
 
-import pandas as pd
+import pandas as pd, sys, os
 
 from static_lib import *
 from pipeline_lib import *
+
+# Add the project root directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+
+from utils import set_current_column
+from runtime_lib.static_agent_libs.agent1_static_lib import *
+from runtime_lib.static_agent_libs.agent2_static_lib import *
+from runtime_lib.static_agent_libs.agent3_static_lib import *
+from runtime_lib.static_agent_libs.agent4_static_lib import *
+from runtime_lib.static_agent_libs.agent5_static_lib import *
+from runtime_lib.static_agent_libs.agent6_static_lib import *
+
+# SYSTEM GENERATION START:
 
 '''
 
