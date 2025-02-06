@@ -15,12 +15,19 @@ from agent_instructions.agent6_inst import AGENT6_IA
 _shared_state = {
     "current_column": None,
     "target_column": None,
-    "dataframe_stages": []
+    "dataframe_stages": [],
+    "nlp_columns": []
 }
 
 #  endregion  ================================================================================#
 #  region                                Shared State Handling                                #
 #=============================================================================================#
+
+def get_dataframe_stage(stage_name):
+    for stage in _shared_state["dataframe_stages"]:
+        if stage['stage_name'] == stage_name:
+            return stage['df']
+    raise Exception(f"A dataframe stage does not exist with this stage_name: {stage_name}")
 
 def save_dataframe_stage(df, stage_name):
     for stage in _shared_state["dataframe_stages"]:
@@ -32,25 +39,23 @@ def save_dataframe_stage(df, stage_name):
         "df": df.copy()
     })
 
-def get_dataframe_stage(stage_name):
-    for stage in _shared_state["dataframe_stages"]:
-        if stage['stage_name'] == stage_name:
-            return stage['df']
-    raise Exception(f"A dataframe stage does not exist with this stage_name: {stage_name}")
+def get_current_column():
+    return _shared_state["current_column"]
 
-# Setters
 def set_current_column(column):
     _shared_state["current_column"] = column
+
+def get_target_column():
+    return _shared_state["target_column"]
 
 def set_target_column(column):
     _shared_state["target_column"] = column
 
-# Getters
-def get_current_column():
-    return _shared_state["current_column"]
-
-def get_target_column():
-    return _shared_state["target_column"]
+def add_nlp_column(column):
+    _shared_state["nlp_columns"].append(column)
+    
+def get_nlp_columns():
+    return _shared_state["nlp_columns"]
 
 #  endregion  ================================================================================#
 #  region                              STATIC GlOBALS                                         #

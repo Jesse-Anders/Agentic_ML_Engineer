@@ -381,11 +381,24 @@ def append_alias_nulls(
     except Exception as e:
         return f"An unexpected error occurred: {e}"
 
+@tool
+def add_nlp_column(
+    column: Annotated[str, 'the name of the NLP column being added.']
+) -> str:
+    '''
+    Appends a new NLP column to the global list of NLP columns.
+    '''
+    if column not in get_nlp_columns:
+        add_nlp_column(column)
+        return(f'Successfully add column to NLP columns: {column}')
+    return(f'Column already in NLP columns: {column}')
+
 tools = [
     get_inst,
     logger,
     exec_stored_func,
-    append_alias_nulls
+    append_alias_nulls,
+    add_nlp_column
 ]
 
 
