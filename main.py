@@ -331,7 +331,7 @@ def exec_stored_func(
 
             pipeline.write(func_call_code)
 
-        return f'Successfully executed function: {func_name}\n\nFunction Output: {output if not isinstance(output, pd.DataFrame) else '[UPDATED DF]'}'
+        return f'Successfully executed function: {func_name}\n\nFunction Output: {output if not isinstance(output, pd.DataFrame) else "[UPDATED DF]"}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
@@ -482,7 +482,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col1', 'col2'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -508,7 +508,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col1', 'col2'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -612,7 +612,7 @@ class FeatureEngineer:
             print(f'Error creating agent6 : A LanGraph prebuit ReAct agent: {e}')
 
         #  endregion  ================================================#
-        #  region  AGENT3 LOOP                                        #
+        #  region  AGENT3 LOOP  Preliminary NLP                       #
         #=============================================================#      
 
         for column in feature_engineer.get_df().columns:
@@ -621,7 +621,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col3','col6'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             

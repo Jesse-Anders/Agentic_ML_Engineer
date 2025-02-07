@@ -23,9 +23,6 @@ from runtime_lib.static_agent_libs.agent6_static_lib import *
 
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
-set_current_column("col1")
-set_current_column("col2")
-# The data type of the column is not 'object'. Ending process.
-set_current_column("col1")
-set_current_column("col2")
-df = dynamic_stochastic_median_impute(df)
+set_current_column("col3")
+# Sample entries from the column: [58, 1, 67, 96, 34, 36, 32, 27, 45, 54, 73, 78, 31, 564, 23, 31, 95, 5, 1, 7, 23, 65, 18, 16, 67, 'Missing', 65, 52, 'eighty seven', 5]. The entries include both numeric values and a few words, but overall they do not represent typical NLP data as they are largely numeric or very short.
+set_current_column("col6")
