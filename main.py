@@ -31,8 +31,6 @@ import runtime_lib.static_agent_libs.agent4_static_lib as agent4
 import runtime_lib.static_agent_libs.agent5_static_lib as agent5
 import runtime_lib.static_agent_libs.agent6_static_lib as agent6
 
-from shared_agents import agent3_1  # Import the variable (it's mutable)
-
 # List of agent modules
 AGENT_MODULES = [agent1, agent2, agent3, agent4, agent5, agent6]
 
