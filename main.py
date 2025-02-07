@@ -309,7 +309,8 @@ def exec_stored_func(
         # func_call_code = re.sub(target_pattern, f'"{preprocessor.args.target_var}"', func_call_code)
 
         # Dynamically execute the function call code
-        local_vars = {'df': preprocessor.get_df()}
+        df = preprocessor.get_df() if preprocessor.active else feature_engineer.get_df()
+        local_vars = {'df': df}
         # print(f'DEBUG: func_call_code: {func_call_code}')
         exec(func_call_code, globals(), local_vars)
 
@@ -319,7 +320,10 @@ def exec_stored_func(
         # Update the preprocessor's DataFrame if the function modifies it in place or returns it
         updated_df = output if isinstance(output, pd.DataFrame) else local_vars.get('df', None)
         if isinstance(updated_df, pd.DataFrame):
-            preprocessor.update_df(updated_df)
+            if preprocessor.active:
+                preprocessor.update_df(updated_df)
+            elif feature_engineer.active:
+                feature_engineer.update_df(updated_df)
         else:
             print('Error updating local dataframe')
     except Exception as e:
@@ -406,6 +410,7 @@ tools = [
 class Preprocesser:
     def __init__(self, args, df):
         self.args = args
+        self.active = False
 
         self.original_df = df.copy()
         self.backup_df = df.copy()
@@ -439,6 +444,10 @@ class Preprocesser:
 
         temperature: temp for the ChatOpenAI model used in the react agent
         '''
+        
+        # Toggle On Activity Flag
+        self.active = True
+
         try:
             # Depending on systems arguments, use either LM Studio's API or OpenAIs'
             is_lms = self.args.llm_platform == 'lm-studio'
@@ -527,6 +536,9 @@ class Preprocesser:
         save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_2')
         #  endregion
 
+        # Toggle Off Activity Flag
+        self.active = False
+
         return self.df # Return the most recent dataframe
     
     def update_df(self, altered_df):
@@ -545,6 +557,7 @@ class Preprocesser:
 class FeatureEngineer:
     def __init__(self, args, df):
         self.args = args
+        self.active = False
         
         self.original_df = df.copy()
         self.backup_df = df.copy()
@@ -572,6 +585,10 @@ class FeatureEngineer:
 
         temperature: temp for the ChatOpenAI model used in the react agent
         '''
+
+        # Toggle On Activity Flag
+        self.active = True
+        
         try:
             # Depending on systems arguments, use either LM Studio's API or OpenAIs'
             is_lms = self.args.llm_platform == 'lm-studio'
@@ -726,9 +743,21 @@ class FeatureEngineer:
 
         save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_6')
         #  endregion
+
+        # Toggle Off Activity Flag
+        self.active = False
         
         # Return the most recent dataframe after all agent loops are completed
         return self.df
+    
+    def update_df(self, altered_df):
+        '''
+        Updates the working dataframe so that the wordflow can continue.
+
+        altered_df: altered version of the feature_engineer dataframe
+        '''
+        self.backup_df = self.df.copy()
+        self.df = altered_df.copy()
 
 #  endregion  ================================================================================#
 #  region                                File Management                                      #
