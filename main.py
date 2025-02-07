@@ -31,6 +31,8 @@ import runtime_lib.static_agent_libs.agent4_static_lib as agent4
 import runtime_lib.static_agent_libs.agent5_static_lib as agent5
 import runtime_lib.static_agent_libs.agent6_static_lib as agent6
 
+from shared_agents import agent3_1  # Import the variable (it's mutable)
+
 # List of agent modules
 AGENT_MODULES = [agent1, agent2, agent3, agent4, agent5, agent6]
 
@@ -547,6 +549,8 @@ class FeatureEngineer:
         self.original_df = df.copy()
         self.backup_df = df.copy()
         self.df = df.copy()
+        
+        # self.stages = [] # this was in preprocessor should it be here?
 
     def get_df(self):
         '''
@@ -588,10 +592,16 @@ class FeatureEngineer:
         #=======================================================# 
 
         try:
-            # AGENT3 = Preliminary NLP
+            # AGENT3 = NLP Preliminary 
             agent3 = create_react_agent(model, tools)                                                                       
         except Exception as e:
             print(f'Error creating agent3 : A LanGraph prebuit ReAct agent: {e}')
+        
+        try:
+            # AGENT3_1 = NLP Row Iterator
+            agent3_1 = create_react_agent(model, tools)                                                                       
+        except Exception as e:
+            print(f'Error creating agent3_1 : A LanGraph prebuit ReAct agent: {e}')
 
         try:
             # AGENT4 = Column-wise / Categorical FE
@@ -621,11 +631,10 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col3','col6'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col6'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
-            # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
             set_current_column(column)
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT3_IA["AGENT3_START"])]}
@@ -633,9 +642,11 @@ class FeatureEngineer:
                 stream = agent3.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
-                print(f'Error during stream: {e}')
+                print(f'Error during stream: {e}')          
 
         save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_3')
+
+
 
         #  endregion  ================================================#
         #  region  AGENT4 LOOP                                        #
