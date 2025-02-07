@@ -16,7 +16,8 @@ _shared_state = {
     "current_column": None,
     "target_column": None,
     "dataframe_stages": [],
-    "nlp_columns": []
+    "nlp_columns": [],
+    "agent3_1": None
 }
 
 PIPELINE_WRITE_LIST = [ # They're in chronological order (agent1_static_lib funcs, agent2_static_lib funcs...)
@@ -70,6 +71,12 @@ def get_nlp_columns():
 
 def add_nlp_column(column):
     _shared_state["nlp_columns"].append(column)
+
+def get_agent3_1():
+    return _shared_state["agent3_1"]
+
+def set_agent3_1(agent):
+    _shared_state["agent3_1"] = agent
 
 #  endregion  ================================================================================#
 #  region                              STATIC GlOBALS                                         #

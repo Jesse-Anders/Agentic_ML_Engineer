@@ -679,7 +679,8 @@ class FeatureEngineer:
         
         try:
             # AGENT3_1 = NLP Row Iterator
-            agent3_1 = create_react_agent(model, tools)                                                                       
+            agent3_1 = create_react_agent(model, tools)
+            set_agent3_1(agent3_1)
         except Exception as e:
             print(f'Error creating agent3_1 : A LanGraph prebuit ReAct agent: {e}')
 
