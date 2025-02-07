@@ -99,3 +99,11 @@ Working to create comprehensive Impute functions. Trying to figure out robust im
 2/1/25
 3 Hour Coding Session
 Gpto1 Code Review of impute functions. Refining and rebuilding functions from 1/31/25 coding session.
+
+2/4/25
+3 Hour Coding 
+continued Refine and finally implementation of Number column outlier and impute functions. Ahh!
+
+2/6/25
+2 hour
+Testing new FE agents and functions. mostly debugging FE agents not being able to effect df yet.
