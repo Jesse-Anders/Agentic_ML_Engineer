@@ -271,10 +271,25 @@ def logger(
         return f'LOGGED Message: {message}'
     except Exception as e:
         return f'Error logging message: {e}'
+    
+@tool
+def write_generated_func(
+    code: Annotated[str, 'string of the code being written to the sandbox.py file']
+) -> str:
+    '''
+    Writes the given code to the sandbox.
+    '''
+    sandbox.reset() # clear any leftover output
+
+    try:
+        sandbox.write(code + '\n')
+        return 'Successfully added function to the sandbox'
+    except Exception as e:
+        return f'Error writing generated function: {e}'
 
 @tool
 def exec_stored_func(
-    func_call_code: Annotated[str, '''The line of code to call the function. Only include the df parameter.
+    func_call_code: Annotated[str, '''The line of code to call the function. Only include the df parameter unless instructed otherwise.
                               Always write "output = " before the function call to catch return values. Format example: output = func_name(df)''']
 ) -> str:
     '''
@@ -288,8 +303,7 @@ def exec_stored_func(
     
     func_name = match.group(1)
 
-    # This line causes errors because it leads agents to pass the column name they read in the print statement as a parameter when they shouldn't.
-    # print(f"Agent is attempting to run {func_name} on the '{get_current_column()}' column")
+    print(f"Agent is attempting to run {func_name} on the '{get_current_column()}' column")
 
     try:
         func = static_lib.get_func(func_name)
@@ -300,18 +314,9 @@ def exec_stored_func(
         return f'Function is None[{func}] and could not be retrieved'
         
     try:
-        # Regex to identify 'column' and 'target' as arguments without explicit values
-        # column_pattern = r'\bcolumn\b(?=(\s*,|\s*\)|$))'  
-        # target_pattern = r'\btarget\b(?=(\s*,|\s*\)|$))'
-
-        # # Replace 'column' and 'target' with their respective global values
-        # func_call_code = re.sub(column_pattern, f'"{get_current_column()}"', func_call_code)
-        # func_call_code = re.sub(target_pattern, f'"{preprocessor.args.target_var}"', func_call_code)
-
         # Dynamically execute the function call code
         df = preprocessor.get_df() if preprocessor.active else feature_engineer.get_df()
         local_vars = {'df': df}
-        # print(f'DEBUG: func_call_code: {func_call_code}')
         exec(func_call_code, globals(), local_vars)
 
         # Capture the updated DataFrame (if any)
@@ -338,6 +343,72 @@ def exec_stored_func(
             pipeline.write(func_call_code)
 
         return f'Successfully executed function: {func_name}\n\nFunction Output: {output if not isinstance(output, pd.DataFrame) else "[UPDATED DF]"}'
+    except Exception as e:
+        return f'Error writing function call to pipeline: {e}'
+
+@tool
+def exec_generated_func(
+    func_call_code: Annotated[str, '''The line of code to call the sandbox function. Include necessary parameters and values except for the 'df' parameter which will be passed in locally.
+                              Always write "output = " before the function call to catch return values. Format example: output = func_name(df)''']
+) -> str:
+    '''
+    Executes a sandbox function on the current working dataframe and writes the function call to the pipeline file.
+    '''
+
+    # Extracting the function name using regex
+    match = re.search(r'output\s*=\s*(\w+)\s*\(', func_call_code)
+    if not match:
+        return 'Error: Could not extract function name from the provided code.'
+    
+    func_name = match.group(1)
+
+    print(f"Agent is attempting to run {func_name} on the '{get_current_column()}' column")
+
+    try:
+        # Get the function code from the sandbox
+        func_code = sandbox.read()
+
+        # Dynamically define the function in the local context
+        exec(func_code, globals())
+        func = globals().get(func_name)
+
+        if func is None:
+            raise ValueError(f'Function {func_name} could not be defined.')
+    except Exception as e:
+        return f'Error loading function from sandbox: {e}'
+
+    try:
+        # Dynamically execute the function call code
+        df = preprocessor.get_df() if preprocessor.active else feature_engineer.get_df()
+        local_vars = {'df': df}
+        exec(func_call_code, globals(), local_vars)
+
+        # Capture the updated DataFrame (if any)
+        output = local_vars.get('output', None)
+
+        # Update the preprocessor's DataFrame if the function modifies it in place or returns it
+        updated_df = output if isinstance(output, pd.DataFrame) else local_vars.get('df', None)
+        if isinstance(updated_df, pd.DataFrame):
+            if preprocessor.active:
+                preprocessor.update_df(updated_df)
+            elif feature_engineer.active:
+                feature_engineer.update_df(updated_df)
+        else:
+            print('Error updating local dataframe')
+    except Exception as e:
+        return f'Error executing function locally: {e}'
+
+    try:
+        # Write the function call code to the pipeline file if it makes changes to the df
+        if func_call_code[:8] == 'output =':
+            func_call_code = 'df =' + func_call_code[8:]
+        pipeline.write(func_call_code)
+
+        # Save the function code from the sandbox to the pipeline_lib
+        pipeline_lib.write(func_code)
+        sandbox.reset()
+
+        return f'Successfully executed and saved function: {func_name}'
     except Exception as e:
         return f'Error writing function call to pipeline: {e}'
 
@@ -415,8 +486,6 @@ class Preprocesser:
         self.original_df = df.copy()
         self.backup_df = df.copy()
         self.df = df.copy()
-        
-        self.stages = []
 
     def get_df(self):
         '''
@@ -486,10 +555,6 @@ class Preprocesser:
         for column in preprocessor.get_df().columns:
             if column == self.args.target_var:
                 continue
-            
-            # Skip Numeric Columns: REMOVED THIS FOR ALL COLUMN PREPROCESSING 2/2/25 JESSE
-            # if pd.api.types.is_numeric_dtype(preprocessor.get_df()[column]):
-            #     continue
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
@@ -562,8 +627,6 @@ class FeatureEngineer:
         self.original_df = df.copy()
         self.backup_df = df.copy()
         self.df = df.copy()
-        
-        # self.stages = [] # this was in preprocessor should it be here?
 
     def get_df(self):
         '''
@@ -610,7 +673,7 @@ class FeatureEngineer:
 
         try:
             # AGENT3 = NLP Preliminary 
-            agent3 = create_react_agent(model, tools)                                                                       
+            agent3 = create_react_agent(model, tools.extend([write_generated_func, exec_generated_func]))                                                                       
         except Exception as e:
             print(f'Error creating agent3 : A LanGraph prebuit ReAct agent: {e}')
         
