@@ -678,7 +678,7 @@ class FeatureEngineer:
         try:
             # SUPER AGENT = Stronger GPT for Periodic Higher Inference Needs
             super_agent = create_react_agent(super_model, tools)
-            set_super_agent(super_agent)
+            set_agent('super_agent', super_agent)
         except Exception as e:
             print(f'Error creating super_agent : A LanGraph prebuit ReAct agent: {e}')
 
@@ -694,7 +694,7 @@ class FeatureEngineer:
         try:
             # AGENT3_1 = NLP Row Iterator
             agent3_1 = create_react_agent(model, tools)
-            set_agent3_1(agent3_1)
+            set_agent('agent3_1', agent3_1)
         except Exception as e:
             print(f'Error creating agent3_1 : A LanGraph prebuit ReAct agent: {e}')
 

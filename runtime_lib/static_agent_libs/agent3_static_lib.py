@@ -29,7 +29,7 @@ def show_sample_of_entries(df, sample_count=10):
 # lib.py
 import pandas as pd
 from tqdm import tqdm
-from utils import get_agent3_1
+from utils import get_agent
 
 def generate_llm_feature(df):
     """
@@ -37,7 +37,7 @@ def generate_llm_feature(df):
     to generate a concise one-word summary, and writes it to 'nlp_column_gen_feature'.
     """
     column=get_current_column()
-    agent3_1 = get_agent3_1()
+    agent3_1 = get_agent('agent3_1')
     target_column = column + "_gen_feature"
     
     prompt_template = (

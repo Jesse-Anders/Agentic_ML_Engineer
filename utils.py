@@ -17,7 +17,8 @@ _shared_state = {
     "target_column": None,
     "dataframe_stages": [],
     "nlp_columns": [],
-    "agent3_1": None
+    "agent3_1": None,
+    "super_agent": None
 }
 
 PIPELINE_WRITE_LIST = [ # They're in chronological order (agent1_static_lib funcs, agent2_static_lib funcs...)
@@ -72,23 +73,13 @@ def get_nlp_columns():
 def add_nlp_column(column):
     _shared_state["nlp_columns"].append(column)
 
-def get_agent3_1():
-    return _shared_state["agent3_1"]
-
-def set_agent3_1(agent):
-    _shared_state["agent3_1"] = agent
-
-def get_super_agent():
-    return _shared_state["super_agent"]
-
-def set_super_agent(agent):
-    _shared_state["super_agent"] = agent
-
-# TODO: Centralied agent getter & setter
-# def get_agent(agent_name):
-# def set_agent(agent_name, agent):
-#     if agent_name doesn't exist:
-#       create a new one
+def get_agent(agent_name):
+    if agent_name in _shared_state:
+        return _shared_state[agent_name]
+    raise Exception(f'Agent not found in _shared_state: {agent_name}')
+    
+def set_agent(agent_name, agent):
+    _shared_state[agent_name] = agent
 
 #  endregion  ================================================================================#
 #  region                              STATIC GlOBALS                                         #
