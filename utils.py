@@ -78,6 +78,18 @@ def get_agent3_1():
 def set_agent3_1(agent):
     _shared_state["agent3_1"] = agent
 
+def get_super_agent():
+    return _shared_state["super_agent"]
+
+def set_super_agent(agent):
+    _shared_state["super_agent"] = agent
+
+# TODO: Centralied agent getter & setter
+# def get_agent(agent_name):
+# def set_agent(agent_name, agent):
+#     if agent_name doesn't exist:
+#       create a new one
+
 #  endregion  ================================================================================#
 #  region                              STATIC GlOBALS                                         #
 #=============================================================================================#

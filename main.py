@@ -661,6 +661,12 @@ class FeatureEngineer:
                 model_name=model_name,
                 temperature=temperature
             )
+
+            super_model = ChatOpenAI(
+                openai_api_key=get_openai_api_key(),
+                model_name=self.args.super_gpt_model,
+                temperature=temperature
+            )
         except Exception as e:
             print(f'Error initializing ChatOpenAI model: {e}')
 
@@ -670,8 +676,18 @@ class FeatureEngineer:
         #=======================================================# 
 
         try:
+            # SUPER AGENT = Stronger GPT for Periodic Higher Inference Needs
+            super_agent = create_react_agent(super_model, tools)
+            set_super_agent(super_agent)
+        except Exception as e:
+            print(f'Error creating super_agent : A LanGraph prebuit ReAct agent: {e}')
+
+        try:
             # AGENT3 = NLP Preliminary 
-            agent3 = create_react_agent(model, tools.extend([write_generated_func, exec_generated_func]))                                                                       
+            agent3 = create_react_agent(model, [
+                get_inst, logger, exec_stored_func,
+                write_generated_func, exec_generated_func
+            ])
         except Exception as e:
             print(f'Error creating agent3 : A LanGraph prebuit ReAct agent: {e}')
         
@@ -1041,6 +1057,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--lms_model', type=str, default='LM Studio Community/Meta-Llama-3-8B-Instruct-GGUF')
     parser.add_argument('--openai_model', type=str, default='gpt-4o-mini')
+    parser.add_argument('--super_gpt_model', type=str, default='gpt-4o')
     parser.add_argument('--llm_platform', type=str, default='openai')
 
     parser.add_argument('--target_var', type=str, default='target')
