@@ -18,7 +18,9 @@ _shared_state = {
     "dataframe_stages": [],
     "nlp_columns": [],
     "agent3_1": None,
-    "super_agent": None
+    "super_agent": None,
+    "numeric_pow_columns": [],
+    "object_pow_columns": []
 }
 
 PIPELINE_WRITE_LIST = [ # They're in chronological order (agent1_static_lib funcs, agent2_static_lib funcs...)
@@ -72,6 +74,18 @@ def get_nlp_columns():
 
 def add_nlp_column(column):
     _shared_state["nlp_columns"].append(column)
+
+def get_numeric_pow_columns():
+    return _shared_state["numeric_pow_columns"]
+
+def set_numeric_pow_columns(groupings_list):
+    _shared_state["numeric_pow_columns"] = groupings_list
+
+def get_object_pow_columns():
+    return _shared_state["object_pow_columns"]
+
+def set_object_pow_columns(groupings_list):
+    _shared_state["object_pow_columns"] = groupings_list
 
 def get_agent(agent_name):
     if agent_name in _shared_state:

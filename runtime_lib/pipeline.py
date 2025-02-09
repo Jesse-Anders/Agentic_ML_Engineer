@@ -21,7 +21,5 @@ from runtime_lib.static_agent_libs.agent6_static_lib import *
 
 # SYSTEM GENERATION START:
 
-df = pd.read_csv("data_inputs/data.csv", index_col=None)
+df = pd.read_csv("data_inputs/pow_testing.csv", index_col=None)
 
-set_current_column("col6")
-df = drop_column(df)
