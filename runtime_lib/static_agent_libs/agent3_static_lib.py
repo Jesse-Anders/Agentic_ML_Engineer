@@ -1,6 +1,8 @@
 import pandas as pd
 import sys
 import os
+from agent_builds.base_agents import basic_agent
+
 # Add the project root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
@@ -31,19 +33,61 @@ import pandas as pd
 from tqdm import tqdm
 from utils import get_agent
 
+# def generate_llm_feature(df):
+#     """
+#     Iterates over each entry in 'nlp_column', uses the prebuilt React agent (agent3)
+#     to generate a concise one-word summary, and writes it to 'nlp_column_gen_feature'.
+#     """
+#     column=get_current_column()
+#     agent3_1 = get_agent('agent3_1')
+#     target_column = column + "_gen_feature"
+    
+#     prompt_template = (
+#         "Read following job description text. If you think it is from a scam job posting, respond with 'fake'. Otherwise, respond with 'real'.\n"
+#         "Job Description Text: {text}"
+#     )
+    
+#     def call_agent_on_text(text: str) -> str:
+#         if pd.isna(text) or text.strip() == "":
+#             return ""
+        
+#         prompt = prompt_template.format(text=text)
+#         # If your agentic system uses these functions, update accordingly.
+#         #set_current_column(column)
+#         #pipeline.write(f'set_current_column("{column}")')
+        
+#         inputs = {'messages': [('user', prompt)]}
+        
+#         try:
+#             # Use the prebuilt agent3 from the shared module.
+#             stream = agent3_1.stream(inputs, stream_mode='values')
+#             response_text = ""
+#             for output in stream:
+#                 response_text += str(output)
+#             response_text = response_text.strip()
+#             return response_text.split()[0] if response_text else ""
+#         except Exception as e:
+#             print(f"Error during agent stream for text: {text}\n{e}")
+#             return f"Error: {e}"
+    
+#     tqdm.pandas(desc="Processing rows with agent")
+#     df[target_column] = df[column].progress_apply(call_agent_on_text)
+#     return df
+
+
 def generate_llm_feature(df):
     """
-    Iterates over each entry in 'nlp_column', uses the prebuilt React agent (agent3)
-    to generate a concise one-word summary, and writes it to 'nlp_column_gen_feature'.
+    Iterates over each entry in the current column, uses the prebuilt React agent (agent3_1)
+    to generate a response ("fake" or "real"), and writes it to a new column
+    named "<current_column>_gen_feature".
     """
-    column=get_current_column()
-    agent3_1 = get_agent('agent3_1')
+    column = get_current_column()
     target_column = column + "_gen_feature"
     
     prompt_template = (
-        "Analyze the sentiment of the following text and summarize it in one word.\n"
-        "Text: {text}\n"
-        "Answer:"
+        "Read the following job description text. If you think it is from a scam job posting, respond with 'fake'. "
+        "Otherwise, respond with 'real'.\n"
+        "Job Description Text: {text}"
     )
     
     def call_agent_on_text(text: str) -> str:
@@ -51,31 +95,37 @@ def generate_llm_feature(df):
             return ""
         
         prompt = prompt_template.format(text=text)
-        # If your agentic system uses these functions, update accordingly.
-        #set_current_column(column)
-        #pipeline.write(f'set_current_column("{column}")')
-        
-        inputs = {'messages': [('user', prompt)]}
+        inputs = {'messages': [{'role': 'user', 'content': prompt}]}
         
         try:
-            # Use the prebuilt agent3 from the shared module.
-            stream = agent3_1.stream(inputs, stream_mode='values')
-            response_text = ""
-            for output in stream:
-                response_text += str(output)
-            response_text = response_text.strip()
-            return response_text.split()[0] if response_text else ""
+            responses = list(basic_agent.stream(inputs, stream_mode='values'))
+            # Debug print to inspect responses:
+            print("DEBUG: responses from agent for text:", text, "\n", responses)
+            
+            assistant_response = ""
+            # Loop over all responses in the stream
+            for response in responses:
+                # Each response is expected to be a dict with a "messages" key.
+                messages = response.get("messages", [])
+                for msg in messages:
+                    # Check if the message object has a role attribute and if it's 'assistant'
+                    if hasattr(msg, "role") and msg.role == "assistant":
+                        assistant_response = msg.content.strip()
+            return assistant_response
         except Exception as e:
             print(f"Error during agent stream for text: {text}\n{e}")
             return f"Error: {e}"
     
+    from tqdm import tqdm
     tqdm.pandas(desc="Processing rows with agent")
     df[target_column] = df[column].progress_apply(call_agent_on_text)
     return df
 
 
+
+
 # lib.py
-import pandas as pd
+
 from tqdm import tqdm
 
 def generate_llm_feature_test(df):

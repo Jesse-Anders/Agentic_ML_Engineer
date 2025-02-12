@@ -24,4 +24,3 @@ from runtime_lib.static_agent_libs.agent6_static_lib import *
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
 set_current_column("col6")
-df = drop_column(df)
