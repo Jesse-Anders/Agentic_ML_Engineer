@@ -84,7 +84,6 @@ def generate_llm_feature(df):
     column = get_current_column()
 =======
     column = get_shared_var('current_column')
-    agent3_1 = get_shared_var('agent3_1')
 >>>>>>> 46f27d99804f903cb642bb8227054171b9b95c46
     target_column = column + "_gen_feature"
     
