@@ -13,7 +13,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Shared State Getters
-from utils import get_dataframe_stage, get_target_column, get_current_column
+from utils import get_dataframe_stage, get_shared_var
 
 # ============================================================================================#
 # region                   Evaluate for Drop Null Heavy Column                                #
@@ -42,8 +42,8 @@ def evaluate_column_for_drop(df, drop_null_threshold=0.5, target_corr_threshold=
             - 'recommended_action': "drop" or "keep", with an explanation.
             - 'details': All computed metrics.
     """
-    column = get_current_column()
-    target = get_target_column()
+    column = get_shared_var('current_column')
+    target = get_shared_var('target_column')
 
     # Basic counts and null percentage (based on non-null entries)
     total_count = len(df)
@@ -135,7 +135,7 @@ def drop_column(df):
     Returns:
         pd.DataFrame: The DataFrame with the specified column removed.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
     
     # Ensure the column exists in the DataFrame.
     if column not in df.columns:
@@ -164,7 +164,7 @@ def check_percent_numeric(df, numeric_threshold=0.9):
     Returns:
         str: A comment describing whether the column is text/object or numeric.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
 
     # Ensure the column exists
     if column not in df.columns:
@@ -203,7 +203,7 @@ def check_for_text_nums(df):
     Returns:
         bool: True if the column contains text that could represent written numbers, False otherwise.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
 
     # Ensure the column exists
     if column not in df.columns:
@@ -233,7 +233,7 @@ def convert_text_nums_to_numeric(df):
     Returns:
         pd.DataFrame: The updated DataFrame with written numbers converted.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
 
     # Ensure the column exists
     if column not in df.columns:
@@ -267,7 +267,7 @@ def describe_and_clean_non_numeric_entries(df):
             - 'alias_null_summary': Summary of alias nulls found and converted, including counts of each.
             - 'unique_review_list': List of non-numeric entries that were found and converted.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
 
     # Ensure the column exists
     if column not in df.columns:
@@ -328,7 +328,7 @@ def convert_column_to_numeric(df):
     Returns:
         pd.DataFrame: The DataFrame with the converted column.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
 
     # Ensure the column exists
     if column not in df.columns:
@@ -357,7 +357,7 @@ def convert_common_alias_nulls(df):
     Returns:
         pd.DataFrame: The DataFrame with the specified column updated.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
 
     # Ensure the column exists
     if column not in df.columns:
@@ -399,7 +399,7 @@ def display_most_common_unique_entries(df, max_display=40):
     Returns:
         list: A list of the top unique entries (without counts), up to `max_display` entries.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
 
     # Ensure the column exists
     if column not in df.columns:
@@ -425,7 +425,7 @@ def convert_uncommon_alias_nulls(df, alias_nulls_path="json_lib/alias_nulls_list
     Returns:
         pd.DataFrame: The updated DataFrame with the alias nulls converted to NaN.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
     
     # Ensure the column exists in the DataFrame
     if column not in df.columns:

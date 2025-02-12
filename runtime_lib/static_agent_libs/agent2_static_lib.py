@@ -12,7 +12,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
 # Shared State Getters
-from utils import get_dataframe_stage, get_target_column, get_current_column
+from utils import get_dataframe_stage, get_shared_var
 
 
 #=============================================================================================#
@@ -30,7 +30,7 @@ def data_type_check(df) -> str:
     Returns:
         str: A message describing the column's data type.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     column_dtype = df[column].dtype # Access the column dynamically
 
@@ -79,7 +79,7 @@ def if_float_is_really_int_convert(df):
         pd.DataFrame: The updated DataFrame with the column converted if applicable.
         str: A message indicating whether the column was converted or not.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # Ensure the column exists and is of float type
     if column not in df.columns:
@@ -115,7 +115,7 @@ def determine_numeric_or_categorical(df, numeric_override_threshold=0.9):
     Returns:
         dict: A dictionary containing the column type, handling strategy, and the updated DataFrame.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # Ensure the column exists and is of integer type
     if column not in df.columns:
@@ -177,7 +177,7 @@ def evaluate_outliers(df, iqr_multiplier=1.5):
             - outlier_percentage: Proportion of values outside the cutoff.
             - recommended_action: Recommendation string (e.g., "remove", "winsorize", "transform", "keep").
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # Drop nulls for computation
     data = df[column].dropna()
@@ -225,7 +225,7 @@ def winsorize_column(df, iqr_multiplier=1.5):
     Returns:
         pd.DataFrame: DataFrame with the specified column winsorized.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # Compute bounds from non-null values
     data = df[column].dropna()
@@ -252,7 +252,7 @@ def log_transform_column(df):
     Returns:
         pd.DataFrame: DataFrame with the column log-transformed.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # Check if any value is <= 0
     if (df[column] <= 0).any():
@@ -308,7 +308,7 @@ def evaluate_imputation_strategy(df,
             - 'null_skewness_conspire': Boolean indicating if missingness and skewness together make KNN unreliable.
             - 'recommended_imputation': The recommended imputation method ("stochastic median" or "KNN").
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # Ensure column exists
     if column not in df.columns:
@@ -391,7 +391,7 @@ def knn_impute_with_rounding(df,
     Returns:
         pd.DataFrame: The DataFrame with the target column imputed.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # Ensure column exists
     if column not in df.columns:
@@ -463,7 +463,7 @@ def dynamic_stochastic_median_impute(
     => total width of the band is 0.5 * IQR.
     => random draws are in [median - 0.25*IQR, median + 0.25*IQR].
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # 1) Basic checks
     if column not in df.columns:
@@ -578,8 +578,8 @@ def evaluate_null_correlation_with_target(
             - high_null_association: bool, indicates "strong enough" association.
             - recommended_handling: "convert_to_category" or "impute".
     """
-    column=get_current_column()
-    target=get_target_column()
+    column=get_shared_var('current_column')
+    target=get_shared_var('target_column')
 
     # 1. Basic validation checks
     if column not in df.columns or target not in df.columns:
@@ -692,7 +692,7 @@ def convert_nulls_to_category(df, category_label="null_category"):
     Returns:
         pd.DataFrame: The updated DataFrame with nulls converted to a category.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
 
     # Ensure the column exists
     if column not in df.columns:
@@ -721,7 +721,7 @@ def impute_categorical_numeric_mode(df):
     Returns:
         pd.DataFrame: The updated DataFrame with missing values imputed.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
     
     # Ensure column exists
     if column not in df.columns:

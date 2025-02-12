@@ -301,7 +301,7 @@ def exec_stored_func(
     
     func_name = match.group(1)
 
-    print(f"Agent is attempting to run {func_name} on the '{get_current_column()}' column")
+    print(f"Agent is attempting to run {func_name} on the '{get_shared_var('current_column')}' column")
 
     try:
         func = static_lib.get_func(func_name)
@@ -360,7 +360,7 @@ def exec_generated_func(
     
     func_name = match.group(1)
 
-    print(f"Agent is attempting to run {func_name} on the '{get_current_column()}' column")
+    print(f"Agent is attempting to run {func_name} on the '{get_shared_var('current_column')}' column")
 
     try:
         # Get the function code from the sandbox
@@ -458,10 +458,66 @@ def add_nlp_column(
     '''
     Appends a new NLP column to the global list of NLP columns.
     '''
-    if column not in get_nlp_columns:
-        add_nlp_column(column)
+    current_nlp_columns = get_shared_var('nlp_columns')
+    if column not in current_nlp_columns:
+        current_nlp_columns.append(column)
+        set_shared_var('nlp_columns', current_nlp_columns)
         return(f'Successfully add column to NLP columns: {column}')
     return(f'Column already in NLP columns: {column}')
+
+@tool
+def get_pow_candidates(
+    column_type: Annotated[str, 'either "numeric" or "object"'] = 'numeric'
+) -> str:
+    '''
+    Returns a list of columns to be examined as potential parts-of-a-whole column groups.
+    '''
+    df = preprocessor.get_df() if preprocessor.active else feature_engineer.get_df()
+    skip_columns = [preprocessor.args.target_var, preprocessor.args.id_var]
+    candidates_string = ''
+    if column_type == 'numeric':
+        pow_cols = [c for c in df.columns if c not in skip_columns and pd.api.types.is_numeric_dtype(df[c])]
+        for c in pow_cols:
+            col_data = df[c].dropna()  # Remove NaN values for accurate statistics
+            min_val = col_data.min()
+            q1 = col_data.quantile(0.25)
+            q2 = col_data.median()
+            q3 = col_data.quantile(0.75)
+            max_val = col_data.max()
+            candidates_string += (
+                f"\n- {c} (dtype: {df[c].dtype}): "
+                f"Min={min_val}, Q1={q1}, Median={q2}, Q3={q3}, Max={max_val}"
+            )
+
+    if column_type == 'object':
+        pow_cols = [c for c in df.columns if c not in skip_columns and pd.api.types.is_object_dtype(df[c])]
+        for c in pow_cols:
+            col_data = df[c].dropna()  # Remove NaN values for accurate statistics
+            unique_vals = col_data.nunique()
+            candidates_string += (
+                f"\n- {c} (dtype: {df[c].dtype}): {unique_vals} unique values"
+            )
+
+    return f'Parts-of-a-whole {column_type} column candidates include the following:\n{candidates_string}'
+
+@tool
+def create_pow_groups(
+    groupings_list: Annotated[list, 'a list of column name lists (groups) that you\'ve determined are related or parts-of-a-whole'],
+    column_type: Annotated[str, 'either "numeric" or "object"'] = 'numeric'
+) -> str:
+    '''
+    Stores parts-of-a-whole groupings so that they can be accessed for future feature engineering.
+    '''
+    try:
+        if column_type == 'numeric':
+            set_shared_var('numeric_pow_groups', groupings_list)
+        elif column_type == 'object':
+            set_shared_var('object_pow_groups', groupings_list)
+        else:
+            return f'Column type is invalid: {column_type}'
+    except Exception as e:
+        return f'Error setting parts-of-a-whole column groupings shared variable: {e}'
+    return f'Successfully stored parts-of-a-whole groupings.'
 
 tools = [
     get_inst,
@@ -556,12 +612,12 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col1', 'col2'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            set_current_column(column)
+            set_shared_var('current_column', column)
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT1_IA["AGENT1_START"])]}
             try:
@@ -587,7 +643,7 @@ class Preprocesser:
                     continue
             
             # Outlier and Impute Handler Loop
-            set_current_column(column)
+            set_shared_var('current_column', column)
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT2_IA["AGENT2_START"])]}
             try:
@@ -677,8 +733,10 @@ class FeatureEngineer:
 
         try:
             # SUPER AGENT = Stronger GPT for Periodic Higher Inference Needs
-            super_agent = create_react_agent(super_model, tools)
-            set_agent('super_agent', super_agent)
+            super_agent = create_react_agent(super_model, [
+                get_inst, logger, exec_stored_func, get_pow_candidates, create_pow_groups
+            ])
+            set_shared_var('super_agent', super_agent)
         except Exception as e:
             print(f'Error creating super_agent : A LanGraph prebuit ReAct agent: {e}')
 
@@ -694,7 +752,7 @@ class FeatureEngineer:
         try:
             # AGENT3_1 = NLP Row Iterator
             agent3_1 = create_react_agent(model, tools)
-            set_agent('agent3_1', agent3_1)
+            set_shared_var('agent3_1', agent3_1)
         except Exception as e:
             print(f'Error creating agent3_1 : A LanGraph prebuit ReAct agent: {e}')
 
@@ -706,7 +764,9 @@ class FeatureEngineer:
 
         try:
             # AGENT5 = DF-wise / Numeric FE
-            agent5 = create_react_agent(model, tools)                                                                       
+            agent5 = create_react_agent(model, [
+                get_inst, logger, exec_stored_func
+            ])
         except Exception as e:
             print(f'Error creating agent5 : A LanGraph prebuit ReAct agent: {e}')
 
@@ -726,11 +786,11 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col6'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
-            set_current_column(column)
+            set_shared_var('current_column', column)
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT3_IA["AGENT3_START"])]}
             try:
@@ -758,7 +818,7 @@ class FeatureEngineer:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            set_current_column(column)
+            set_shared_var('current_column', column)
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT4_IA["AGENT4_START"])]}
             try:
@@ -773,27 +833,23 @@ class FeatureEngineer:
         #  region  AGENT5 LOOP                                        #
         #=============================================================#       
 
-        for column in feature_engineer.get_df().columns:
-            if column == self.args.target_var:
-                continue
-            
-            # DEBUGGING: Run iteration of small column set or a single column
-            if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-                if column not in COLUMNS_TO_TEST:
-                    continue
-            
-            # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            set_current_column(column)
-            pipeline.write(f'set_current_column("{column}")')
-            inputs = {'messages': [('user', AGENT5_IA["AGENT5_START"])]}
+        if not preprocessor.args.debug:
+            inputs = {'messages': [('user', AGENT5_IA["SUPER_AGENT5_START"])]}
             try:
-                stream = agent5.stream(inputs, stream_mode='values')
+                stream = super_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_5')
+            for group in get_pow_candidates():
+                inputs = {'messages': [('user', AGENT5_IA["AGENT5_START"])]}
+                try:
+                    stream = agent5.stream(inputs, stream_mode='values')
+                    print_stream(stream)
+                except Exception as e:
+                    print(f'Error during stream: {e}')
+
+                save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_5')
 
         #  endregion  ================================================#
         #  region  AGENT6 LOOP                                        #
@@ -810,7 +866,7 @@ class FeatureEngineer:
                     continue
             
             # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            set_current_column(column)
+            set_shared_var('current_column', column)
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT6_IA["AGENT6_START"])]}
             try:
@@ -1068,8 +1124,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     run_ml_engineer(args)
 
-# Jesse Terminal Run
+# Terminal Run & Flag Examples
 # /opt/anaconda3/envs/Agentic-ML-Engineer/bin/python main.py --llm_platform=openai --debug=True
 
+# Alternate dataset with ID column pre-specification
+# python .\main.py --debug=True --data_input_path=data_inputs/pow_testing.csv --id_var=ID
 
 #  endregion

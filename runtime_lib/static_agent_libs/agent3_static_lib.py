@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 
 # Shared State Getters
 # from utils import get_dataframe_stage, get_target_column, get_current_column
-from utils import get_dataframe_stage, get_target_column, get_current_column, print_stream
+from utils import get_dataframe_stage, get_shared_var, print_stream
 
 
 def show_sample_of_entries(df, sample_count=10):
@@ -22,7 +22,7 @@ def show_sample_of_entries(df, sample_count=10):
     Returns:
         pd.Series: A random sample of sample_count=x rows from the specified column.
     """
-    column=get_current_column()
+    column=get_shared_var('current_column')
     return df[column].dropna().sample(n=min(sample_count, len(df)), random_state=42)
 
 
@@ -31,7 +31,6 @@ def show_sample_of_entries(df, sample_count=10):
 # lib.py
 import pandas as pd
 from tqdm import tqdm
-from utils import get_agent
 
 # def generate_llm_feature(df):
 #     """
@@ -81,7 +80,12 @@ def generate_llm_feature(df):
     to generate a response ("fake" or "real"), and writes it to a new column
     named "<current_column>_gen_feature".
     """
+<<<<<<< HEAD
     column = get_current_column()
+=======
+    column = get_shared_var('current_column')
+    agent3_1 = get_shared_var('agent3_1')
+>>>>>>> 46f27d99804f903cb642bb8227054171b9b95c46
     target_column = column + "_gen_feature"
     
     prompt_template = (
@@ -143,7 +147,7 @@ def generate_llm_feature_test(df):
                       first 5 characters of each entry from the original column.
     """
     # Get the current column name. Make sure get_current_column is available.
-    column = get_current_column()
+    column = get_shared_var('current_column')
     target_column = column + "_gen_feature"
     
     def first_five_chars(text: str) -> str:
@@ -168,7 +172,7 @@ def drop_column(df):
     Returns:
         pd.DataFrame: The DataFrame with the specified column removed.
     """
-    column = get_current_column()
+    column = get_shared_var('current_column')
     
     # Ensure the column exists in the DataFrame.
     if column not in df.columns:

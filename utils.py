@@ -18,7 +18,10 @@ _shared_state = {
     "dataframe_stages": [],
     "nlp_columns": [],
     "agent3_1": None,
-    "super_agent": None
+    "super_agent": None,
+    "numeric_pow_groups": [],
+    "object_pow_groups": [],
+    "current_pow_group": None
 }
 
 PIPELINE_WRITE_LIST = [ # They're in chronological order (agent1_static_lib funcs, agent2_static_lib funcs...)
@@ -54,32 +57,14 @@ def save_dataframe_stage(df, stage_name):
         "stage_name": stage_name,
         "df": df.copy()
     })
-
-def get_current_column():
-    return _shared_state["current_column"]
-
-def set_current_column(column):
-    _shared_state["current_column"] = column
-
-def get_target_column():
-    return _shared_state["target_column"]
-
-def set_target_column(column):
-    _shared_state["target_column"] = column
-
-def get_nlp_columns():
-    return _shared_state["nlp_columns"]
-
-def add_nlp_column(column):
-    _shared_state["nlp_columns"].append(column)
-
-def get_agent(agent_name):
-    if agent_name in _shared_state:
-        return _shared_state[agent_name]
-    raise Exception(f'Agent not found in _shared_state: {agent_name}')
     
-def set_agent(agent_name, agent):
-    _shared_state[agent_name] = agent
+def get_shared_var(var_name):
+    if var_name in _shared_state:
+        return _shared_state[var_name]
+    raise Exception(f'Agent not found in _shared_state: {var_name}')
+    
+def set_shared_var(var_name, var):
+    _shared_state[var_name] = var
 
 #  endregion  ================================================================================#
 #  region                              STATIC GlOBALS                                         #
