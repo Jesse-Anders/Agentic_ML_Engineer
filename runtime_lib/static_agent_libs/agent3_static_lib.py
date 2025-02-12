@@ -82,9 +82,7 @@ def generate_llm_feature(df):
     """
 <<<<<<< HEAD
     column = get_current_column()
-=======
     column = get_shared_var('current_column')
->>>>>>> 46f27d99804f903cb642bb8227054171b9b95c46
     target_column = column + "_gen_feature"
     
     prompt_template = (
