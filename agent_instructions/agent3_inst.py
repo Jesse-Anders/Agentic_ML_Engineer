@@ -11,7 +11,7 @@ AGENT3_IA = {
 
     ),
         "NLP_INST": (
-        "Use the exec_stored_func to run generate_llm_feature_test.\n"
+        "Use the exec_stored_func to run generate_llm_feature.\n"
         # "Read get_inst(ABOUT_THE_TARGET) to understand the overall goal of this data set.\n"
         # "based on this goal, use the exec_stored_func tool to run ???\n"
         # "Use the exec_stored_func to run drop_column.\n"

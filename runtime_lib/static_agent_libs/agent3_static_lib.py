@@ -1,6 +1,7 @@
 import pandas as pd
 import sys
 import os
+from tqdm import tqdm
 from agent_builds.base_agents import basic_agent
 
 # Add the project root directory to sys.path
@@ -76,12 +77,9 @@ from tqdm import tqdm
 
 def generate_llm_feature(df):
     """
-    Iterates over each entry in the current column, uses the prebuilt React agent (agent3_1)
-    to generate a response ("fake" or "real"), and writes it to a new column
-    named "<current_column>_gen_feature".
+    Iterates over each entry in the current column, uses the prebuilt React agent to generate a response ("fake" or "real"),
+    and writes it to a new column named "<current_column>_gen_feature".
     """
-<<<<<<< HEAD
-    column = get_current_column()
     column = get_shared_var('current_column')
     target_column = column + "_gen_feature"
     
@@ -90,7 +88,7 @@ def generate_llm_feature(df):
         "Otherwise, respond with 'real'.\n"
         "Job Description Text: {text}"
     )
-    
+
     def call_agent_on_text(text: str) -> str:
         if pd.isna(text) or text.strip() == "":
             return ""
@@ -99,25 +97,49 @@ def generate_llm_feature(df):
         inputs = {'messages': [{'role': 'user', 'content': prompt}]}
         
         try:
-            responses = list(basic_agent.stream(inputs, stream_mode='values'))
-            # Debug print to inspect responses:
-            print("DEBUG: responses from agent for text:", text, "\n", responses)
-            
             assistant_response = ""
-            # Loop over all responses in the stream
-            for response in responses:
-                # Each response is expected to be a dict with a "messages" key.
-                messages = response.get("messages", [])
-                for msg in messages:
-                    # Check if the message object has a role attribute and if it's 'assistant'
-                    if hasattr(msg, "role") and msg.role == "assistant":
-                        assistant_response = msg.content.strip()
+            # Loop over each event in the stream
+            for event in basic_agent.stream(inputs):
+                # Debug print to inspect what the event looks like:
+                # print("DEBUG event:", event)
+                
+                # Case 1: event is a dict that contains "messages"
+                if isinstance(event, dict) and "messages" in event:
+                    # Assume event["messages"] is a list and the last element is the assistant message
+                    assistant_response = event["messages"][-1].content.strip()
+                
+                # Case 2: event is a dict but doesn't directly have "messages"
+                # In this case, iterate over its values
+                elif isinstance(event, dict):
+                    for key, value in event.items():
+                        # If the value is a dict with "messages", extract it.
+                        if isinstance(value, dict) and "messages" in value:
+                            assistant_response = value["messages"][-1].content.strip()
+                        # If the value is a list, iterate over its items.
+                        elif isinstance(value, list):
+                            for item in value:
+                                if isinstance(item, dict) and "messages" in item:
+                                    assistant_response = item["messages"][-1].content.strip()
+                
+                # Case 3: event is directly a list of items
+                elif isinstance(event, list):
+                    for item in event:
+                        if isinstance(item, dict) and "messages" in item:
+                            assistant_response = item["messages"][-1].content.strip()
+                
+                # Case 4: event is simply a string (this can happen in some modes)
+                elif isinstance(event, str):
+                    assistant_response = event.strip()
+            
             return assistant_response
         except Exception as e:
             print(f"Error during agent stream for text: {text}\n{e}")
             return f"Error: {e}"
+
+
+
+
     
-    from tqdm import tqdm
     tqdm.pandas(desc="Processing rows with agent")
     df[target_column] = df[column].progress_apply(call_agent_on_text)
     return df
@@ -125,9 +147,6 @@ def generate_llm_feature(df):
 
 
 
-# lib.py
-
-from tqdm import tqdm
 
 def generate_llm_feature_test(df):
     """
