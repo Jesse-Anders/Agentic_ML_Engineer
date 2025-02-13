@@ -33,47 +33,6 @@ def show_sample_of_entries(df, sample_count=10):
 import pandas as pd
 from tqdm import tqdm
 
-# def generate_llm_feature(df):
-#     """
-#     Iterates over each entry in 'nlp_column', uses the prebuilt React agent (agent3)
-#     to generate a concise one-word summary, and writes it to 'nlp_column_gen_feature'.
-#     """
-#     column=get_current_column()
-#     agent3_1 = get_agent('agent3_1')
-#     target_column = column + "_gen_feature"
-    
-#     prompt_template = (
-#         "Read following job description text. If you think it is from a scam job posting, respond with 'fake'. Otherwise, respond with 'real'.\n"
-#         "Job Description Text: {text}"
-#     )
-    
-#     def call_agent_on_text(text: str) -> str:
-#         if pd.isna(text) or text.strip() == "":
-#             return ""
-        
-#         prompt = prompt_template.format(text=text)
-#         # If your agentic system uses these functions, update accordingly.
-#         #set_current_column(column)
-#         #pipeline.write(f'set_current_column("{column}")')
-        
-#         inputs = {'messages': [('user', prompt)]}
-        
-#         try:
-#             # Use the prebuilt agent3 from the shared module.
-#             stream = agent3_1.stream(inputs, stream_mode='values')
-#             response_text = ""
-#             for output in stream:
-#                 response_text += str(output)
-#             response_text = response_text.strip()
-#             return response_text.split()[0] if response_text else ""
-#         except Exception as e:
-#             print(f"Error during agent stream for text: {text}\n{e}")
-#             return f"Error: {e}"
-    
-#     tqdm.pandas(desc="Processing rows with agent")
-#     df[target_column] = df[column].progress_apply(call_agent_on_text)
-#     return df
-
 
 def generate_llm_feature(df):
     """
@@ -98,53 +57,20 @@ def generate_llm_feature(df):
         
         try:
             assistant_response = ""
-            # Loop over each event in the stream
+            # Process each event from the agent stream
             for event in basic_agent.stream(inputs):
-                # Debug print to inspect what the event looks like:
-                # print("DEBUG event:", event)
-                
-                # Case 1: event is a dict that contains "messages"
+                # Since event is always a dict with a "messages" key, we extract the last message
                 if isinstance(event, dict) and "messages" in event:
-                    # Assume event["messages"] is a list and the last element is the assistant message
                     assistant_response = event["messages"][-1].content.strip()
-                
-                # Case 2: event is a dict but doesn't directly have "messages"
-                # In this case, iterate over its values
-                elif isinstance(event, dict):
-                    for key, value in event.items():
-                        # If the value is a dict with "messages", extract it.
-                        if isinstance(value, dict) and "messages" in value:
-                            assistant_response = value["messages"][-1].content.strip()
-                        # If the value is a list, iterate over its items.
-                        elif isinstance(value, list):
-                            for item in value:
-                                if isinstance(item, dict) and "messages" in item:
-                                    assistant_response = item["messages"][-1].content.strip()
-                
-                # Case 3: event is directly a list of items
-                elif isinstance(event, list):
-                    for item in event:
-                        if isinstance(item, dict) and "messages" in item:
-                            assistant_response = item["messages"][-1].content.strip()
-                
-                # Case 4: event is simply a string (this can happen in some modes)
-                elif isinstance(event, str):
-                    assistant_response = event.strip()
-            
             return assistant_response
         except Exception as e:
             print(f"Error during agent stream for text: {text}\n{e}")
             return f"Error: {e}"
 
-
-
-
     
     tqdm.pandas(desc="Processing rows with agent")
     df[target_column] = df[column].progress_apply(call_agent_on_text)
     return df
-
-
 
 
 
