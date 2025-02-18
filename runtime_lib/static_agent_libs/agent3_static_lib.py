@@ -27,13 +27,6 @@ def show_sample_of_entries(df, sample_count=10):
     return df[column].dropna().sample(n=min(sample_count, len(df)), random_state=42)
 
 
-
-
-# lib.py
-import pandas as pd
-from tqdm import tqdm
-
-
 def generate_llm_feature(df):
     """
     Iterates over each entry in the current column, uses the prebuilt React agent to generate a response ("fake" or "real"),
@@ -43,9 +36,9 @@ def generate_llm_feature(df):
     target_column = column + "_gen_feature"
     
     prompt_template = (
-        "Read the following job description text. If you think it is from a scam job posting, respond with 'fake'. "
-        "Otherwise, respond with 'real'.\n"
-        "Job Description Text: {text}"
+        "Entry Text: {text}\n"
+        "Read the following job Entry Text. If you think it is from a scam job posting, respond with 'fake'. "
+        "Otherwise, respond with 'real'.\n"   
     )
 
     def call_agent_on_text(text: str) -> str:
@@ -71,8 +64,6 @@ def generate_llm_feature(df):
     tqdm.pandas(desc="Processing rows with agent")
     df[target_column] = df[column].progress_apply(call_agent_on_text)
     return df
-
-
 
 def generate_llm_feature_test(df):
     """
@@ -100,28 +91,4 @@ def generate_llm_feature_test(df):
     tqdm.pandas(desc="Processing rows")
     df[target_column] = df[column].progress_apply(first_five_chars)
 
-    return df
-
-
-def drop_column(df):
-    """
-    Drops a specified column from the DataFrame.
-
-    Args:
-        df (pd.DataFrame): The DataFrame from which the column will be dropped.
-        column (str): The name of the column to drop.
-
-    Returns:
-        pd.DataFrame: The DataFrame with the specified column removed.
-    """
-    column = get_shared_var('current_column')
-    
-    # Ensure the column exists in the DataFrame.
-    if column not in df.columns:
-        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
-    
-    # Drop the column (using inplace=False to return a new DataFrame)
-    df = df.drop(columns=[column])
-    print(f"Column '{column}' has been dropped from the DataFrame.")
-    
     return df
