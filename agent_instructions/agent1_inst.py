@@ -34,7 +34,7 @@ AGENT1_IA = {
     "HANDLE_ALIAS_NULLS_IN_TEXT_LLM": (
         "Use exec_stored_func tool to run display_most_common_unique_entries(df) and review the most common unique entries in the column.\n"
         "Look through the unique entries and try to determine if there are any entries that should be nulls, meaning they are 'very likely mislabeled nulls'.\n"
-        "If any exist, call get_inst(JSON_LIST_INST) for instructions on formatting a list of 'very likely mislabeled nulls' and use the append_alias_nulls tool to save the new list.\n"
+        "If any exist, call get_inst(JSON_LIST_INST) for instructions on formatting a list of 'very likely mislabeled nulls' and use the append_to_json_list tool with json_path as 'json_lib/alias_nulls_list.json' to save the new list.\n"
         # IMPORTANT: We need a way to send this json list (in this state) to the pipeline.
         "If you added mislabeled nulls to the list, use the exec_stored_func tool to run convert_uncommon_alias_nulls(df) to convert items in the list to nulls, then End Process.\n"
         "If you found no 'very likely mislabeled nulls'. END PROCESS\n"

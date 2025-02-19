@@ -12,19 +12,27 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from utils import get_dataframe_stage, get_shared_var, print_stream
 
 
-def show_sample_of_entries(df, sample_count=10):
+import pandas as pd
+
+def show_sample_of_entries(df, sample_count=5, sample_length=150):
     """
-    Displays a random sample of sample_count=x rows from the specified column in the DataFrame.
-    
+    Displays a random sample of sample_count rows from the specified column in the DataFrame,
+    with each entry truncated to a maximum of sample_length characters.
+
     Parameters:
         df (pd.DataFrame): The DataFrame containing the data.
-        column (str): The name of the column to sample from.
-        
+        sample_count (int): The number of rows to sample.
+        sample_length (int): The maximum number of characters displayed from each sample entry.
+
     Returns:
-        pd.Series: A random sample of sample_count=x rows from the specified column.
+        pd.Series: A random sample of sample_count rows from the specified column, truncated.
     """
-    column=get_shared_var('current_column')
-    return df[column].dropna().sample(n=min(sample_count, len(df)), random_state=42)
+    column = get_shared_var('current_column')
+    sampled_entries = df[column].dropna().sample(n=min(sample_count, len(df)), random_state=42)
+    
+    # Truncate each entry to the specified sample_length
+    return sampled_entries.apply(lambda x: x[:sample_length] if isinstance(x, str) else x)
+
 
 
 def generate_llm_feature(df):
@@ -37,8 +45,8 @@ def generate_llm_feature(df):
     
     prompt_template = (
         "Entry Text: {text}\n"
-        "Read the following job Entry Text. If you think it is from a scam job posting, respond with 'fake'. "
-        "Otherwise, respond with 'real'.\n"   
+        "Read the following Entry Text. If you think it is from a scam job posting, respond with 'fake'.\n"
+        "Otherwise, respond with 'real'."   
     )
 
     def call_agent_on_text(text: str) -> str:
@@ -65,30 +73,33 @@ def generate_llm_feature(df):
     df[target_column] = df[column].progress_apply(call_agent_on_text)
     return df
 
-def generate_llm_feature_test(df):
-    """
-    A test function that iterates over each entry in the current column
-    (as determined by get_current_column()), extracts the first 5 characters
-    of the text, and writes the result into a new column whose name is the
-    current column name with '_gen_feature' appended.
-    
-    Parameters:
-        df (pd.DataFrame): The input DataFrame containing the text column.
-    
-    Returns:
-        pd.DataFrame: The DataFrame updated with a new column containing the
-                      first 5 characters of each entry from the original column.
-    """
-    # Get the current column name. Make sure get_current_column is available.
-    column = get_shared_var('current_column')
-    target_column = column + "_gen_feature"
-    
-    def first_five_chars(text: str) -> str:
-        if pd.isna(text) or not text:
-            return ""
-        return text[:5]
-    
-    tqdm.pandas(desc="Processing rows")
-    df[target_column] = df[column].progress_apply(first_five_chars)
 
-    return df
+
+
+# def generate_llm_feature_test(df):
+#     """
+#     A test function that iterates over each entry in the current column
+#     (as determined by get_current_column()), extracts the first 5 characters
+#     of the text, and writes the result into a new column whose name is the
+#     current column name with '_gen_feature' appended.
+    
+#     Parameters:
+#         df (pd.DataFrame): The input DataFrame containing the text column.
+    
+#     Returns:
+#         pd.DataFrame: The DataFrame updated with a new column containing the
+#                       first 5 characters of each entry from the original column.
+#     """
+#     # Get the current column name. Make sure get_current_column is available.
+#     column = get_shared_var('current_column')
+#     target_column = column + "_gen_feature"
+    
+#     def first_five_chars(text: str) -> str:
+#         if pd.isna(text) or not text:
+#             return ""
+#         return text[:5]
+    
+#     tqdm.pandas(desc="Processing rows")
+#     df[target_column] = df[column].progress_apply(first_five_chars)
+
+#     return df

@@ -411,45 +411,54 @@ def exec_generated_func(
         return f'Error writing function call to pipeline: {e}'
 
 @tool
-def append_alias_nulls(
-    new_nulls: Annotated[list, 'the list of mislabeled nulls to be added to the alias null list.']
+def append_to_json_list(
+    new_items: Annotated[list, "The list of items to be added to the JSON list."],
+    json_path: Annotated[str, "The file path to the JSON file to which items will be appended."]
 ) -> str:
-    '''
-    Appends new alias nulls to the existing list in the JSON file.
-    If the file doesn't exist or is empty, it will initialize with an empty list.
+    """
+    Appends new items to the existing list in the JSON file specified by json_path.
+    If the file doesn't exist or is empty, it initializes the file with an empty list.
 
     Example JSON structure:
-    ["na", "missing", "none", "unknown", "empty"]
-    '''
+    ["item1", "item2", "item3"]
+    
+    Parameters:
+        new_items (list): The list of strings to append.
+        json_path (str): The file path to the JSON file.
+
+    Returns:
+        str: A success message or error message.
+    """
     try:
-        # Ensure the input is a list of strings
-        if not isinstance(new_nulls, list):
+        # Ensure the input is a list of strings.
+        if not isinstance(new_items, list):
             return "Error: The provided data is not a list."
-        if not all(isinstance(item, str) for item in new_nulls):
+        if not all(isinstance(item, str) for item in new_items):
             return "Error: All items in the list must be strings."
 
-        # Initialize the JSON file with an empty list if it doesn't exist or is empty
-        if not os.path.exists(ALIAS_NULLS_PATH) or os.path.getsize(ALIAS_NULLS_PATH) == 0:
-            with open(ALIAS_NULLS_PATH, "w") as file:
-                json.dump([], file, indent=4)  # Initialize with an empty list
-            print(f"Initialized empty JSON file at {ALIAS_NULLS_PATH}.")
+        # If the file doesn't exist or is empty, initialize it with an empty list.
+        if not os.path.exists(json_path) or os.path.getsize(json_path) == 0:
+            with open(json_path, "w") as file:
+                json.dump([], file, indent=4)
+            print(f"Initialized empty JSON file at {json_path}.")
 
-        # Load the existing null list from the JSON file
-        with open(ALIAS_NULLS_PATH, "r") as file:
-            null_list = json.load(file)
+        # Load the existing list from the JSON file.
+        with open(json_path, "r") as file:
+            current_list = json.load(file)
 
-        # Append the new nulls to the existing list and remove duplicates
-        null_list.extend(new_nulls)
-        null_list = list(set(null_list))
+        # Append the new items to the list and remove duplicates.
+        current_list.extend(new_items)
+        current_list = list(set(current_list))
 
-        # Save the updated null list back to the JSON file
-        with open(ALIAS_NULLS_PATH, "w") as file:
-            json.dump(null_list, file, indent=4)
+        # Save the updated list back to the JSON file.
+        with open(json_path, "w") as file:
+            json.dump(current_list, file, indent=4)
 
-        return f"Nulls successfully added: {new_nulls}"
+        return f"Items successfully added: {new_items}"
 
     except Exception as e:
         return f"An unexpected error occurred: {e}"
+
 
 @tool
 def add_nlp_column(
@@ -523,7 +532,7 @@ tools = [
     get_inst,
     logger,
     exec_stored_func,
-    append_alias_nulls,
+    append_to_json_list,
     add_nlp_column
 ]
 
@@ -612,7 +621,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col4'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -627,6 +636,7 @@ class Preprocesser:
                 print(f'Error during stream: {e}')
 
         save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_1')
+
 
         #  endregion  ================================================#
         #  region  AGENT2 LOOP                                        #
@@ -786,7 +796,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col6'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
