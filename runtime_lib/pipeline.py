@@ -23,6 +23,4 @@ from runtime_lib.static_agent_libs.agent6_static_lib import *
 
 df = pd.read_csv("data_inputs/data.csv", index_col=None)
 
-set_current_column("col4")
-df = convert_common_alias_nulls(df)
-df = convert_uncommon_alias_nulls(df)
+set_current_column("col6")

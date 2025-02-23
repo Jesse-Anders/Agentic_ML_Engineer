@@ -1,4 +1,6 @@
 [
-    "nerps",
-    "nerp"
+    "Based on the Entry Text, identify the geographical location hinted at in the job posting and provide only one word.",
+    "Based on the Entry Text, identify the primary emotion conveyed in the job posting and provide only one word.",
+    "Based on the Entry Text, extract the most significant skill or qualification mentioned and provide only one word.",
+    "Based on the Entry Text, determine the industry or sector most relevant to the job description and provide only one word."
 ]

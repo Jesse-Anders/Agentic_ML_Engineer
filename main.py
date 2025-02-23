@@ -459,7 +459,6 @@ def append_to_json_list(
     except Exception as e:
         return f"An unexpected error occurred: {e}"
 
-
 @tool
 def add_nlp_column(
     column: Annotated[str, 'the name of the NLP column being added.']
@@ -621,7 +620,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col4'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -752,8 +751,8 @@ class FeatureEngineer:
 
         try:
             # AGENT3 = NLP Preliminary 
-            agent3 = create_react_agent(model, [
-                get_inst, logger, exec_stored_func,
+            agent3 = create_react_agent(super_model, [
+                get_inst, logger, exec_stored_func, append_to_json_list,
                 write_generated_func, exec_generated_func
             ])
         except Exception as e:
@@ -796,7 +795,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col6'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
