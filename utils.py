@@ -21,7 +21,11 @@ _shared_state = {
     "super_agent": None,
     "numeric_pow_groups": [],
     "object_pow_groups": [],
-    "current_pow_group": None
+    "current_pow_group": [],
+    "numeric_transform_columns": [],
+    "ungrouped_cols": [],
+    "skip_columns": [],
+    "compare_col": None,
 }
 
 PIPELINE_WRITE_LIST = [ # They're in chronological order (agent1_static_lib funcs, agent2_static_lib funcs...)
