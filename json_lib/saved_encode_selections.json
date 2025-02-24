@@ -1,8 +1,5 @@
 {
-    "Encode_Categorical_Features": [
-        "col1",
-        "col2"
-    ],
+    "Encode_Categorical_Features": [],
     "One_Hot_Categorical_Features": [],
     "Boolean_Encode_Categorical_Features": [],
     "MinMax_Normalize": [],
