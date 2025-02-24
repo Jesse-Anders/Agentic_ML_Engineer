@@ -492,10 +492,9 @@ def get_pow_candidates(
     Returns a list of columns to be examined as potential parts-of-a-whole column groups.
     '''
     df = preprocessor.get_df() if preprocessor.active else feature_engineer.get_df()
-    skip_columns = [preprocessor.args.target_var, preprocessor.args.id_var]
-    candidates_string = ''
+    candidates_string = 'The following first entry is the column you are to build a parts-of-a-whole group around:'
     if column_type == 'numeric':
-        pow_cols = [c for c in df.columns if c not in skip_columns and pd.api.types.is_numeric_dtype(df[c])]
+        pow_cols = [get_shared_var('compare_col')] + get_shared_var('ungrouped_cols')
         for c in pow_cols:
             col_data = df[c].dropna()  # Remove NaN values for accurate statistics
             min_val = col_data.min()
@@ -504,12 +503,12 @@ def get_pow_candidates(
             q3 = col_data.quantile(0.75)
             max_val = col_data.max()
             candidates_string += (
-                f"\n- {c} (dtype: {df[c].dtype}): "
+                f"\n- {'COMPARE COLUMN: ' if c == get_shared_var('compare_col') else ''}{c} (dtype: {df[c].dtype}): "
                 f"Min={min_val}, Q1={q1}, Median={q2}, Q3={q3}, Max={max_val}"
             )
 
     if column_type == 'object':
-        pow_cols = [c for c in df.columns if c not in skip_columns and pd.api.types.is_object_dtype(df[c])]
+        pow_cols = [c for c in df.columns if c not in get_shared_var('skip_columns') and pd.api.types.is_object_dtype(df[c])]
         for c in pow_cols:
             col_data = df[c].dropna()  # Remove NaN values for accurate statistics
             unique_vals = col_data.nunique()
@@ -520,65 +519,32 @@ def get_pow_candidates(
     return f'Parts-of-a-whole {column_type} column candidates include the following:\n{candidates_string}'
 
 @tool
-def create_pow_groups(
-    groupings_list: Annotated[list, 'a list of column name lists (groups) that you\'ve determined are related or parts-of-a-whole'],
+def create_pow_group(
+    group: Annotated[list, 'a list of column names that you\'ve determined are logically related or parts-of-a-whole'],
     column_type: Annotated[str, 'either "numeric" or "object"'] = 'numeric'
 ) -> str:
     '''
-    Stores parts-of-a-whole groupings so that they can be accessed for future feature engineering.
+    Stores a parts-of-a-whole column group.
     '''
     try:
+        ungrouped_cols = get_shared_var('ungrouped_cols')
+
+        # Columns may belong to only one group
+        set_shared_var('ungrouped_cols', [c for c in ungrouped_cols if c not in group])
+
         if column_type == 'numeric':
-            set_shared_var('numeric_pow_groups', groupings_list)
+            numeric_pow_groups = get_shared_var('numeric_pow_groups')
+            numeric_pow_groups.append(group)
+            set_shared_var('numeric_pow_groups', numeric_pow_groups)
         elif column_type == 'object':
-            set_shared_var('object_pow_groups', groupings_list)
+            object_pow_groups = get_shared_var('object_pow_groups')
+            object_pow_groups.append(group)
+            set_shared_var('object_pow_groups', object_pow_groups)
         else:
             return f'Column type is invalid: {column_type}'
     except Exception as e:
         return f'Error setting parts-of-a-whole column groupings shared variable: {e}'
     return f'Successfully stored parts-of-a-whole groupings.'
-
-@tool
-def encode_choice(encoding_category: str, extra_info: dict = None):
-    """
-    Adds the current column (retrieved via get_shared_var('current_column')) to the encode_selections 
-    dictionary under the specified encoding_category.
-    
-    Parameters:
-      encoding_category (str): One of the following keys:
-          'Encode_Categorical_Features',
-          'One_Hot_Categorical_Features',
-          'Boolean_Encode_Categorical_Features',
-          'MinMax_Normalize',
-          'NLP_Feature',
-          'Bin_Numeric'
-      extra_info (dict, optional): Additional info required for some encodings (e.g., 
-          for 'Bin_Numeric' you can pass {'n_bins': 10}).
-          
-    Returns:
-      str: A confirmation message indicating the column was added.
-    """
-    # Retrieve the current column from the shared variable
-    column = get_shared_var('current_column')
-    if column is None:
-        raise ValueError("The shared variable 'current_column' is not set.")
-    
-    # Validate the encoding category exists in the dictionary
-    if encoding_category not in encode_selections:
-        raise ValueError(f"Encoding category '{encoding_category}' is not recognized.")
-    
-    # For 'Bin_Numeric', expect extra_info to include the number of bins
-    if encoding_category == 'Bin_Numeric':
-        if extra_info is None or 'n_bins' not in extra_info:
-            raise ValueError("For 'Bin_Numeric', extra_info with key 'n_bins' must be provided.")
-        # Append as a tuple (column, n_bins)
-        encode_selections[encoding_category].append((column, extra_info['n_bins']))
-    else:
-        # For other categories, add the column if it isn't already present
-        if column not in encode_selections[encoding_category]:
-            encode_selections[encoding_category].append(column)
-    
-    return f"Added column '{column}' to '{encoding_category}'"
 
 tools = [
     get_inst,
@@ -797,7 +763,7 @@ class FeatureEngineer:
         try:
             # SUPER AGENT = Stronger GPT for Periodic Higher Inference Needs
             super_agent = create_react_agent(super_model, [
-                get_inst, logger, exec_stored_func, get_pow_candidates, create_pow_groups
+                get_inst, logger, exec_stored_func, get_pow_candidates, create_pow_group
             ])
             set_shared_var('super_agent', super_agent)
         except Exception as e:
@@ -828,7 +794,7 @@ class FeatureEngineer:
         try:
             # AGENT5 = DF-wise / Numeric FE
             agent5 = create_react_agent(model, [
-                get_inst, logger, exec_stored_func
+                get_inst, logger, describe_pow_group, test_pow_transform
             ])
         except Exception as e:
             print(f'Error creating agent5 : A LanGraph prebuit ReAct agent: {e}')
@@ -896,15 +862,50 @@ class FeatureEngineer:
         #  region  AGENT5 LOOP                                        #
         #=============================================================#       
 
-        if not preprocessor.args.debug:
+        # Initialize parts-of-a-whole search
+        search_exhausted = False
+        iteration_count = 0
+        max_iterations = 100  # Safety limit to prevent infinite loops
+        
+        # Setup initial columns
+        set_shared_var('skip_columns', [self.args.target_var, self.args.id_var])
+        ungrouped_cols = [c for c in self.get_df().columns 
+                         if c not in get_shared_var('skip_columns') 
+                         and pd.api.types.is_numeric_dtype(self.get_df()[c])]
+        set_shared_var('ungrouped_cols', ungrouped_cols)
+        
+        while not search_exhausted:
+            iteration_count += 1
+            ungrouped_cols = get_shared_var('ungrouped_cols')
+            
+            # Multiple conditions to exit the loop
+            if (len(ungrouped_cols) <= 1  # Skip last column if it's a straggler
+                or iteration_count >= max_iterations  # Safety limit reached
+                or not ungrouped_cols):  # No more columns to process
+                search_exhausted = True
+                print(f"Search completed after {iteration_count} iterations")
+                break
+            
+            # Process next column
+            compare_col = ungrouped_cols.pop(0)
+            set_shared_var('compare_col', compare_col)
+            set_shared_var('ungrouped_cols', ungrouped_cols)
+            
+            print(f"Processing column {compare_col}. Remaining columns: {len(ungrouped_cols)}")
+            
             inputs = {'messages': [('user', AGENT5_IA["SUPER_AGENT5_START"])]}
             try:
                 stream = super_agent.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+                # Don't let errors break the loop
+                continue
 
-            for group in get_pow_candidates():
+        # Process the groups as before
+        for group in get_shared_var('numeric_pow_groups'):
+            set_shared_var('current_pow_group', group)
+            for i in range(self.args.pow_iter):
                 inputs = {'messages': [('user', AGENT5_IA["AGENT5_START"])]}
                 try:
                     stream = agent5.stream(inputs, stream_mode='values')
@@ -912,7 +913,10 @@ class FeatureEngineer:
                 except Exception as e:
                     print(f'Error during stream: {e}')
 
-                save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_5')
+        print(f'\n\nSearch Alg Approach Pow Groups: {get_shared_var("numeric_pow_groups")}\n')
+        print(f'ITER=5 Recursive Feature Creation: {get_shared_var("numeric_transform_columns")}\n\n')
+
+        save_dataframe_stage(self.get_df(), 'POST_AGENT_5')
 
         #  endregion  ================================================#
         #  region  AGENT6 LOOP                                        #
@@ -1183,6 +1187,8 @@ if __name__ == "__main__":
     parser.add_argument('--openai_model', type=str, default='gpt-4o-mini')
     parser.add_argument('--super_gpt_model', type=str, default='gpt-4o')
     parser.add_argument('--llm_platform', type=str, default='openai')
+    
+    parser.add_argument('--pow_iter', type=int, default=5)
 
     parser.add_argument('--target_var', type=str, default='target')
     parser.add_argument('--id_var', type=str)
