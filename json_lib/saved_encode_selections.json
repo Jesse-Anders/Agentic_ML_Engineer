@@ -1,0 +1,11 @@
+{
+    "Encode_Categorical_Features": [
+        "col1",
+        "col2"
+    ],
+    "One_Hot_Categorical_Features": [],
+    "Boolean_Encode_Categorical_Features": [],
+    "MinMax_Normalize": [],
+    "NLP_Feature": [],
+    "Bin_Numeric": []
+}

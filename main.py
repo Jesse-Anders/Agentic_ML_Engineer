@@ -37,6 +37,17 @@ AGENT_MODULES = [agent1, agent2, agent3, agent4, agent5, agent6]
 # INSTRUCTION ARCHIVE LIST: Used in the get_inst tool
 IA_LIST = [INST_ARCHIVE, AGENT1_IA, AGENT2_IA, AGENT3_IA, AGENT4_IA, AGENT5_IA, AGENT6_IA]
 
+# Encode Assignment Dictionary: Used by agent 6 to assign columns for specific encoding actions for agent 7
+encode_selections = {
+    'Encode_Categorical_Features': [],
+    'One_Hot_Categorical_Features': [],
+    'Boolean_Encode_Categorical_Features': [],
+    'MinMax_Normalize': [],
+    'NLP_Features':[],
+    'Bin_Numeric': []  # For Bin_Numeric, we'll store tuples: (column, n_bins)
+    }   
+
+
 #=============================================================================================#
 #  region                                Dynamic Globals                                      #
 #=============================================================================================#
@@ -527,12 +538,55 @@ def create_pow_groups(
         return f'Error setting parts-of-a-whole column groupings shared variable: {e}'
     return f'Successfully stored parts-of-a-whole groupings.'
 
+@tool
+def encode_choice(encoding_category: str, extra_info: dict = None):
+    """
+    Adds the current column (retrieved via get_shared_var('current_column')) to the encode_selections 
+    dictionary under the specified encoding_category.
+    
+    Parameters:
+      encoding_category (str): One of the following keys:
+          'Encode_Categorical_Features',
+          'One_Hot_Categorical_Features',
+          'Boolean_Encode_Categorical_Features',
+          'MinMax_Normalize',
+          'NLP_Feature',
+          'Bin_Numeric'
+      extra_info (dict, optional): Additional info required for some encodings (e.g., 
+          for 'Bin_Numeric' you can pass {'n_bins': 10}).
+          
+    Returns:
+      str: A confirmation message indicating the column was added.
+    """
+    # Retrieve the current column from the shared variable
+    column = get_shared_var('current_column')
+    if column is None:
+        raise ValueError("The shared variable 'current_column' is not set.")
+    
+    # Validate the encoding category exists in the dictionary
+    if encoding_category not in encode_selections:
+        raise ValueError(f"Encoding category '{encoding_category}' is not recognized.")
+    
+    # For 'Bin_Numeric', expect extra_info to include the number of bins
+    if encoding_category == 'Bin_Numeric':
+        if extra_info is None or 'n_bins' not in extra_info:
+            raise ValueError("For 'Bin_Numeric', extra_info with key 'n_bins' must be provided.")
+        # Append as a tuple (column, n_bins)
+        encode_selections[encoding_category].append((column, extra_info['n_bins']))
+    else:
+        # For other categories, add the column if it isn't already present
+        if column not in encode_selections[encoding_category]:
+            encode_selections[encoding_category].append(column)
+    
+    return f"Added column '{column}' to '{encoding_category}'"
+
 tools = [
     get_inst,
     logger,
     exec_stored_func,
     append_to_json_list,
-    add_nlp_column
+    add_nlp_column,
+    encode_choice
 ]
 
 
@@ -795,7 +849,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col6'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -862,7 +916,7 @@ class FeatureEngineer:
 
         #  endregion  ================================================#
         #  region  AGENT6 LOOP                                        #
-        #=============================================================#       
+        #=============================================================#    
 
         for column in feature_engineer.get_df().columns:
             if column == self.args.target_var:
@@ -870,7 +924,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col1','col2'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -883,6 +937,11 @@ class FeatureEngineer:
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+
+        with open('json_lib/saved_encode_selections.json', 'w') as file:
+            json.dump(encode_selections, file, indent=4)
+
+        print("Encode selections updated and JSON file written.")
 
         save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_6')
         #  endregion

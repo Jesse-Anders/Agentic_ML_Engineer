@@ -3,7 +3,8 @@ AGENT6_IA = {
 #    region                AGENT6                                                             #
 #=============================================================================================#
     "AGENT6_START": (
-        "Tell me that you've read the Agent 6 instructions and END PROCESS.\n"
+        "Use the encode_choice tool to add the current column to the encode_selections dictionary as Encode_Categorical_Features.\n"
+        "END PROCESS.\n"
     ),
     #endregion
 }
