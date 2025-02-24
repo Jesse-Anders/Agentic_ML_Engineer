@@ -6,6 +6,6 @@
     "One_Hot_Categorical_Features": [],
     "Boolean_Encode_Categorical_Features": [],
     "MinMax_Normalize": [],
-    "NLP_Feature": [],
+    "NLP_Features": [],
     "Bin_Numeric": []
 }
