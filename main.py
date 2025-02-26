@@ -39,13 +39,15 @@ IA_LIST = [INST_ARCHIVE, AGENT1_IA, AGENT2_IA, AGENT3_IA, AGENT4_IA, AGENT5_IA, 
 
 # Encode Assignment Dictionary: Used by agent 6 to assign columns for specific encoding actions for agent 7 
 encode_selections = {
-    'Encode_Categorical_Features': [],
-    'One_Hot_Categorical_Features': [],
-    'Boolean_Encode_Categorical_Features': [],
-    'MinMax_Normalize': [],
-    'NLP_Features':[],
-    'Bin_Numeric': []  # For Bin_Numeric, we'll store tuples: (column, n_bins)
-    }   
+    'Numeric_Encode': [], # Tree Models Only
+    'One_Hot_Encode': [], # Neural Network Models Only
+    'Frequency_Count_Encode': [], # Future Feature (Not Currently Active)
+    'Ordinal_Encode': [],
+    'NLP_Handler':[],
+    'Scale_Or_Normalize': [],
+    'Encode_True_False_As_One_Zero': [],
+    'Failed_Encode_Selection': []
+    }  
 
 
 #=============================================================================================#
@@ -645,14 +647,14 @@ def encode_choice(encoding_category: str, extra_info: dict = None):
     
     Parameters:
       encoding_category (str): One of the following keys:
-          'Encode_Categorical_Features',
-          'One_Hot_Categorical_Features',
-          'Boolean_Encode_Categorical_Features',
-          'MinMax_Normalize',
-          'NLP_Feature',
-          'Bin_Numeric'
-      extra_info (dict, optional): Additional info required for some encodings (e.g., 
-          for 'Bin_Numeric' you can pass {'n_bins': 10}).
+        'Numeric_Encode'
+        'One_Hot_Encode'
+        'Frequency_Count_Encode'
+        'Ordinal_Encode'
+        'NLP_Handler'
+        'Scale_Or_Normalize'
+        'Encode_True_False_As_One_Zero'
+        'Failed_Encode_Selection'
           
     Returns:
       str: A confirmation message indicating the column was added.
@@ -935,9 +937,12 @@ class FeatureEngineer:
 
         try:
             # AGENT6 = Final Feature Selector
-            agent6 = create_react_agent(model, tools)                                                                       
+            agent6 = create_react_agent(super_model, [
+                get_inst, exec_stored_func, encode_choice
+            ])                                                                       
         except Exception as e:
             print(f'Error creating agent6 : A LanGraph prebuit ReAct agent: {e}')
+
 
         #  endregion  ================================================#
         #  region  AGENT3 LOOP  Preliminary NLP                       #
@@ -1065,7 +1070,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col1','col2'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             

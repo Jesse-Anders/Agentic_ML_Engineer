@@ -13,8 +13,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from utils import get_dataframe_stage, get_shared_var, print_stream
 
 
-import pandas as pd
-
 def show_sample_of_entries(df, sample_count=5, sample_length=1000):
     """
     Displays a random sample of sample_count rows from the specified column in the DataFrame,

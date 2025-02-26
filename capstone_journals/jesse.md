@@ -107,3 +107,7 @@ continued Refine and finally implementation of Number column outlier and impute 
 2/6/25
 2 hour
 Testing new FE agents and functions. mostly debugging FE agents not being able to effect df yet.
+
+2/26 (I FELL OFF THE JOURNALING WAGON - WAY MORE WORK HAS BEEN DONE THAN RECORDED HERE!!!)
+4 hour
+Coding Session. Agent 6, which makes all encoding choices is up and running. The agent selects between 7 encoding options and populates a json with all encoding allocations. Agent 6.2 will pick up where agent 6 leaves off and actually execute on the encode choices. 

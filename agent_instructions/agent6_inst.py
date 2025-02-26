@@ -3,37 +3,42 @@ AGENT6_IA = {
 #    region                AGENT6                                                             #
 #=============================================================================================#
     "AGENT6_START": (
-        # "Use the encode_choice tool to add the current column to the encode_selections dictionary as Encode_Categorical_Features.\n"
-        "There are 6 options and your task is to determine which of the 6 encoding processes should be executed on the current column.\n"
-        ""
-        "END PROCESS.\n"
+        "Use the exec_stored_func to run gather_column_info to show a sampling of entries in the column.\n"
+        "Decide if current column contains boolean data (true and false values only) or if the column is numeric (continuous or integer, not just codes for categories), or if the column is neither.\n"
+        "If the column is true false boolean, add the current column name to the encode_selections dictionary as Encode_True_False_As_One_Zero. END PROCESS.\n"
+        "If the column is numeric, add the current column name to the encode_selections dictionary as Scale_Or_Normalize. END PROCESS.\n"
+        "If the column is neither bool nor numeric, get_inst(NLP_OR_CATEGORICAL_INST)"
+    ),
+    "NLP_OR_CATEGORICAL_INST": (
+        "Decide if the current column generally suitable for NLP operations. Meaning, it is primarily text and is free-form text rather than discrete categories.\n"
+        "If the column is suitable for NLP operations, add the current column name to the encode_selections dictionary as NLP_Handler. END PROCESS.\n"
+        "Otherwise, move on to get_inst(CATEGORICAL_1_INST)"
+    ),
+    "CATEGORICAL_1_INST": (
+        "Decide if the current column contains Ordinal categories. Meaning, the feature's categories have a natural, meaningful order (e.g., skill levels, size categories, ratings, etc).\n"
+        "Confirm the data has genuine ordinal semantics to be preserved in the numeric encoding.\n"
+        "If the column is Ordinal, add the current column name to the encode_selections dictionary as Ordinal_Encode. END PROCESS."
+        "Otherwise, move on to get_inst(CATEGORICAL_2_INST)"
+    ),
+    "CATEGORICAL_2_INST": (
+        "Please review and confirm that this column is a reasonable candidate to be Numeric Label Encoded or One Hot Encoded.\n"
+        "If column entries are of an unclear data type and or not possible canditades for Numeric Label Encoding or One Hot Encoding, add the current column name to the encode_selections dictionary as Failed_Encode_Selection and END PROCESS.\n"
+        "Else, add the current column name to the encode_selections dictionary as Numeric_Encode and " # This is for Tree Based ML Models
+        "add the current column name to the encode_selections dictionary as One_Hot_Encode.\n" # This is for Neural Network ML Models
+        # IMPORTANT: Currently, all remaining features got to One_Hot_Encode_Categorical and are parsed by via Python with a mathematical threshold to Frequency_Count_Encoding.
+        # FUTURE UPGRADE WANTED: Apply Domain Knowledge to Parse Between One_Hot vs. Frequency_Count Encoding at this LLM stage.
+        "END PROCESS."
     ),
     #endregion
 }
 
 # encode_selections = {
-#     'Numeric_Encode_Categorical_Features': [],
-#     'One_Hot_Encode_Categorical_Features': [],
-#     'Boolean_Encode_Categorical_Features': [],
-#     'MinMax_Normalize': [],
-#     'NLP_Features':[],
-#     'Bin_Numeric': []  # For Bin_Numeric, we'll store tuples: (column, n_bins)
+#     'Numeric_Encode': [], # Tree Models Only
+#     'One_Hot_Encode': [], # Neural Network Models Only
+#     'Frequency_Count_Encode': [], # Future Feature (Not Currently Active)
+#     'Ordinal_Encode': [],
+#     'NLP_Handler':[],
+#     'Scale_Or_Normalize': [],
+#     'Encode_True_False_As_One_Zero': [],
+#     'Failed_Encode_Selection': []
 #     }   
-
-
-
-# Example “Recommended Encodings” Lists
-# Tree-Based Models
-# 1.	Numeric (Label) Encode (for most categorical features).
-# 2.	Ordinal Encoding (if the data is genuinely ordinal).
-# 3.	Frequency/Count Encoding (if cardinality is high).
-# 4.	Boolean Encode by Threshold (optional, if you want to turn a multi-category feature into a single important/less-important feature).
-# 5.	NLP for text columns.
-# 6.	Scaling/Normalization (less critical, typically optional, unless you have hybrid pipelines that also feed into an algorithm that needs scaling).
-# Neural Networks / Linear Models
-# 1.	One-Hot Encode (for small/medium cardinality nominal features).
-# 2.	Ordinal Encoding (if genuinely ordinal).
-# 3.	Frequency/Count Encoding (for high-cardinality nominal features).
-# 4.	Boolean Encode by Threshold (could still be used, but less common).
-# 5.	NLP for text columns (could be embeddings or TF-IDF, depending on approach).
-# 6.	Scaling/Normalization (almost always recommended—Min/Max or Standard Scaling for numeric features).

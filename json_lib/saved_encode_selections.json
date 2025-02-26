@@ -1,8 +1,22 @@
 {
-    "Encode_Categorical_Features": [],
-    "One_Hot_Categorical_Features": [],
-    "Boolean_Encode_Categorical_Features": [],
-    "MinMax_Normalize": [],
-    "NLP_Features": [],
-    "Bin_Numeric": []
+    "Numeric_Encode": [
+        "col3",
+        "col4"
+    ],
+    "One_Hot_Encode": [
+        "col3",
+        "col4"
+    ],
+    "Frequency_Count_Encode": [],
+    "Ordinal_Encode": [],
+    "NLP_Handler": [
+        "col6"
+    ],
+    "Scale_Or_Normalize": [
+        "col1",
+        "col2",
+        "col5"
+    ],
+    "Encode_True_False_As_One_Zero": [],
+    "Failed_Encode_Selection": []
 }
