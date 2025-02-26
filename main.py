@@ -1089,6 +1089,10 @@ class FeatureEngineer:
         # with open('json_lib/saved_encode_selections.json', 'w') as file:
         #     json.dump(encode_selections, file, indent=4)
 
+        #  ===========================================================#
+        #  region START: AGENT6 Encode Execution                      #
+        #=============================================================# 
+
         with open('json_lib/saved_encode_selections.json', "r") as file:
             encode_selections = json.load(file)
 
@@ -1103,10 +1107,15 @@ class FeatureEngineer:
             else:
                 print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
         
+        # Save the Final Encode Reference Dictionary
         with open('json_lib/saved_encode_dictionary.json', 'w') as file:
             json.dump(column_mappings, file, indent=4)
 
-        print("Encode selections updated and JSON file written.")
+        print("Encode Dictionary updated and JSON file written.")
+
+        #  ===========================================================#
+        #  region END: AGENT6 Encode Execution                      #
+        #=============================================================# 
 
         save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_6')
         #  endregion

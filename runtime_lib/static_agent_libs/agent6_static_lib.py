@@ -73,20 +73,16 @@ def gather_column_info(df, sample_count=10, sample_length=300):
         "Number of Unique Values": num_unique,
         "Total Rows": total_rows,
         "Ratio of Unique Entries to Total Entries (Lower Value Indicates More Likely Categorical)": unique_to_total_ratio,
-        "Average Entry Length in Characters (High Averages Indicate Likely NLP)": average_entry_length,
+        "Average Entry Length in Characters (Above 50 Indicates Very Likely NLP)": average_entry_length,
         "Top 5 Value Counts": top_values_dict,
         f"Sampling of Entries (length capped at {sample_length})": truncated_samples
     }
 
     return column_info
 
-# Initialize a global dictionary to store mappings for each encoded column
-column_mappings = {}
-
 # Encode Categorical Features
 def execute_numeric_encode(df, column):
     global column_mappings  # Reference the global dictionary
-    # column = get_shared_var('current_column')
     
     # Check if the column exists in the DataFrame
     if column not in df.columns:

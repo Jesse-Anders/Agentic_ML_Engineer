@@ -444,11 +444,14 @@ def knn_impute_with_rounding(df,
 # Imputes are scattered near the median. The dynamics increase or decrease the impute scatter range based on data distribution and the columns min and max values.
 # FUTURE OPTION : Add Eval that splits flow to this dynamic_stochastic_median_impute OR a normal_distribution_impute 
 # IN GENERAL: There are a lot of ways to tighten up numeric impute handling. This can be worked on a lot more.
+import numpy as np
+import pandas as pd
+
 def dynamic_stochastic_median_impute(
     df,
     iqr_factor=0.5,
     clamp_to_min_max=True,
-    force_round=False
+    force_round=True
 ):
     """
     Imputes missing values by uniformly sampling in a window around the median,
@@ -463,7 +466,7 @@ def dynamic_stochastic_median_impute(
     => total width of the band is 0.5 * IQR.
     => random draws are in [median - 0.25*IQR, median + 0.25*IQR].
     """
-    column=get_shared_var('current_column')
+    column = get_shared_var('current_column')
 
     # 1) Basic checks
     if column not in df.columns:
@@ -510,6 +513,10 @@ def dynamic_stochastic_median_impute(
         decimal_places = determine_max_decimal_places(df[column].dropna())
         imputed_values = np.round(imputed_values, decimals=decimal_places)
 
+    # **Fix: Ensure integer columns remain integers**
+    if pd.api.types.is_integer_dtype(df[column]):
+        imputed_values = imputed_values.astype(int)
+
     # 8) Place the imputed values into the DataFrame
     df.loc[null_mask, column] = imputed_values
 
@@ -519,6 +526,7 @@ def dynamic_stochastic_median_impute(
         f"({num_nulls} values imputed){' (rounded)' if force_round else ''}."
     )
     return df
+
 
 
 # Used to round imputed numbers appropriate to column data

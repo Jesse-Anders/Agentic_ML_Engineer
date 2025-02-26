@@ -10,7 +10,7 @@ AGENT6_IA = {
         "If the column is neither bool nor numeric, get_inst(NLP_OR_CATEGORICAL_INST)"
     ),
     "NLP_OR_CATEGORICAL_INST": (
-        "Decide if the current column generally suitable for NLP operations. Meaning, it is primarily text and is free-form text rather than discrete categories.\n"
+        "Decide if the current column generally suitable for NLP operations. Meaning, it is primarily multi word text entries, likely including many complete sentences.\n"
         "If the column is suitable for NLP operations, add the current column name to the encode_selections dictionary as NLP_Handler. END PROCESS.\n"
         "Otherwise, move on to get_inst(CATEGORICAL_1_INST)"
     ),

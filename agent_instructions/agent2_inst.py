@@ -14,7 +14,7 @@ AGENT2_IA = {
     # Instructions for handling Float data type columns.
     "FLOAT_INST": (
         "Use exec_stored_func tool to run if_float_is_really_int_convert(df).\n"
-        "Follow instructions from the call get_inst(NUMERIC_INST).\n"
+        "After running if_float_is_really_int_convert(df), follow instructions from the call get_inst(NUMERIC_INST)."
     ), 
     # Instructions for handling Integer data type columns.
     "NUMERIC_INST": (
