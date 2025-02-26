@@ -1066,28 +1066,45 @@ class FeatureEngineer:
         #  region  AGENT6 LOOP                                        #
         #=============================================================#    
 
-        for column in feature_engineer.get_df().columns:
-            if column == self.args.target_var:
-                continue
+        # for column in feature_engineer.get_df().columns:
+        #     if column == self.args.target_var:
+        #         continue
             
-            # DEBUGGING: Run iteration of small column set or a single column
-            if self.args.debug:
-                COLUMNS_TO_TEST = ['col1', 'col2', 'col3', 'col4', 'col5', 'col6'] # Empty to Skip Agent Entirely!
-                if column not in COLUMNS_TO_TEST:
-                    continue
+        #     # DEBUGGING: Run iteration of small column set or a single column
+        #     if self.args.debug:
+        #         COLUMNS_TO_TEST = ['col1', 'col2', 'col3', 'col4', 'col5', 'col6'] # Empty to Skip Agent Entirely!
+        #         if column not in COLUMNS_TO_TEST:
+        #             continue
             
-            # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-            set_shared_var('current_column', column)
-            pipeline.write(f'set_current_column("{column}")')
-            inputs = {'messages': [('user', AGENT6_IA["AGENT6_START"])]}
-            try:
-                stream = agent6.stream(inputs, stream_mode='values')
-                print_stream(stream)
-            except Exception as e:
-                print(f'Error during stream: {e}')
+        #     # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
+        #     set_shared_var('current_column', column)
+        #     pipeline.write(f'set_current_column("{column}")')
+        #     inputs = {'messages': [('user', AGENT6_IA["AGENT6_START"])]}
+        #     try:
+        #         stream = agent6.stream(inputs, stream_mode='values')
+        #         print_stream(stream)
+        #     except Exception as e:
+        #         print(f'Error during stream: {e}')
 
-        with open('json_lib/saved_encode_selections.json', 'w') as file:
-            json.dump(encode_selections, file, indent=4)
+        # with open('json_lib/saved_encode_selections.json', 'w') as file:
+        #     json.dump(encode_selections, file, indent=4)
+
+        with open('json_lib/saved_encode_selections.json', "r") as file:
+            encode_selections = json.load(file)
+
+        # Extract the list of columns for Numeric Encoding
+        Numeric_Encode = encode_selections.get("Numeric_Encode", [])
+
+        # Apply Numeric Encoding to each column in the list
+        for column in Numeric_Encode:
+            if column in feature_engineer.get_df().columns:  # Ensure the column exists in the dataframe
+                print(f"Working on {column}")
+                df = execute_numeric_encode(feature_engineer.get_df(), column)
+            else:
+                print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
+        
+        with open('json_lib/saved_encode_dictionary.json', 'w') as file:
+            json.dump(column_mappings, file, indent=4)
 
         print("Encode selections updated and JSON file written.")
 

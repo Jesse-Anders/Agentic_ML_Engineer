@@ -84,33 +84,34 @@ def gather_column_info(df, sample_count=10, sample_length=300):
 column_mappings = {}
 
 # Encode Categorical Features
-def execute_numeric_encode(df, column_name):
+def execute_numeric_encode(df, column):
     global column_mappings  # Reference the global dictionary
+    # column = get_shared_var('current_column')
     
     # Check if the column exists in the DataFrame
-    if column_name not in df.columns:
-        print(f"Column '{column_name}' not found in DataFrame. Skipping...")
+    if column not in df.columns:
+        print(f"Column '{column}' not found in DataFrame. Skipping...")
         return df
     
     # Get unique values and sort them to ensure consistent mapping
-    unique_values = sorted(df[column_name].unique())
+    unique_values = sorted(df[column].unique())
     
     # Create a mapping dictionary from unique value to an integer code
     mapping_dict = {val: idx for idx, val in enumerate(unique_values)}
     
     # Create the encoded column name
-    encoded_column_name = f'encoded_{column_name}'
+    encoded_column_name = f'encoded_{column}'
     
     # Apply the mapping to create a new encoded column
-    df[encoded_column_name] = df[column_name].replace(mapping_dict)
+    df[encoded_column_name] = df[column].replace(mapping_dict)
     
     # Drop the original column
-    #df.drop(columns=[column_name], inplace=True)
+    #df.drop(columns=[column], inplace=True)
     
     # Store the mapping using the encoded column name as a reference
     column_mappings[encoded_column_name] = mapping_dict
 
-    print(f"Created encoded_{column_name}")
+    print(f"Created encoded_{column}")
     print(f"Encoded as {column_mappings[encoded_column_name]}")
     print()
 
