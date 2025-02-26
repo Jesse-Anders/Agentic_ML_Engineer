@@ -72,11 +72,52 @@ def gather_column_info(df, sample_count=10, sample_length=300):
         "Data Type": dtype,
         "Number of Unique Values": num_unique,
         "Total Rows": total_rows,
-        "Unique Entries as a Ratio of Total Entries": unique_to_total_ratio,
+        "Ratio of Unique Entries to Total Entries (Lower Value Indicates More Likely Categorical)": unique_to_total_ratio,
         "Average Entry Length in Characters (High Averages Indicate Likely NLP)": average_entry_length,
         "Top 5 Value Counts": top_values_dict,
         f"Sampling of Entries (length capped at {sample_length})": truncated_samples
     }
 
     return column_info
+
+# Initialize a global dictionary to store mappings for each encoded column
+column_mappings = {}
+
+# Encode Categorical Features
+def execute_numeric_encode(df, column_name):
+    global column_mappings  # Reference the global dictionary
+    
+    # Check if the column exists in the DataFrame
+    if column_name not in df.columns:
+        print(f"Column '{column_name}' not found in DataFrame. Skipping...")
+        return df
+    
+    # Get unique values and sort them to ensure consistent mapping
+    unique_values = sorted(df[column_name].unique())
+    
+    # Create a mapping dictionary from unique value to an integer code
+    mapping_dict = {val: idx for idx, val in enumerate(unique_values)}
+    
+    # Create the encoded column name
+    encoded_column_name = f'encoded_{column_name}'
+    
+    # Apply the mapping to create a new encoded column
+    df[encoded_column_name] = df[column_name].replace(mapping_dict)
+    
+    # Drop the original column
+    #df.drop(columns=[column_name], inplace=True)
+    
+    # Store the mapping using the encoded column name as a reference
+    column_mappings[encoded_column_name] = mapping_dict
+
+    print(f"Created encoded_{column_name}")
+    print(f"Encoded as {column_mappings[encoded_column_name]}")
+    print()
+
+    return df
+
+# Example usage
+# Assuming 'df' is your DataFrame and 'column_to_encode' is the column you want to encode
+# df = encode_column(df, 'education_level')
+# print(column_mappings['education_level'])  # Access the stored mapping
 

@@ -49,6 +49,8 @@ encode_selections = {
     'Failed_Encode_Selection': []
     }  
 
+# Initialize a global dictionary to store mappings for each encoded column
+column_mappings = {}
 
 #=============================================================================================#
 #  region                                Dynamic Globals                                      #
@@ -1070,7 +1072,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col1', 'col2', 'col3', 'col4', 'col5', 'col6'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
