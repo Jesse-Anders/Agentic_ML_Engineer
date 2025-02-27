@@ -37,21 +37,6 @@ AGENT_MODULES = [agent1, agent2, agent3, agent4, agent5, agent6]
 # INSTRUCTION ARCHIVE LIST: Used in the get_inst tool
 IA_LIST = [INST_ARCHIVE, AGENT1_IA, AGENT2_IA, AGENT3_IA, AGENT4_IA, AGENT5_IA, AGENT6_IA]
 
-# Encode Assignment Dictionary: Used by agent 6 to assign columns for specific encoding actions for agent 7 
-encode_selections = {
-    'Numeric_Encode': [], # Tree Models Only
-    'One_Hot_Encode': [], # Neural Network Models Only
-    'Frequency_Count_Encode': [], # Future Feature (Not Currently Active)
-    'Ordinal_Encode': [],
-    'NLP_Handler':[],
-    'Scale_Or_Normalize': [],
-    'Encode_True_False_As_One_Zero': [],
-    'Failed_Encode_Selection': []
-    }  
-
-# Initialize a global dictionary to store mappings for each encoded column
-column_mappings = {}
-
 #=============================================================================================#
 #  region                                Dynamic Globals                                      #
 #=============================================================================================#
@@ -666,6 +651,8 @@ def encode_choice(encoding_category: str, extra_info: dict = None):
     if column is None:
         raise ValueError("The shared variable 'current_column' is not set.")
     
+    encode_selections = get_shared_var('encode_selections')
+    
     # Validate the encoding category exists in the dictionary
     if encoding_category not in encode_selections:
         raise ValueError(f"Encoding category '{encoding_category}' is not recognized.")
@@ -680,6 +667,8 @@ def encode_choice(encoding_category: str, extra_info: dict = None):
         # For other categories, add the column if it isn't already present
         if column not in encode_selections[encoding_category]:
             encode_selections[encoding_category].append(column)
+    
+    set_shared_var('encode_selections', encode_selections)
     
     return f"Added column '{column}' to '{encoding_category}'"
 
@@ -1067,28 +1056,28 @@ class FeatureEngineer:
         #  region  AGENT6 LOOP                                        #
         #=============================================================#    
 
-        # for column in feature_engineer.get_df().columns:
-        #     if column == self.args.target_var:
-        #         continue
+        for column in feature_engineer.get_df().columns:
+            if column == self.args.target_var:
+                continue
             
-        #     # DEBUGGING: Run iteration of small column set or a single column
-        #     if self.args.debug:
-        #         COLUMNS_TO_TEST = ['col1', 'col2', 'col3', 'col4', 'col5', 'col6'] # Empty to Skip Agent Entirely!
-        #         if column not in COLUMNS_TO_TEST:
-        #             continue
+            # DEBUGGING: Run iteration of small column set or a single column
+            if self.args.debug:
+                COLUMNS_TO_TEST = ['col1', 'col2', 'col3', 'col4', 'col5', 'col6'] # Empty to Skip Agent Entirely!
+                if column not in COLUMNS_TO_TEST:
+                    continue
             
-        #     # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
-        #     set_shared_var('current_column', column)
-        #     pipeline.write(f'set_current_column("{column}")')
-        #     inputs = {'messages': [('user', AGENT6_IA["AGENT6_START"])]}
-        #     try:
-        #         stream = agent6.stream(inputs, stream_mode='values')
-        #         print_stream(stream)
-        #     except Exception as e:
-        #         print(f'Error during stream: {e}')
+            # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
+            set_shared_var('current_column', column)
+            pipeline.write(f'set_current_column("{column}")')
+            inputs = {'messages': [('user', AGENT6_IA["AGENT6_START"])]}
+            try:
+                stream = agent6.stream(inputs, stream_mode='values')
+                print_stream(stream)
+            except Exception as e:
+                print(f'Error during stream: {e}')
 
-        # with open('json_lib/saved_encode_selections.json', 'w') as file:
-        #     json.dump(encode_selections, file, indent=4)
+        with open('json_lib/saved_encode_selections.json', 'w') as file:
+            json.dump(get_shared_var('encode_selections'), file, indent=4)
 
         #  ===========================================================#
         #  region START: AGENT6 Encode Execution                      #
@@ -1104,7 +1093,7 @@ class FeatureEngineer:
             # "Frequency_Count_Encode": execute_frequency_encode,  # Future Feature (Not Currently Active)
             # "Ordinal_Encode": execute_ordinal_encode,
             # "NLP_Handler": execute_nlp_handler,
-            # "Scale_Or_Normalize": execute_scaling_normalization,
+            "Scale_Or_Normalize": execute_scaling_normalization,
             # "Encode_True_False_As_One_Zero": execute_boolean_encode
         }
 
@@ -1119,13 +1108,13 @@ class FeatureEngineer:
                 # Apply the encoding function to each column
                 for column in columns:
                     if column in df6.columns:  # Ensure the column exists in the DataFrame
-                        df6 = encoding_function(df6, column, column_mappings)  # Apply encoding
+                        df6 = encoding_function(df6, column)  # Apply encoding
                     else:
                         print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
         
         # Save the Final Encode Reference Dictionary
         with open('json_lib/saved_encode_dictionary.json', 'w') as file:
-            json.dump(column_mappings, file, indent=4)
+            json.dump(get_shared_var('column_mappings'), file, indent=4)
 
         print("Encode Dictionary updated and JSON file written.")
 

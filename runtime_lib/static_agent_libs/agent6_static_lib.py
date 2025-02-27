@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 
 # Shared State Getters
 # from utils import get_dataframe_stage, get_target_column, get_current_column
-from utils import get_dataframe_stage, get_shared_var, print_stream
+from utils import get_dataframe_stage, get_shared_var, set_shared_var, print_stream
 
 
 def gather_column_info(df, sample_count=10, sample_length=300):
@@ -81,7 +81,7 @@ def gather_column_info(df, sample_count=10, sample_length=300):
     return column_info
 
 # Encode Categorical Features
-def execute_numeric_encode(df, column, column_mappings):
+def execute_numeric_encode(df, column):
     """
     Perform numeric encoding on a categorical column and update column_mappings.
     
@@ -94,6 +94,7 @@ def execute_numeric_encode(df, column, column_mappings):
     - pd.DataFrame: Updated DataFrame with numeric encoding.
     - dict: Updated column_mappings dictionary.
     """
+    column_mappings = get_shared_var('column_mappings')
     
     # Check if the column exists in the DataFrame
     if column not in df.columns:
@@ -121,7 +122,7 @@ def execute_numeric_encode(df, column, column_mappings):
     print(f"Created {encoded_column_name}")
     print(f"Encoded as {column_mappings[encoded_column_name]}")
 
-    return df, column_mappings
+    return df
 
 
 # Example usage
@@ -132,7 +133,7 @@ def execute_numeric_encode(df, column, column_mappings):
 
 # MIN/MAX NORMALIZATION
 # Creates a new Column with min/max normalization
-def execute_scaling_normalization(df, column, column_mappings):
+def execute_scaling_normalization(df, column):
     """
     Apply min-max normalization to a specific column in a pandas DataFrame and create a new column for the normalized values.
 
@@ -142,7 +143,7 @@ def execute_scaling_normalization(df, column, column_mappings):
 
     The function will add a new column to the DataFrame with the normalized values, prefixed with 'mm_'.
     """
-    thisThing = column_mappings
+
     # Apply min-max normalization
     min_value = df[column].min()
     max_value = df[column].max()
@@ -152,6 +153,8 @@ def execute_scaling_normalization(df, column, column_mappings):
     df.drop(columns=[column], inplace=True)
 
     print(f"Created {column}_Normalized")
+
+    return df
 
 # Example usage:
 # min_max_normalize_column(df, 'column_to_normalize')

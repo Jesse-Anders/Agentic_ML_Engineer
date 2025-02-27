@@ -26,6 +26,19 @@ _shared_state = {
     "ungrouped_cols": [],
     "skip_columns": [],
     "compare_col": None,
+    "column_mappings": {},
+    
+    # Encode Assignment Dictionary: Used by agent 6 to assign columns for specific encoding actions for agent 7 
+    "encode_selections": {
+        'Numeric_Encode': [], # Tree Models Only
+        'One_Hot_Encode': [], # Neural Network Models Only
+        'Frequency_Count_Encode': [], # Future Feature (Not Currently Active)
+        'Ordinal_Encode': [],
+        'NLP_Handler':[],
+        'Scale_Or_Normalize': [],
+        'Encode_True_False_As_One_Zero': [],
+        'Failed_Encode_Selection': []
+    }
 }
 
 PIPELINE_WRITE_LIST = [ # They're in chronological order (agent1_static_lib funcs, agent2_static_lib funcs...)
