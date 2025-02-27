@@ -81,40 +81,78 @@ def gather_column_info(df, sample_count=10, sample_length=300):
     return column_info
 
 # Encode Categorical Features
-def execute_numeric_encode(df, column):
-    global column_mappings  # Reference the global dictionary
+def execute_numeric_encode(df, column, column_mappings):
+    """
+    Perform numeric encoding on a categorical column and update column_mappings.
+    
+    Parameters:
+    - df (pd.DataFrame): The dataframe to modify.
+    - column (str): The column to encode.
+    - column_mappings (dict): The global dictionary to store encoding mappings.
+    
+    Returns:
+    - pd.DataFrame: Updated DataFrame with numeric encoding.
+    - dict: Updated column_mappings dictionary.
+    """
     
     # Check if the column exists in the DataFrame
     if column not in df.columns:
         print(f"Column '{column}' not found in DataFrame. Skipping...")
-        return df
+        return df, column_mappings  # Return without modification
     
     # Get unique values and sort them to ensure consistent mapping
-    unique_values = sorted(df[column].unique())
+    unique_values = sorted(df[column].dropna().unique())  # Drop NaN to avoid issues
     
     # Create a mapping dictionary from unique value to an integer code
     mapping_dict = {val: idx for idx, val in enumerate(unique_values)}
     
     # Create the encoded column name
-    encoded_column_name = f'encoded_{column}'
+    encoded_column_name = f'{column}_Numeric_Encoded'
     
     # Apply the mapping to create a new encoded column
     df[encoded_column_name] = df[column].replace(mapping_dict)
     
     # Drop the original column
-    #df.drop(columns=[column], inplace=True)
+    df.drop(columns=[column], inplace=True)
     
-    # Store the mapping using the encoded column name as a reference
+    # Update column_mappings dictionary
     column_mappings[encoded_column_name] = mapping_dict
 
-    print(f"Created encoded_{column}")
+    print(f"Created {encoded_column_name}")
     print(f"Encoded as {column_mappings[encoded_column_name]}")
-    print()
 
-    return df
+    return df, column_mappings
+
 
 # Example usage
 # Assuming 'df' is your DataFrame and 'column_to_encode' is the column you want to encode
 # df = encode_column(df, 'education_level')
 # print(column_mappings['education_level'])  # Access the stored mapping
 
+
+# MIN/MAX NORMALIZATION
+# Creates a new Column with min/max normalization
+def execute_scaling_normalization(df, column, column_mappings):
+    """
+    Apply min-max normalization to a specific column in a pandas DataFrame and create a new column for the normalized values.
+
+    Parameters:
+    - df: pandas DataFrame
+    - column: The column to normalize
+
+    The function will add a new column to the DataFrame with the normalized values, prefixed with 'mm_'.
+    """
+    thisThing = column_mappings
+    # Apply min-max normalization
+    min_value = df[column].min()
+    max_value = df[column].max()
+    df[column + '_Normalized'] = (df[column] - min_value) / (max_value - min_value)
+    
+        # Drop the original column
+    df.drop(columns=[column], inplace=True)
+
+    print(f"Created {column}_Normalized")
+
+# Example usage:
+# min_max_normalize_column(df, 'column_to_normalize')
+# After this, df will have a new column with the name 'mm_column_to_normalize' containing the normalized values.

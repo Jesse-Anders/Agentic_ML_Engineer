@@ -1,1 +1,35 @@
-{}
+{
+    "col4_Numeric_Encoded": {
+        "Apple": 0,
+        "Banana": 1,
+        "Carrot": 2,
+        "Dog": 3,
+        "Elephant": 4,
+        "Flower": 5,
+        "Giraffe": 6,
+        "Hat": 7,
+        "Ice cream": 8,
+        "Jellyfish": 9,
+        "Kite": 10,
+        "Lion": 11,
+        "Mountain": 12,
+        "Notebook": 13,
+        "Orange": 14,
+        "Piano": 15,
+        "Queen": 16,
+        "Rainbow": 17,
+        "Sunflower": 18,
+        "Tiger": 19,
+        "Umbrella": 20,
+        "Volcano": 21,
+        "Watermelon": 22,
+        "Xylophone": 23,
+        "Yawn": 24,
+        "Zebra": 25,
+        "guard": 26,
+        "more": 27,
+        "now": 28,
+        "think": 29,
+        "what": 30
+    }
+}

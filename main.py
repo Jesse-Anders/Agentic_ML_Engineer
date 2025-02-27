@@ -849,6 +849,7 @@ class FeatureEngineer:
         self.backup_df = df.copy()
         self.df = df.copy()
 
+
     def get_df(self):
         '''
         Return current df
@@ -1096,16 +1097,31 @@ class FeatureEngineer:
         with open('json_lib/saved_encode_selections.json', "r") as file:
             encode_selections = json.load(file)
 
-        # Extract the list of columns for Numeric Encoding
-        Numeric_Encode = encode_selections.get("Numeric_Encode", [])
+        # Dictionary mapping encode_selections keys to their corresponding function calls
+        encoding_functions = {
+            "Numeric_Encode": execute_numeric_encode,  # Tree Models Only
+            # "One_Hot_Encode": execute_one_hot_encode,  # Neural Network Models Only
+            # "Frequency_Count_Encode": execute_frequency_encode,  # Future Feature (Not Currently Active)
+            # "Ordinal_Encode": execute_ordinal_encode,
+            # "NLP_Handler": execute_nlp_handler,
+            # "Scale_Or_Normalize": execute_scaling_normalization,
+            # "Encode_True_False_As_One_Zero": execute_boolean_encode
+        }
 
-        # Apply Numeric Encoding to each column in the list
-        for column in Numeric_Encode:
-            if column in feature_engineer.get_df().columns:  # Ensure the column exists in the dataframe
-                print(f"Working on {column}")
-                df = execute_numeric_encode(feature_engineer.get_df(), column)
-            else:
-                print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
+        df6 = feature_engineer.get_df()  # Load the DataFrame once
+
+        # Iterate over each encoding category in encode_selections
+        for encode_type, columns in encode_selections.items():
+            # Check if there is a function mapped for this encoding type
+            if encode_type in encoding_functions:
+                encoding_function = encoding_functions[encode_type]  # Get corresponding function
+
+                # Apply the encoding function to each column
+                for column in columns:
+                    if column in df6.columns:  # Ensure the column exists in the DataFrame
+                        df6 = encoding_function(df6, column, column_mappings)  # Apply encoding
+                    else:
+                        print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
         
         # Save the Final Encode Reference Dictionary
         with open('json_lib/saved_encode_dictionary.json', 'w') as file:
@@ -1117,6 +1133,7 @@ class FeatureEngineer:
         #  region END: AGENT6 Encode Execution                      #
         #=============================================================# 
 
+        # IS THIS REALLY WORKING AFTER MY 'df6' SHTUFF???
         save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_6')
         #  endregion
 
