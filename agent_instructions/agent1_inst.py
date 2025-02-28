@@ -32,15 +32,18 @@ AGENT1_IA = {
     ), 
 # Instructions for handling uncommon mislabeled or alias nulls, using LLM logic.
     "HANDLE_ALIAS_NULLS_IN_TEXT_LLM": (
-        "Use exec_stored_func tool to run display_most_common_unique_entries(df) and review the most common unique entries in the column.\n"
-        "Look through the unique entries and try to determine if there are any entries that should be nulls, meaning they are 'very likely mislabeled nulls'.\n"
-        "If any exist, call get_inst(JSON_LIST_INST) for instructions on formatting a list of 'very likely mislabeled nulls' and use the append_to_json_list tool with json_path as 'json_lib/alias_nulls_list.json' to save the new list.\n"
-        # IMPORTANT: We need a way to send this json list (in this state) to the pipeline.
+        "Use exec_stored_func tool to run display_most_common_unique_entries(df).\n"
+        "Read the Function Output and determine if any of the listed items are 'very likely mislabeled nulls'. Some examples include 'none', 'missing', 'no data', and entries with similar meaning.\n"
+        "If no items in the Function Output are 'very likely mislabeled nulls'. END PROCESS\n"
+        "If items that are very likely mislabeled nulls exist, isolate the mislabeled items as a new list and call get_inst(FOUND_ALIAS_NULLS) for instructions."
+    ),
+    "FOUND_ALIAS_NULLS": (
+        "For handling the specific isolated new_items that are 'very likely mislabeled nulls', call get_inst(JSON_LIST_INST) for instructions on formatting a list of 'very likely mislabeled nulls' and use the append_to_json_list tool with json_path as 'json_lib/alias_nulls_list.json' to save the new list.\n"
         "If you added mislabeled nulls to the list, use the exec_stored_func tool to run convert_uncommon_alias_nulls(df) to convert items in the list to nulls, then End Process.\n"
-        "If you found no 'very likely mislabeled nulls'. END PROCESS\n"
     ), 
 # Instructions for creating a well-formatted JSON list of alias nulls.
     "JSON_LIST_INST": (
+        "new_items SHOULD ONLY BE MISLABELED NULLS!!!"
         "Here is a simple example of a well-formatted JSON list:\n"
         '[ "na", "missing", "none", "unknown", "empty" ]\n'
         "Ensure that:\n"

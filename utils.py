@@ -36,7 +36,6 @@ _shared_state = {
         'Ordinal_Encode': [],
         'NLP_Handler':[],
         'Scale_Or_Normalize': [],
-        'Encode_True_False_As_One_Zero': [],
         'Failed_Encode_Selection': []
     }
 }

@@ -640,7 +640,6 @@ def encode_choice(encoding_category: str, extra_info: dict = None):
         'Ordinal_Encode'
         'NLP_Handler'
         'Scale_Or_Normalize'
-        'Encode_True_False_As_One_Zero'
         'Failed_Encode_Selection'
           
     Returns:
@@ -767,7 +766,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col6','col7',] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1062,7 +1061,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col1', 'col2', 'col3', 'col4', 'col5', 'col6'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1076,47 +1075,47 @@ class FeatureEngineer:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        with open('json_lib/saved_encode_selections.json', 'w') as file:
-            json.dump(get_shared_var('encode_selections'), file, indent=4)
+        # with open('json_lib/saved_encode_selections.json', 'w') as file:
+        #     json.dump(get_shared_var('encode_selections'), file, indent=4)
 
         #  ===========================================================#
         #  region START: AGENT6 Encode Execution                      #
         #=============================================================# 
 
-        with open('json_lib/saved_encode_selections.json', "r") as file:
-            encode_selections = json.load(file)
+        # with open('json_lib/saved_encode_selections.json', "r") as file:
+        #     encode_selections = json.load(file)
 
-        # Dictionary mapping encode_selections keys to their corresponding function calls
-        encoding_functions = {
-            "Numeric_Encode": execute_numeric_encode,  # Tree Models Only
-            # "One_Hot_Encode": execute_one_hot_encode,  # Neural Network Models Only
-            # "Frequency_Count_Encode": execute_frequency_encode,  # Future Feature (Not Currently Active)
-            "Ordinal_Encode": execute_ordinal_encode,
-            # "NLP_Handler": execute_nlp_handler,
-            "Scale_Or_Normalize": execute_scaling_normalization,
-            # "Encode_True_False_As_One_Zero": execute_boolean_encode
-        }
+        # # Dictionary mapping encode_selections keys to their corresponding function calls
+        # encoding_functions = {
+        #     "Numeric_Encode": execute_numeric_encode,  # Tree Models Only
+        #     # "One_Hot_Encode": execute_one_hot_encode,  # Neural Network Models Only
+        #     # "Frequency_Count_Encode": execute_frequency_encode,  # Future Feature (Not Currently Active)
+        #     "Ordinal_Encode": execute_ordinal_encode,
+        #     # "NLP_Handler": execute_nlp_handler,
+        #     "Scale_Or_Normalize": execute_scaling_normalization,
 
-        df6 = feature_engineer.get_df()  # Load the DataFrame once
+        # }
 
-        # Iterate over each encoding category in encode_selections
-        for encode_type, columns in encode_selections.items():
-            # Check if there is a function mapped for this encoding type
-            if encode_type in encoding_functions:
-                encoding_function = encoding_functions[encode_type]  # Get corresponding function
+        # df6 = feature_engineer.get_df()  # Load the DataFrame once
 
-                # Apply the encoding function to each column
-                for column in columns:
-                    if column in df6.columns:  # Ensure the column exists in the DataFrame
-                        df6 = encoding_function(df6, column)  # Apply encoding
-                    else:
-                        print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
+        # # Iterate over each encoding category in encode_selections
+        # for encode_type, columns in encode_selections.items():
+        #     # Check if there is a function mapped for this encoding type
+        #     if encode_type in encoding_functions:
+        #         encoding_function = encoding_functions[encode_type]  # Get corresponding function
+
+        #         # Apply the encoding function to each column
+        #         for column in columns:
+        #             if column in df6.columns:  # Ensure the column exists in the DataFrame
+        #                 df6 = encoding_function(df6, column)  # Apply encoding
+        #             else:
+        #                 print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
         
-        # Save the Final Encode Reference Dictionary
-        with open('json_lib/saved_encode_dictionary.json', 'w') as file:
-            json.dump(get_shared_var('column_mappings'), file, indent=4)
+        # # Save the Final Encode Reference Dictionary
+        # with open('json_lib/saved_encode_dictionary.json', 'w') as file:
+        #     json.dump(get_shared_var('column_mappings'), file, indent=4)
 
-        print("Encode Dictionary updated and JSON file written.")
+        # print("Encode Dictionary updated and JSON file written.")
 
         #  ===========================================================#
         #  region END: AGENT6 Encode Execution                      #
@@ -1360,7 +1359,7 @@ if __name__ == "__main__":
     parser.add_argument('--sandbox_path', type=str, default='runtime_lib/sandbox.py')
 
     parser.add_argument('--lms_model', type=str, default='LM Studio Community/Meta-Llama-3-8B-Instruct-GGUF')
-    parser.add_argument('--openai_model', type=str, default='gpt-4o-mini')
+    parser.add_argument('--openai_model', type=str, default='gpt-4o') #gpt-4o-mini
     parser.add_argument('--super_gpt_model', type=str, default='gpt-4o')
     parser.add_argument('--llm_platform', type=str, default='openai')
     

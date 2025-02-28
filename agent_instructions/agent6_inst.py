@@ -4,15 +4,14 @@ AGENT6_IA = {
 #=============================================================================================#
     "AGENT6_START": (
         "Use the exec_stored_func to run gather_column_info to show a sampling of entries in the column.\n"
-        "Decide if current column contains boolean data (true and false values only) or if the column is numeric (continuous or integer, not just codes for categories), or if the column is neither.\n"
-        "If the column is true false boolean, add the current column name to the encode_selections dictionary as Encode_True_False_As_One_Zero. END PROCESS.\n"
-        "If the column is numeric, add the current column name to the encode_selections dictionary as Scale_Or_Normalize. END PROCESS.\n"
-        "If the column is neither bool nor numeric, get_inst(NLP_OR_CATEGORICAL_INST)"
+        "If the column is numeric (continuous or integer, not just codes for categories), add the current column name to the encode_selections dictionary as Scale_Or_Normalize. END PROCESS.\n"
+        # THIS IS OBSOLETE NOW... "If the column is true false boolean, add the current column name to the encode_selections dictionary as Encode_True_False_As_One_Zero. END PROCESS.\n"
+        "Else, use the tool call get_inst(NLP_OR_CATEGORICAL_INST) for instructions"
     ),
     "NLP_OR_CATEGORICAL_INST": (
         "Decide if the current column generally suitable for NLP operations. Meaning, it is primarily multi word text entries, likely including many complete sentences.\n"
         "If the column is suitable for NLP operations, add the current column name to the encode_selections dictionary as NLP_Handler. END PROCESS.\n"
-        "Otherwise, move on to get_inst(CATEGORICAL_1_INST)"
+        "Else, use the tool call get_inst(CATEGORICAL_1_INST) for instructions."
     ),
     "CATEGORICAL_1_INST": (
         "Decide if the current column contains Ordinal categories. Meaning, the feature's categories have a natural, meaningful order (e.g., skill levels, size categories, ratings, etc).\n"
