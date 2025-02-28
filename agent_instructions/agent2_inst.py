@@ -16,12 +16,12 @@ AGENT2_IA = {
         "Use exec_stored_func tool to run check_for_bool(df).\n"
         "If column is determined to be boolean get_inst(BOOL_INST).\n"
         "Else, use the tool call get_inst(OBJECT_INST) for instructions."
-    ), 
+    ),
 
     "BOOL_INST": (
         "Use exec_stored_func tool to run encode_bool_to_num_cat(df).\n"
         "After running encode_bool_to_num_cat(df), use the tool call get_inst(NUMERIC_INST) for instructions."
-    ), 
+    ),
 
     # Instructions for handling Float data type columns.
     "FLOAT_INST": (
@@ -66,7 +66,8 @@ AGENT2_IA = {
 #=============================================================================================#
     # Instructions for handling Object data type columns.
     "OBJECT_INST": (
-        "Tell me you have read the Object instructions. And say Thank You. \n"
+        "Use the exec_stored_func tool to run object_mode_impute(df).\n"
+        "END PROCESS.\n"
     ),
     # Instructions for handling Unknown data type columns.
     "UNKNOWN_INST": (

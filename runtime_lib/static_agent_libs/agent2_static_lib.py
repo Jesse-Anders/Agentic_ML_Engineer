@@ -849,4 +849,41 @@ def impute_categorical_numeric_mode(df):
 
     print(f"Column '{column}': Missing values imputed using mode ({mode_value}).")
     return df
+
+def object_mode_impute(df):
+    """
+    Imputes missing values in an object (string/categorical) column using mode.
+    If there are multiple modes, uses the first one.
+    
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+        The column name is retrieved from get_shared_var('current_column').
+    
+    Returns:
+        pd.DataFrame: The updated DataFrame with missing values imputed.
+    """
+    column = get_shared_var('current_column')
+    
+    # Ensure column exists
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+
+    # Ensure column is of object type
+    if not pd.api.types.is_object_dtype(df[column]):
+        raise ValueError(f"Column '{column}' must be of object dtype for object mode imputation.")
+
+    # Count nulls before imputation
+    null_count = df[column].isnull().sum()
+    if null_count == 0:
+        print(f"No missing values found in column '{column}'. No imputation needed.")
+        return df
+
+    # Compute mode (most frequent value)
+    mode_value = df[column].mode()[0]  # Takes first mode if multiple exist
+
+    # Fill missing values with mode
+    updated_df = df[column].fillna(mode_value)
+
+    print(f"Column '{column}': {null_count} missing values imputed using mode value '{mode_value}'.")
+    return updated_df
 # endregion
