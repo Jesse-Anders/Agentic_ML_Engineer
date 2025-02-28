@@ -11,7 +11,7 @@ AGENT3_IA = {
 
     ),
     "NLP_INST": (
-        # "Read get_inst(DATA_SET_GOAL) to understand the overall goal of this data set.\n"
+        "Call get_inst('DATA_SET_GOAL') to understand the overall goal of this data set.\n"
         # "Use exec_stored_func tool to run show_sample_of_entries to get an overall feel for the text entries in the current column.\n"
         # "Based on the goal of this data set and the overall feel of the text entries in current column, your task is to create 4 text prompts for an LLM.\n"
         # "Each prompt should begin with 'Based on the Entry Text' and each prompt should make clear that the result must contain only one word.\n"
@@ -21,9 +21,7 @@ AGENT3_IA = {
         "END PROCESS"
 
     ),
-    "DATA_SET_GOAL": (
-        "The target variable for this data set is a bool (Real=0, Fake=1) that represenst whether a job posting is for a 'real' job or if the posting is scam, meaning it is a 'fake' job posting.\n"
-    ),
+    "DATA_SET_GOAL": (), # blank by intention, handled in main.py in the get_inst tool
     "EXAMPLE_PROMPTS": (
         "EXAMPLE PROMPT 1.) Read the following Entry Text. If you think it is from a scam job posting, respond with 'fake'. Otherwise, respond with 'real'."
         "EXAMPLE PROMPT 2.) Read the following Entry Text. Determine the sentiment of the text and output one of the following one word answers... 'happy', 'angry', 'sad', 'non-emotive'."

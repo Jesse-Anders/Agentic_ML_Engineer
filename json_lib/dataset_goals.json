@@ -1,0 +1,4 @@
+{
+    "fake_job_postings": "The target variable for this dataset is a bool (Real=0, Fake=1) that represenst whether a job posting is for a 'real' job or if the posting is scam, meaning it is a 'fake' job posting.\n",
+    "titanic": "The target variable for this dataset is a boolean column named 'Survived' (Survived=1, Didn't Survive=0) indicating whether the passenger survived the Titanic crash or not."
+}

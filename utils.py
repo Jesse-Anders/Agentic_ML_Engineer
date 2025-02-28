@@ -15,6 +15,7 @@ from agent_instructions.agent6_inst import AGENT6_IA
 _shared_state = {
     "current_column": None,
     "target_column": None,
+    "dataset_goal": "Disregard. Dataset goal not enetered.",
     "dataframe_stages": [],
     "nlp_columns": [],
     "agent3_1": None,

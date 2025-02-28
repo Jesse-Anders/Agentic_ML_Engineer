@@ -250,6 +250,14 @@ def get_inst(
 
     inst_key: the exact name of the set (examples: "CODE_INST", "CLEANING_AGENT2_START", "OBJECT_INST", etc.)
     '''
+    # Special handling for dataset goal instructions
+    if inst_key == "DATA_SET_GOAL":
+        dataset_goal = get_shared_var('dataset_goal')
+        if dataset_goal:
+            return f"DATASET GOAL: {dataset_goal}\n"
+        return "DATASET GOAL: No specific goal provided for this dataset.\n"
+
+    # Regular instruction lookup
     for instruction_set in IA_LIST:
         if inst_key in instruction_set:
             return instruction_set[inst_key]
@@ -608,6 +616,12 @@ def test_pow_transform(
         
         # Verify the new column exists and update the working dataframe
         if new_col_name in updated_df.columns:
+            
+            # Check if column already exists in working dataframe
+            working_df = preprocessor.get_df() if preprocessor.active else feature_engineer.get_df()
+            if new_col_name in working_df.columns:
+                return f"Error: Column '{new_col_name}' already exists in the working dataframe. Choose a different name."
+            
             if preprocessor.active:
                 preprocessor.update_df(updated_df)
             else:
@@ -766,7 +780,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col6','col7',] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -945,7 +959,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col8'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1183,17 +1197,36 @@ def init_pyfiles(args):
     pipeline = PyFile(args.pipeline_path, args)
 
 
-def init_json_files():
+def init_json_files(args):
     '''
-    Verifys the json directory and creates the static_lib_json.json file
-
+    Verifies the json directory and creates/reads necessary json files static_lib_json.json and dataset_goals.json
+    
     args: system arguments
     '''
     if not os.path.exists(JSON_DIR):
         os.mkdir(JSON_DIR)
 
+    # Create static lib json
     with open(f'{JSON_DIR}/{STATIC_JSON_LIB}.json', "w") as json_file:
         json.dump(static_lib.get_func_objects(), json_file, indent=4)
+
+    # Read dataset goals json is dataset goal is specified
+    goal_id = args.dataset_goal_id
+    if goal_id != 'default':
+        dataset_goals_path = f'{JSON_DIR}/dataset_goals.json'
+        try:
+            if os.path.exists(dataset_goals_path):
+                with open(dataset_goals_path, 'r') as file:
+                    dataset_goals_dict = json.load(file)
+                    
+                    if goal_id in dataset_goals_dict.keys():
+                        set_shared_var('dataset_goal', dataset_goals_dict[goal_id])
+                    else:
+                        print(f'Warning: Goal ID "{goal_id}" not found in dataset_goals.json. Available goals: {list(dataset_goals_dict.keys())}')
+            else:
+                print(f'Warning: {dataset_goals_path} not found. Dataset goals will not be loaded.')
+        except Exception as e:
+            print(f'Error reading dataset goals json: {e}')
 
 
 def init_global_objects(args, df):
@@ -1327,7 +1360,7 @@ def run_ml_engineer(args):
     init_pyfiles(args)
 
     # init json dir and files
-    init_json_files()
+    init_json_files(args)
 
     # load in the dataset
     pipeline.write(f'df = pd.read_csv("{args.data_input_path}", index_col=None)\n')
@@ -1369,6 +1402,9 @@ if __name__ == "__main__":
     parser.add_argument('--target_var', type=str, default='target')
     parser.add_argument('--id_var', type=str)
 
+    # parser.add_argument('--dataset_goal_id', type=str, default='default')
+    parser.add_argument('--dataset_goal_id', type=str, default='fake_job_postings')
+
     parser.add_argument('--debug', type=bool, default=False)
 
     args = parser.parse_args()
@@ -1379,5 +1415,7 @@ if __name__ == "__main__":
 
 # Alternate dataset with ID column pre-specification
 # python .\main.py --debug=True --do_pow_search=True --data_input_path=data_inputs/pow_testing.csv --id_var=ID
+
+# python .\main.py --debug=True --dataset_goal_id=fake_job_postings
 
 #  endregion
