@@ -7,9 +7,21 @@ AGENT2_IA = {
         "Use the exec_stored_func tool to run the data_type_check(df) function to determine the Column's data type.\n"
         "If data type is Float, use the tool call get_inst(FLOAT_INST) for instructions.\n"
         "If data type is Integer, use the tool call get_inst(NUMERIC_INST) for instructions.\n"
-        "If data type is Object, use the tool call get_inst(OBJECT_INST) for instructions.\n"
-        "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions.\n"
+        "If data type is Object, use the tool call get_inst(BOOL_CHECK_INST) for instructions.\n"
+        "If data type is Boolean, use the tool call get_inst(BOOL_INST) for instructions.\n"
+        "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions."
     ),
+
+    "BOOL_CHECK_INST": (
+        "Use exec_stored_func tool to run check_for_bool(df).\n"
+        "If column is determined to be boolean get_inst(BOOL_INST).\n"
+        "Else, use the tool call get_inst(OBJECT_INST) for instructions."
+    ), 
+
+    "BOOL_INST": (
+        "Use exec_stored_func tool to run encode_bool_to_num_cat(df).\n"
+        "After running encode_bool_to_num_cat(df), use the tool call get_inst(NUMERIC_INST) for instructions."
+    ), 
 
     # Instructions for handling Float data type columns.
     "FLOAT_INST": (
@@ -40,6 +52,7 @@ AGENT2_IA = {
     "CATEGORICAL_NULL_INST": (
         "Use exec_stored_func tool to run evaluate_null_correlation_with_target(df) to get null handling recommendations.\n"
         "If 'convert_to_category' is recommended, use exec_stored_func tool to run convert_nulls_to_category(df). Then use tool call get_inst(CATEGORICAL_ENCODE_EXNULLS_CATEGORY) for instructions.\n"
+        # THIS SHOULD BE UPGRADED to impute based on correlation or knn etc when possible, rather than always MODE impute.
         "If 'impute' is recommended, use exec_stored_func tool to run impute_categorical_numeric_mode(df). END PROCESS.\n"
     ),
     # Instructions for encoding new Null as Category Column.

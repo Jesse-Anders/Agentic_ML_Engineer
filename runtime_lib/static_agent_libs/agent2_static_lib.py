@@ -63,6 +63,112 @@ def data_type_check(df) -> str:
         return f"Column '{column}' has an unhandled data type: {column_dtype}."
     
 # endregion
+
+#=============================================================================================#
+#  region              CHECK FOR BOOLEAN & CONVERT ALL BOOLEAN TO 1/0                         #
+#=============================================================================================#
+
+def check_for_bool(df):
+    """
+    Determines if a column contains boolean-type entries at least 95% of the time 
+    (excluding nulls). The valid boolean indicators (case-insensitive) are:
+    'true', 'false', 't', 'f'.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame containing the column.
+    column : str
+        The name of the column to check.
+
+    Returns
+    -------
+    str
+        A message indicating whether the column is or is not considered boolean.
+    """
+    column=get_shared_var('current_column')
+
+    if column not in df.columns:
+        return f"Column '{column}' does not exist in the DataFrame."
+
+    # Drop nulls, convert to lowercase strings
+    col_data = df[column].dropna().astype(str).str.lower()
+
+    # If there are no non-null values, we can't determine
+    if len(col_data) == 0:
+        return f"Cannot determine bool type for '{column}' (no non-null data)."
+
+    # Define the allowed set of boolean strings
+    allowed_booleans = {"true", "false", "t", "f"}
+
+    # Count how many entries are in the allowed set
+    bool_count = col_data.isin(allowed_booleans).sum()
+
+    # Calculate the ratio of valid boolean-like entries
+    total_count = len(col_data)
+    bool_ratio = bool_count / total_count
+
+    # If at least 95% of values are boolean-like, classify as boolean
+    if bool_ratio >= 0.95:
+        return f"'{column}' is a boolean type (valid boolean ratio = {bool_ratio:.2f})."
+    else:
+        return f"'{column}' is not a boolean type (valid boolean ratio = {bool_ratio:.2f})."
+    
+def encode_bool_to_num_cat(df):
+    """
+    Encodes a single column's True/False (or T/F) values to numeric 1/0.
+
+    The column name is retrieved from get_shared_var('current_column').
+    - If the column has dtype=bool, True -> 1, False -> 0.
+    - If it's an object/string column, and all non-null values are among
+      {'true','false','t','f'} (case-insensitive), map them to 1/0.
+    - Otherwise, leave the column as-is.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to modify.
+
+    Returns
+    -------
+    pd.DataFrame
+        The updated DataFrame with boolean-like column mapped to 1/0 (if applicable).
+    """
+    column = get_shared_var('current_column')
+
+    if column not in df.columns:
+        print(f"Column '{column}' not found in DataFrame. Skipping...")
+        return df  # No change
+    
+    col_dtype = df[column].dtype
+    allowed_booleans = {"true", "false", "t", "f"}
+
+    # If it's a native boolean column:
+    if col_dtype == bool:
+        df[column] = df[column].astype(int)  # True->1, False->0
+        print(f"Converted native bool column '{column}' to 1/0.")
+        return df
+
+    # Otherwise, if it's an object/string column:
+    if col_dtype == object or str(col_dtype) == "string":
+        col_lower = df[column].dropna().astype(str).str.lower()
+        unique_vals = set(col_lower.unique())
+
+        # Check if all non-null values are in the allowed set
+        if unique_vals.issubset(allowed_booleans):
+            mapping = {"true": 1, "t": 1, "false": 0, "f": 0}
+            df[column] = col_lower.map(mapping)
+            
+            # Convert to integer type - consider "Int64" if you want to keep nulls
+            df[column] = df[column].astype(float).astype("Int64")
+            print(f"Converted string column '{column}' to 1/0 for T/F values.")
+        else:
+            print((f"Column '{column}' not a valid boolean string column. "
+                   f"Contains other values: {unique_vals}. No change made."))
+
+    return df
+
+
 #=============================================================================================#
 #  region              CONVERT FLOAT TO INTEGER IF POSSIBLE                                   #
 #=============================================================================================#

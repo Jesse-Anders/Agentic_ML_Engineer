@@ -124,11 +124,97 @@ def execute_numeric_encode(df, column):
 
     return df
 
+# One Hot Encode Categorical Features for neural network models.
+def execute_one_hot_encode(df, column):
+    """
+    Perform one-hot encoding on a categorical column.
 
-# Example usage
-# Assuming 'df' is your DataFrame and 'column_to_encode' is the column you want to encode
-# df = encode_column(df, 'education_level')
-# print(column_mappings['education_level'])  # Access the stored mapping
+    Parameters:
+    - df (pd.DataFrame): The dataframe to modify.
+    - column (str): The column to one-hot encode.
+
+    Returns:
+    - pd.DataFrame: Updated DataFrame with one-hot encoded features.
+    """
+
+    # Check if the column exists in the DataFrame
+    if column not in df.columns:
+        print(f"Column '{column}' not found in DataFrame. Skipping...")
+        return df  # Return without modification
+    
+    # Identify unique non-null values in the column
+    unique_values = sorted(df[column].dropna().unique())
+
+    # For each unique category, create a new binary column
+    new_columns = []
+    for val in unique_values:
+        new_col_name = f"{column}_one_hot_{val}"
+        df[new_col_name] = (df[column] == val).astype(int)
+        new_columns.append(new_col_name)
+
+    # (Optional) Handle NaN values explicitly, if desired
+    # e.g., if you want a separate column to indicate NaN
+    # if df[column].isnull().any():
+    #     nan_col_name = f"{column}_one_hot_nan"
+    #     df[nan_col_name] = df[column].isnull().astype(int)
+    #     new_columns.append(nan_col_name)
+
+    # Drop the original column to mirror the style of execute_numeric_encode
+    df.drop(columns=[column], inplace=True)
+
+    print(f"One-hot encoded '{column}' → Created columns: {new_columns}")
+    return df
+
+# Ordinal Encode Columns with Data such as Small, Medium, Large.
+def execute_ordinal_encode(df, column):
+    """
+    Perform ordinal encoding on a column that has already been deemed ordinal.
+    Uses sorted unique values to assign an increasing integer code 
+    (e.g., ['small', 'medium', 'large'] -> small=0, medium=1, large=2).
+
+    Parameters:
+    - df (pd.DataFrame): The DataFrame to modify.
+    - column (str): The column to encode.
+
+    Returns:
+    - pd.DataFrame: The updated DataFrame with ordinal encoding.
+    """
+    # Retrieve the global column_mappings dictionary
+    column_mappings = get_shared_var('column_mappings')
+
+    # Check if the column exists in the DataFrame
+    if column not in df.columns:
+        print(f"Column '{column}' not found in DataFrame. Skipping...")
+        return df  # Return without modification
+
+    # Identify unique, non-null values in the column
+    unique_values = df[column].dropna().unique()
+    if len(unique_values) == 0:
+        print(f"Column '{column}' has no non-null values. Skipping...")
+        return df
+
+    # Sort unique values for a simple (alphabetical or numeric) ordinal order
+    sorted_unique_values = sorted(unique_values)
+
+    # Create a mapping from each category to its ordinal rank
+    mapping_dict = {val: idx for idx, val in enumerate(sorted_unique_values)}
+
+    # Create the encoded column name
+    encoded_column_name = f"{column}_Ordinal_Encoded"
+
+    # Apply the mapping
+    df[encoded_column_name] = df[column].replace(mapping_dict)
+
+    # Drop the original column (mirroring the numeric encode approach)
+    df.drop(columns=[column], inplace=True)
+
+    # Update column_mappings with the new mapping
+    column_mappings[encoded_column_name] = mapping_dict
+
+    print(f"Created {encoded_column_name}")
+    print(f"Ordinal mapping used: {column_mappings[encoded_column_name]}")
+
+    return df
 
 
 # MIN/MAX NORMALIZATION
@@ -156,6 +242,73 @@ def execute_scaling_normalization(df, column):
 
     return df
 
-# Example usage:
-# min_max_normalize_column(df, 'column_to_normalize')
-# After this, df will have a new column with the name 'mm_column_to_normalize' containing the normalized values.
+# To be deleted - Handling this with agent 2
+# def execute_boolean_encode(df, column):
+#     """
+#     Encode a boolean or 'true'/'false' string column as 1 for true, 0 for false.
+    
+#     Handles:
+#     - Native boolean columns (dtype=bool).
+#     - Object columns containing only 'true', 'false' (case-insensitive).
+
+#     Parameters:
+#     - df (pd.DataFrame): The DataFrame to modify.
+#     - column (str): The column to encode.
+
+#     Returns:
+#     - pd.DataFrame: Updated DataFrame with boolean encoding.
+#     """
+#     # Retrieve the global column_mappings dictionary (if you need to track this encode)
+#     column_mappings = get_shared_var('column_mappings')
+
+#     # 1. Check if the column exists
+#     if column not in df.columns:
+#         print(f"Column '{column}' not found in DataFrame. Skipping...")
+#         return df  # No change
+
+#     # 2. Determine if it's already a native bool or an object column with 'true'/'false'
+#     col_dtype = df[column].dtype
+
+#     # We'll create a new column name
+#     encoded_column_name = f"{column}_Boolean_Encoded"
+
+#     if col_dtype == bool:
+#         # Directly convert booleans True->1, False->0
+#         df[encoded_column_name] = df[column].astype(int)
+        
+#         # Drop the original column
+#         df.drop(columns=[column], inplace=True)
+        
+#         # Update column_mappings (optional but consistent)
+#         column_mappings[encoded_column_name] = {"True": 1, "False": 0}
+        
+#         print(f"Created {encoded_column_name} from bool column.")
+
+#     else:
+#         # 3. If it's not bool, we check if it contains strings 'true'/'false'
+#         #    Force lowercase to handle case-insensitive scenarios
+#         col_as_str = df[column].astype(str).str.lower()
+#         unique_vals = set(col_as_str.dropna().unique())  # exclude NaN
+
+#         # Check if all non-null values are exclusively 'true' or 'false'
+#         allowed_values = {"true", "false"}
+#         if unique_vals.issubset(allowed_values):
+#             # We can safely map 'true'->1, 'false'->0
+#             mapping_dict = {"true": 1, "false": 0}
+#             df[encoded_column_name] = col_as_str.map(mapping_dict).fillna(0).astype(int)
+            
+#             # Drop the original column
+#             df.drop(columns=[column], inplace=True)
+            
+#             # Update column_mappings
+#             column_mappings[encoded_column_name] = mapping_dict
+#             print(f"Created {encoded_column_name} from object column containing true/false.")
+#         else:
+#             # The column is neither bool nor exclusively 'true'/'false'
+#             print((
+#                 f"Column '{column}' is not a valid boolean string column. "
+#                 f"It has other values: {unique_vals}. Skipping..."
+#             ))
+#             # We won't modify the DataFrame in this case.
+
+#     return df

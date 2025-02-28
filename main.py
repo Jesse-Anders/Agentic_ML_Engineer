@@ -1091,7 +1091,7 @@ class FeatureEngineer:
             "Numeric_Encode": execute_numeric_encode,  # Tree Models Only
             # "One_Hot_Encode": execute_one_hot_encode,  # Neural Network Models Only
             # "Frequency_Count_Encode": execute_frequency_encode,  # Future Feature (Not Currently Active)
-            # "Ordinal_Encode": execute_ordinal_encode,
+            "Ordinal_Encode": execute_ordinal_encode,
             # "NLP_Handler": execute_nlp_handler,
             "Scale_Or_Normalize": execute_scaling_normalization,
             # "Encode_True_False_As_One_Zero": execute_boolean_encode
