@@ -450,7 +450,7 @@ def convert_uncommon_alias_nulls(df, json_path="json_lib/alias_nulls_list.json")
 
         # After using alias_nulls, clear the JSON file
         with open(json_path, "w") as file:
-        json.dump([], file)  # Empty object
+            json.dump([], file)  # Empty object
 
         return df
 

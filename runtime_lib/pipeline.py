@@ -21,10 +21,15 @@ from runtime_lib.static_agent_libs.agent6_static_lib import *
 
 # SYSTEM GENERATION START:
 
-df = pd.read_csv("data_inputs/data.csv", index_col=None)
+df = pd.read_csv("data_inputs/data_post_agent1.csv", index_col=None)
 
+set_current_column("col1")
+df = dynamic_stochastic_median_impute(df)
+set_current_column("col2")
+df = dynamic_stochastic_median_impute(df)
+set_current_column("col3")
+df = dynamic_stochastic_median_impute(df)
+set_current_column("col4")
 set_current_column("col6")
-df = convert_common_alias_nulls(df)
-df = convert_uncommon_alias_nulls(df)
 set_current_column("col7")
-df = convert_common_alias_nulls(df)
+set_current_column("col8")

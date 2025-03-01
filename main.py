@@ -780,7 +780,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col4'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -806,10 +806,10 @@ class Preprocesser:
                 continue
 
             # DEBUGGING: Run iteration of small column set or a single column
-            if self.args.debug:
-                COLUMNS_TO_TEST = ['col4'] # Empty to Skip Agent Entirely!
-                if column not in COLUMNS_TO_TEST:
-                    continue
+            # if self.args.debug:
+            #     COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+            #     if column not in COLUMNS_TO_TEST:
+            #         continue
             
             # Outlier and Impute Handler Loop
             set_shared_var('current_column', column)
@@ -1384,7 +1384,7 @@ def run_ml_engineer(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_input_path', type=str, default='data_inputs/data.csv')
+    parser.add_argument('--data_input_path', type=str, default='data_inputs/data_post_agent1.csv')
     parser.add_argument('--data_output_path', type=str, default='data_outputs/output.csv')
     parser.add_argument('--pipeline_path', type=str, default='runtime_lib/pipeline.py')
     parser.add_argument('--static_lib_path', type=str, default='runtime_lib/static_lib.py')
