@@ -412,48 +412,6 @@ def display_most_common_unique_entries(df, max_display=40):
     top_entries = value_counts.head(max_display).index.tolist()
 
     return top_entries
-
-# def convert_uncommon_alias_nulls(df, alias_nulls_path="json_lib/alias_nulls_list.json"):
-#     """
-#     Converts all alias null values stored in the JSON file to proper NaN values in the specified column of the DataFrame.
-
-#     Args:
-#         df (pd.DataFrame): The DataFrame containing the column to process.
-#         column (str): The name of the column to convert.
-#         alias_nulls_path (str): The path to the JSON file containing the alias nulls list (default is "json_lib/alias_nulls_list.json").
-
-#     Returns:
-#         pd.DataFrame: The updated DataFrame with the alias nulls converted to NaN.
-#     """
-#     column = get_shared_var('current_column')
-    
-#     # Ensure the column exists in the DataFrame
-#     if column not in df.columns:
-#         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
-
-#     try:
-#         # Load the list of alias nulls from the JSON file
-#         with open(alias_nulls_path, "r") as file:
-#             alias_nulls = json.load(file)
-
-#         # Normalize the list of alias nulls (convert to lowercase for consistent matching)
-#         alias_nulls = [item.strip().lower() for item in alias_nulls]
-
-#         # Normalize the column for processing
-#         normalized_column = df[column].apply(lambda x: str(x).strip().lower() if isinstance(x, str) else x)
-
-#         # Replace alias nulls with NaN
-#         df.loc[normalized_column.isin(alias_nulls), column] = pd.NA
-#         print(f"Converted {alias_nulls} to proper null data type")
-
-#         return df
-
-#     except FileNotFoundError:
-#         raise FileNotFoundError(f"Alias nulls file not found at {alias_nulls_path}.")
-#     except json.JSONDecodeError:
-#         raise ValueError(f"Error: Nulls list file at {alias_nulls_path} is not a valid JSON file.")
-#     except Exception as e:
-#         raise Exception(f"An unexpected error occurred: {e}")
     
 
 
@@ -489,6 +447,10 @@ def convert_uncommon_alias_nulls(df, json_path="json_lib/alias_nulls_list.json")
         # Replace alias nulls with NaN
         df.loc[normalized_column.isin(alias_nulls), column] = pd.NA
         print(f"Converted {alias_nulls} to proper null data type")
+
+        # After using alias_nulls, clear the JSON file
+        with open(json_path, "w") as file:
+        json.dump([], file)  # Empty object
 
         return df
 
