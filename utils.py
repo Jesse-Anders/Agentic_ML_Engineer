@@ -28,6 +28,7 @@ _shared_state = {
     "skip_columns": [],
     "compare_col": None,
     "column_mappings": {},
+    'current_agent_name': None,
     
     # Encode Assignment Dictionary: Used by agent 6 to assign columns for specific encoding actions for agent 7 
     "encode_selections": {
