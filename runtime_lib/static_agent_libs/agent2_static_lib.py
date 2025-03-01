@@ -881,9 +881,10 @@ def object_mode_impute(df):
     # Compute mode (most frequent value)
     mode_value = df[column].mode()[0]  # Takes first mode if multiple exist
 
-    # Fill missing values with mode
-    updated_df = df[column].fillna(mode_value)
+    # ✅ Assign back to df[column] to update the DataFrame
+    df[column] = df[column].fillna(mode_value)
 
     print(f"Column '{column}': {null_count} missing values imputed using mode value '{mode_value}'.")
-    return updated_df
+    return df  # Return the full updated DataFrame
+
 # endregion
