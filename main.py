@@ -368,7 +368,7 @@ def exec_generated_func(
     
     func_name = match.group(1)
 
-    print(f"Agent is attempting to run {func_name} on the '{get_shared_var('current_column')}' column")
+    print(f"{get_shared_var('current_agent_name')} is attempting to run {func_name} on the '{get_shared_var('current_column')}' column")
 
     try:
         # Get the function code from the sandbox
