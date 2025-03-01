@@ -848,7 +848,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col7'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1123,7 +1123,7 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['col1', 'col2', 'col3', 'col4', 'col5', 'col6', 'col7', 'col8'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1137,54 +1137,56 @@ class FeatureEngineer:
             except Exception as e:
                 print(f'Error during stream: {e}')
 
-        # with open('json_lib/saved_encode_selections.json', 'w') as file:
-        #     json.dump(get_shared_var('encode_selections'), file, indent=4)
+        with open('json_lib/saved_encode_selections.json', 'w') as file:
+            json.dump(get_shared_var('encode_selections'), file, indent=4)
 
         #  ===========================================================#
         #  region START: AGENT6 Encode Execution                      #
         #=============================================================# 
 
-        # with open('json_lib/saved_encode_selections.json', "r") as file:
-        #     encode_selections = json.load(file)
+        with open('json_lib/saved_encode_selections.json', "r") as file:
+            encode_selections = json.load(file)
 
-        # # Dictionary mapping encode_selections keys to their corresponding function calls
-        # encoding_functions = {
-        #     "Numeric_Encode": execute_numeric_encode,  # Tree Models Only
-        #     # "One_Hot_Encode": execute_one_hot_encode,  # Neural Network Models Only
-        #     # "Frequency_Count_Encode": execute_frequency_encode,  # Future Feature (Not Currently Active)
-        #     # "Ordinal_Encode": execute_ordinal_encode, # Future Feature (Not Currently Active)
-        #     # "NLP_Handler": execute_nlp_handler,
-        #     "Scale_Or_Normalize": execute_scaling_normalization,
+        # Dictionary mapping encode_selections keys to their corresponding function calls
+        encoding_functions = {
+            # "Numeric_Encode": execute_numeric_encode,  # Tree Models Only
+            # "One_Hot_Encode": execute_one_hot_encode,  # Neural Network Models Only
+            # "Frequency_Count_Encode": execute_frequency_encode,  # Future Feature (Not Currently Active)
+            # "Ordinal_Encode": execute_ordinal_encode, # Future Feature (Not Currently Active)
+            "NLP_Handler": execute_nlp_handler,
+            # "Scale_Or_Normalize": execute_scaling_normalization,
 
-        # }
+        }
 
-        # df6 = feature_engineer.get_df()  # Load the DataFrame once
+        df6 = feature_engineer.get_df()  # Load the DataFrame once
 
-        # # Iterate over each encoding category in encode_selections
-        # for encode_type, columns in encode_selections.items():
-        #     # Check if there is a function mapped for this encoding type
-        #     if encode_type in encoding_functions:
-        #         encoding_function = encoding_functions[encode_type]  # Get corresponding function
+        # Iterate over each encoding category in encode_selections
+        for encode_type, columns in encode_selections.items():
+            # Check if there is a function mapped for this encoding type
+            if encode_type in encoding_functions:
+                encoding_function = encoding_functions[encode_type]  # Get corresponding function
 
-        #         # Apply the encoding function to each column
-        #         for column in columns:
-        #             if column in df6.columns:  # Ensure the column exists in the DataFrame
-        #                 df6 = encoding_function(df6, column)  # Apply encoding
-        #             else:
-        #                 print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
+                # Apply the encoding function to each column
+                for column in columns:
+                    if column in df6.columns:  # Ensure the column exists in the DataFrame
+                        df6 = encoding_function(df6, column)  # Apply encoding
+                    else:
+                        print(f"Warning: Column '{column}' not found in DataFrame. Skipping...")
         
-        # # Save the Final Encode Reference Dictionary
-        # with open('json_lib/saved_encode_dictionary.json', 'w') as file:
-        #     json.dump(get_shared_var('column_mappings'), file, indent=4)
+        # Save the Final Encode Reference Dictionary
+        with open('json_lib/saved_encode_dictionary.json', 'w') as file:
+            json.dump(get_shared_var('column_mappings'), file, indent=4)
 
-        # print("Encode Dictionary updated and JSON file written.")
+        print("Encode Dictionary updated and JSON file written.")
 
         #  ===========================================================#
         #  region END: AGENT6 Encode Execution                      #
-        #=============================================================# 
+        #=============================================================#
 
-        # IS THIS REALLY WORKING AFTER MY 'df6' SHTUFF???
-        save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_6')
+        # save dataframe with newly encoded columns
+        feature_engineer.update_df(df6)
+        save_dataframe_stage(df6, 'POST_AGENT_6')
+
         #  endregion
 
         # Toggle Off Activity Flag
@@ -1284,12 +1286,12 @@ def init_global_objects(args, df):
     args: system arguments
     df: pandas dataframe
     '''
-    global preprocessor, feature_engineer, target_column
+    global preprocessor, feature_engineer
 
     preprocessor = Preprocesser(args, df)
     feature_engineer = FeatureEngineer(args, df)
 
-    target_column = args.target_var
+    set_shared_var('target_column', args.target_var)
 
 
 def save_pipeline_generation(args):

@@ -5,6 +5,15 @@ import json
 from tqdm import tqdm
 from agent_builds.base_agents import basic_agent
 
+# NLP Libraries & Packages
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+
 # Add the project root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
@@ -243,3 +252,116 @@ def execute_scaling_normalization(df, column):
     return df
 
 
+def execute_nlp_handler(df, column):
+    '''
+    Processes an NLP column through standard text preprocessing steps and creates vectorized features.
+    
+    Steps:
+    1. Text preprocessing (lowercase, remove special chars, etc.)
+    2. Tokenization and stop word removal
+    3. TF-IDF vectorization with n-grams
+    4. Add new features to dataframe with unique column names
+    
+    Args:
+        df (pd.DataFrame): The dataframe containing the NLP column
+        column (str): Name of the column to process
+    
+    Returns:
+        pd.DataFrame: Updated dataframe with new NLP feature columns
+    '''
+    
+    try: # Download all required NLTK resources
+        nltk.download('punkt')
+        nltk.download('punkt_tab')
+        nltk.download('stopwords')
+        nltk.download('wordnet')
+        nltk.download('omw-1.4')  # Required for newer versions of NLTK
+    except Exception as e:
+        print(f"Error downloading NLTK resources: {e}")
+    
+    # Check if column exists
+    if column not in df.columns:
+        print(f"Column '{column}' not found in DataFrame. Skipping...")
+        return df
+
+    # Create a copy of the text column and fill NaN values
+    text_series = df[column].fillna('')
+    
+    def preprocess_text(text):
+        try:
+            # Convert to string if not already
+            text = str(text).lower()
+            
+            # Remove special characters and digits
+            text = re.sub(r'[^a-zA-Z\s]', ' ', text)
+            
+            # Remove extra whitespace
+            text = ' '.join(text.split())
+            
+            try:
+                tokens = word_tokenize(text)
+            except Exception as e:
+                print(f"NLTK tokenization failed: {e}. Falling back to simple split.")
+                tokens = text.split()  # Fallback simple tokenization
+            
+            try:
+                # Remove stopwords if available
+                stop_words = set(stopwords.words('english'))
+                tokens = [token for token in tokens if token not in stop_words]
+            except Exception as e:
+                print(f"Warning: Skipping stopword removal due to error: {e}")
+            
+            try:
+                # Lemmatization if available
+                lemmatizer = WordNetLemmatizer()
+                tokens = [lemmatizer.lemmatize(token) for token in tokens]
+            except Exception as e:
+                print(f"Warning: Skipping lemmatization due to error: {e}")
+            
+            return ' '.join(tokens)
+        except Exception as e:
+            print(f"Warning: Error in preprocessing text: {e}")
+            return str(text)  # Return original text as fallback
+    
+    # Apply preprocessing to all texts
+    processed_texts = text_series.apply(preprocess_text)
+    
+    # TF-IDF Vectorization with n-grams
+    vectorizer = TfidfVectorizer(
+        max_features=1000,  # Limit number of features
+        ngram_range=(1, 2),  # Include unigrams and bigrams
+        min_df=2,  # Minimum document frequency
+        max_df=0.95,  # Maximum document frequency
+        token_pattern=r'(?u)\b\w+\b'  # Simple token pattern as fallback
+    )
+    
+    try:
+        # Fit and transform the processed texts
+        tfidf_matrix = vectorizer.fit_transform(processed_texts)
+        
+        # Get feature names from vectorizer
+        feature_names = vectorizer.get_feature_names_out()
+        
+        # Create unique column names for new features
+        new_columns = [f"{column}_tfidf_{i}_{name}" for i, name in enumerate(feature_names)]
+        
+        # Convert sparse matrix to DataFrame with unique column names
+        tfidf_df = pd.DataFrame(
+            tfidf_matrix.toarray(),
+            columns=new_columns,
+            index=df.index
+        )
+        
+        # Drop the original text column
+        df = df.drop(columns=[column])
+        
+        # Concatenate the TF-IDF features with the original dataframe
+        df = pd.concat([df, tfidf_df], axis=1)
+        
+        print(f"Processed NLP column '{column}' and created {len(new_columns)} new TF-IDF features")
+        
+    except Exception as e:
+        print(f"Error in TF-IDF vectorization: {e}")
+        return df  # Return original dataframe if vectorization fails
+    
+    return df

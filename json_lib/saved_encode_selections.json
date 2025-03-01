@@ -1,21 +1,23 @@
 {
     "Numeric_Encode": [
-        "col4"
+        "col4",
+        "col6"
     ],
     "One_Hot_Encode": [
-        "col4"
+        "col4",
+        "col6"
     ],
     "Frequency_Count_Encode": [],
-    "Ordinal_Encode": [],
+    "Ordinal_Encode": [
+        "col7"
+    ],
     "NLP_Handler": [
-        "col6"
+        "col8"
     ],
     "Scale_Or_Normalize": [
         "col1",
         "col2",
-        "col3",
-        "col5"
+        "col3"
     ],
-    "Encode_True_False_As_One_Zero": [],
     "Failed_Encode_Selection": []
 }
