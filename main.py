@@ -685,6 +685,44 @@ def encode_choice(encoding_category: str, extra_info: dict = None):
     
     return f"Added column '{column}' to '{encoding_category}'"
 
+@tool
+def redundancy_dictionary(key_item: str, value_items: list, extra_info: dict = None):
+    """
+    Updates the redundancy dictionary with a canonical key and its associated redundant variations.
+    
+    This tool retrieves the shared variable 'redundancy_dictionary'. If it doesn't exist,
+    it creates one. Then it either creates a new entry for the provided key_item or appends
+    any new value items to the existing list (avoiding duplicates).
+    
+    Parameters:
+      key_item (str): The canonical value (e.g., "1-99") considered the primary label.
+      value_items (list): A list of redundant variations (e.g., ["[1-99]", "(1-99)"]).
+      extra_info (dict, optional): Additional information (currently unused).
+      
+    Returns:
+      str: A confirmation message indicating the update to the redundancy dictionary.
+    """
+    # Retrieve the redundancy dictionary from shared variables; create if not present.
+    redundancy_dict = get_shared_var('redundancy_dictionary')
+    
+    # Pretty sure this 'if' statement can be removed.
+    if redundancy_dict is None:
+        redundancy_dict = {}
+
+    # If the key already exists, add new values (avoiding duplicates)
+    if key_item in redundancy_dict:
+        for item in value_items:
+            if item not in redundancy_dict[key_item]:
+                redundancy_dict[key_item].append(item)
+    else:
+        redundancy_dict[key_item] = value_items
+
+    # Update the shared variable with the new redundancy dictionary
+    set_shared_var('redundancy_dictionary', redundancy_dict)
+    
+    return f"Updated redundancy dictionary: key '{key_item}' now maps to {redundancy_dict[key_item]}"
+
+
 
 tools = [
     get_inst,
@@ -692,7 +730,8 @@ tools = [
     exec_stored_func,
     append_to_json_list,
     add_nlp_column,
-    encode_choice
+    encode_choice,
+    redundancy_dictionary
 ]
 
 
