@@ -24,4 +24,3 @@ from runtime_lib.static_agent_libs.agent6_static_lib import *
 df = pd.read_csv("data_inputs/data_post_agent1-exn.csv", index_col=None)
 
 set_current_column("col7")
-df = convert_nulls_to_category(df)

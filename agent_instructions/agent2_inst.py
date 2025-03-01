@@ -72,17 +72,29 @@ AGENT2_IA = {
         "Else, ese the exec_stored_func tool to run object_mode_impute(df).\n"
         "Now, use tool call get_inst(OBJECT_INST_2) for further instructions."
     ),
-        "OBJECT_INST_2": (
+    "OBJECT_INST_2": (
+        "Use exec_stored_func tool to run count_unique_entries(df).\n"
+        "If column has 40 or fewer unique entries, use tool call get_inst(OBJECT_INST_3) for further instructions.\n"
+        "Else, use tool call get_inst(OBJECT_INST_4) for further instructions."
+    ),
+    "OBJECT_INST_3": (
         #"Use exec_stored_func tool to run determine_if_is_categorical(df) to determine if the column is categorical.\n"
         #"If column_type is is textual, END PROCESS.\n"
         #"If column_type is is 'categorical'
-        "Use exec_stored_func tool to run display_most_common_unique_entries(df).\n"
-        "Read the Function Output and determine if any of the unique entries seem like duplicate entries that just have slight differences in spelling or sybols.\n"
-        # This needs to be executed on
-        "List any items that seem like they are duplicate items.\n"
+        # NOTE: display_most_common_unique_entries is in agent1_static_lib.py
+        "Use exec_stored_func tool to run display_most_common_unique_entries(df, max_display=40).\n"
+        "Read the Function Output and determine if any of the unique entries seem like duplicate entries that just have slight differences in spelling or symbols.\n"
+        "List any items that seem like they are duplicate items and use the redundancy_dictionary tool to add items as Keys & Values to the redundancy_dict.\n"
+        #"Use exec_stored_func tool to run display_redundancy_dictionary().\n"
+        "Use exec_stored_func tool to run clean_redundant_entries(df)"
         "END PROCESS."
     ),
-    
+    "OBJECT_INST_4": (
+        # Under COnstruction!!!
+        "Waiting for Instructions for the 40+ unique items redundancy fix.\n"
+        "END PROCESS."
+    ),
+
     # Instructions for handling Unknown data type columns.
     "UNKNOWN_INST": (
         "Tell me you have read the Unknown instructions. And say Thank You. \n"
