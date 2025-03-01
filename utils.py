@@ -30,6 +30,7 @@ _shared_state = {
     "column_mappings": {},
     "redundancy_dictionary": {},
     'current_agent_name': None,
+    'max_nlp_token_features': 1000,
     
     # Encode Assignment Dictionary: Used by agent 6 to assign columns for specific encoding actions for agent 7 
     "encode_selections": {

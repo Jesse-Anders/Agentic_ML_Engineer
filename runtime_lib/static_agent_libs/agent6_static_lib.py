@@ -326,9 +326,11 @@ def execute_nlp_handler(df, column):
     # Apply preprocessing to all texts
     processed_texts = text_series.apply(preprocess_text)
     
+    max_features = get_shared_var('max_nlp_token_features')
+    
     # TF-IDF Vectorization with n-grams
     vectorizer = TfidfVectorizer(
-        max_features=1000,  # Limit number of features
+        max_features=max_features,  # Limit number of features
         ngram_range=(1, 2),  # Include unigrams and bigrams
         min_df=2,  # Minimum document frequency
         max_df=0.95,  # Maximum document frequency

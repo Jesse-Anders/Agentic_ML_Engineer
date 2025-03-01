@@ -1292,6 +1292,7 @@ def init_global_objects(args, df):
     feature_engineer = FeatureEngineer(args, df)
 
     set_shared_var('target_column', args.target_var)
+    set_shared_var('max_nlp_token_features', args.max_nlp_token_features)
 
 
 def save_pipeline_generation(args):
@@ -1448,6 +1449,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--do_pow_search', type=bool, default=False)
     parser.add_argument('--pow_iter', type=int, default=2)
+    parser.add_argument('--max_nlp_token_features', type=int, default=1000)
     
     parser.add_argument('--target_var', type=str, default='target')
     parser.add_argument('--id_var', type=str)
