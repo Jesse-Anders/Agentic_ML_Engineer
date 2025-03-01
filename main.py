@@ -806,10 +806,10 @@ class Preprocesser:
                 continue
 
             # DEBUGGING: Run iteration of small column set or a single column
-            # if self.args.debug:
-            #     COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-            #     if column not in COLUMNS_TO_TEST:
-            #         continue
+            if self.args.debug:
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                if column not in COLUMNS_TO_TEST:
+                    continue
             
             # Outlier and Impute Handler Loop
             set_shared_var('current_column', column)

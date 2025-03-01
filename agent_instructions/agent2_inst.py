@@ -66,7 +66,8 @@ AGENT2_IA = {
 #=============================================================================================#
     # Instructions for handling Object data type columns.
     "OBJECT_INST": (
-        # IMPORTANT: This should have correlation based imputes added.
+        # IMPORTANT: Incomplete. Must handle exNulls when target correlation 
+        # IMPORTANT: Incomplete. Handle Categorical assimilation. 1-99 vs [1-99] vs 1 - 199 type issues
         "Use the exec_stored_func tool to run object_mode_impute(df).\n"
         "END PROCESS.\n"
     ),
@@ -78,5 +79,5 @@ AGENT2_IA = {
 }
 
 # OBJECT_INST will handl exNull situations
+# OBJECT_INST will handle Categorical determination AND categorical assimilation. 1-99 vs [1-99] vs 1 - 199 type issues.
 # OBJECT_INST will mode impute
-# OBJECT_INST will ???
