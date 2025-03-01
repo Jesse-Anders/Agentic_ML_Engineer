@@ -309,7 +309,7 @@ def exec_stored_func(
     
     func_name = match.group(1)
 
-    print(f"Agent is attempting to run {func_name} on the '{get_shared_var('current_column')}' column")
+    print(f"Agent {get_shared_var('current_agent_name')} is attempting to run {func_name} on the '{get_shared_var('current_column')}' column")
 
     try:
         func = static_lib.get_func(func_name)
@@ -773,6 +773,7 @@ class Preprocesser:
         #  endregion  ================================================#
         #  region  AGENT1 LOOP                                        #
         #=============================================================#       
+        set_shared_var('current_agent_name', 'Agent 1')
 
         for column in preprocessor.get_df().columns:
             if column == self.args.target_var:
@@ -799,7 +800,8 @@ class Preprocesser:
 
         #  endregion  ================================================#
         #  region  AGENT2 LOOP                                        #
-        #=============================================================#       
+        #=============================================================#
+        set_shared_var('current_agent_name', 'Agent 2')       
 
         for column in preprocessor.get_df().columns:
             if column == self.args.target_var:
@@ -952,6 +954,7 @@ class FeatureEngineer:
         #  endregion  ================================================#
         #  region  AGENT3 LOOP  Preliminary NLP                       #
         #=============================================================#      
+        set_shared_var('current_agent_name', 'Agent 3')
 
         for column in feature_engineer.get_df().columns:
             if column == self.args.target_var:
@@ -979,6 +982,7 @@ class FeatureEngineer:
         #  endregion  ================================================#
         #  region  AGENT4 LOOP                                        #
         #=============================================================#       
+        set_shared_var('current_agent_name', 'Agent 4')
 
         for column in feature_engineer.get_df().columns:
             if column == self.args.target_var:
@@ -1005,6 +1009,7 @@ class FeatureEngineer:
         #  endregion  ================================================#
         #  region  AGENT5 LOOP                                        #
         #=============================================================#       
+        set_shared_var('current_agent_name', 'Agent 5 Super')
 
         # DEBUG use do_pow_search flag to toggle POW agents
         if feature_engineer.args.do_pow_search:
@@ -1049,6 +1054,8 @@ class FeatureEngineer:
                     # Don't let errors break the loop
                     continue
 
+            set_shared_var('current_agent_name', 'Agent 5')
+
             # Process the groups as before
             for group in get_shared_var('numeric_pow_groups'):
                 set_shared_var('current_pow_group', group)
@@ -1068,6 +1075,7 @@ class FeatureEngineer:
         #  endregion  ================================================#
         #  region  AGENT6 LOOP                                        #
         #=============================================================#    
+        set_shared_var('current_agent_name', 'Agent 6')
 
         for column in feature_engineer.get_df().columns:
             if column == self.args.target_var:
