@@ -309,7 +309,7 @@ def exec_stored_func(
     
     func_name = match.group(1)
 
-    print(f"Agent {get_shared_var('current_agent_name')} is attempting to run {func_name} on the '{get_shared_var('current_column')}' column")
+    print(f"{get_shared_var('current_agent_name')} is attempting to run {func_name} on the '{get_shared_var('current_column')}' column")
 
     try:
         func = static_lib.get_func(func_name)
@@ -808,10 +808,10 @@ class Preprocesser:
                 continue
 
             # DEBUGGING: Run iteration of small column set or a single column
-            if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-                if column not in COLUMNS_TO_TEST:
-                    continue
+            # if self.args.debug:
+            #     COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+            #     if column not in COLUMNS_TO_TEST:
+            #         continue
             
             # Outlier and Impute Handler Loop
             set_shared_var('current_column', column)
