@@ -66,6 +66,7 @@ AGENT2_IA = {
 #=============================================================================================#
     # Instructions for handling Object data type columns.
     "OBJECT_INST": (
+        # IMPORTANT: This should have correlation based imputes added.
         "Use the exec_stored_func tool to run object_mode_impute(df).\n"
         "END PROCESS.\n"
     ),
