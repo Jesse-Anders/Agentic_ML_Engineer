@@ -858,7 +858,7 @@ class Preprocesser:
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT2_IA["AGENT2_START"])]}
             try:
-                stream = agent2.stream(inputs, stream_mode='values')
+                stream = agent2.stream(inputs, {"recursion_limit": 100}, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
