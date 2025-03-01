@@ -665,162 +665,195 @@ def determine_max_decimal_places(series):
 
 # In Categorical Nums - Decide if Nulls should be their own category by checking correlation to target.
 # Notes: If the target is freeform text with thousands of unique labels, your crosstab can blow up. You might need a pre-check (e.g., skip chi-square if cardinality > 50 or so, or do a more scalable approach).
-from scipy.stats import chi2_contingency
+
+from scipy.stats import chi2_contingency, fisher_exact
+import numpy as np
+
 def evaluate_null_correlation_with_target(
     df,
     numeric_correlation_threshold=0.5,
-    chi2_pvalue_threshold=0.05
+    chi2_pvalue_threshold=0.05,
+    max_categories=50
 ):
     """
-    Evaluates whether the null pattern in `column` has a strong association 
-    with the `target`, which can be numeric, boolean, or categorical/text.
-    
-    Args:
-        df (pd.DataFrame): The DataFrame containing the data.
-        column (str): The name of the column for which we're evaluating nulls.
-        target (str): The name of the target column.
-        numeric_correlation_threshold (float): For numeric/boolean targets, the 
-            absolute Pearson correlation needed to consider null as a separate category.
-        chi2_pvalue_threshold (float): For categorical/text targets, the p-value 
-            cutoff from a chi-square test of independence. If below this threshold, 
-            we consider the association “strong enough” to treat null separately.
-    
+    Evaluates whether the null pattern in a column has a strong association 
+    with the target, handling numeric, boolean, and categorical/text targets.
+
+    Fixes:
+    - Prevents zero-variance issues from returning NaN.
+    - Ensures meaningful results are always provided.
+    - Adds debug printouts for investigating unexpected NaN outputs.
+
     Returns:
         dict with:
-            - null_target_association: numeric correlation or chi-square p-value 
-              (depending on target type).
-            - high_null_association: bool, indicates "strong enough" association.
+            - null_target_association: correlation or chi-square p-value.
+            - high_null_association: bool, indicates strong association.
             - recommended_handling: "convert_to_category" or "impute".
     """
-    column=get_shared_var('current_column')
-    target=get_shared_var('target_column')
+    column = get_shared_var('current_column')
+    target = get_shared_var('target_column')
 
-    # 1. Basic validation checks
     if column not in df.columns or target not in df.columns:
         raise ValueError("One or more specified columns do not exist in the DataFrame.")
 
-    # If no missing data at all, no reason to do anything special
+    # If no missing values, return early
     if df[column].isnull().sum() == 0:
         return {
-            "null_target_association": 0.0,
+            "null_target_association": float('nan'),
             "high_null_association": False,
-            "recommended_handling": "impute",  # or "none" if you prefer
+            "recommended_handling": "impute",
         }
     
-    # Create a binary indicator for missing values in `column`
     null_indicator = df[column].isnull().astype(int)
-
-    # 2. Handle different target types
     target_dtype = df[target].dtype
-    # We'll unify the logic into two broad branches:
-    #   - "Numeric/Boolean" => Pearson correlation
-    #   - "Categorical/Text/Other" => Chi-square test
 
-    # Check for boolean:
-    #   Pandas sometimes stores booleans as bool dtype or object dtype with True/False
-    #   We'll cast if it's purely True/False. Then we can do correlation as 0/1 if we want.
-    # Or decide it's effectively "categorical" if it's string-based or object-based.
-    
+    ### **1️⃣ Step 1: Determine Target Type First**
+    unique_target_values = df[target].dropna().unique()
+    num_unique_target_values = len(unique_target_values)
+
     if pd.api.types.is_numeric_dtype(target_dtype):
-        # Could be float, int, or possibly a boolean column stored as bool
-        # If bool, let's cast it to numeric so we can do correlation
-        if df[target].dropna().isin([0,1]).all():
-            # It's effectively numeric binary => correlation is fine
-            # (Pearson correlation with a 0/1 target is the same as a phi coefficient)
-            pass
+        if num_unique_target_values == 2:
+            target_type = "binary_numeric"  # Binary 0/1 target
         else:
-            # It's a real numeric variable or possibly more than just 0/1
-            pass
-        
-        # 2a. Pearson correlation approach
+            target_type = "continuous_numeric"  # Continuous numeric target
+    else:
+        target_type = "categorical"
+
+    print(f"Determined Target Type: {target_type}")
+
+    ### **2️⃣ Step 2: Check for Zero Variance (Prevents NaN Issues)**
+    if null_indicator.nunique() == 1:
+        print("Warning: Null indicator has no variance (all values are the same).")
+        return {
+            "null_target_association": float('nan'),
+            "high_null_association": False,
+            "recommended_handling": "impute"
+        }
+
+    if df[target].nunique() == 1:
+        print("Warning: Target column has no variance (only one unique value).")
+        return {
+            "null_target_association": float('nan'),
+            "high_null_association": False,
+            "recommended_handling": "impute"
+        }
+
+    ### **3️⃣ Step 3: Apply the Correct Test Based on Target Type**
+    
+    #### **Case 1: Continuous Numeric Target → Pearson Correlation**
+    if target_type == "continuous_numeric":
         corr_value = null_indicator.corr(df[target])
-        
-        # Check for NaN or no variance issues
         if pd.isna(corr_value):
-            # e.g. if target or null_indicator had zero variance => correlation is undefined
+            print("Warning: Pearson correlation is NaN due to zero variance or missing data.")
             return {
                 "null_target_association": float('nan'),
-                "high_null_association": False,  
+                "high_null_association": False,
                 "recommended_handling": "impute"
             }
+        high_null_association = abs(corr_value) >= numeric_correlation_threshold
+        return {
+            "null_target_association": corr_value,
+            "high_null_association": high_null_association,
+            "recommended_handling": "convert_to_category" if high_null_association else "impute"
+        }
 
-        # Evaluate if it's beyond threshold
+    #### **Case 2: Binary Numeric Target → Phi Coefficient**
+    elif target_type == "binary_numeric":
+        # Option 1: Lower the correlation threshold
+        corr_value = np.corrcoef(null_indicator, df[target])[0, 1]
         high_null_association = abs(corr_value) >= numeric_correlation_threshold
 
-        # Decide recommended handling
-        recommended_handling = "convert_to_category" if high_null_association else "impute"
+        # Option 2: Use contingency table and Fisher's Exact Test
+        contingency = pd.crosstab(null_indicator, df[target])
+        if contingency.shape == (2, 2):
+            _, p_val = fisher_exact(contingency)
+            # Consider association high if p-value is very low
+            high_null_association = p_val < chi2_pvalue_threshold or high_null_association
+
+        # Option 3: Compare conditional probabilities
+        prob_when_null = df[target][df[column].isnull()].mean()
+        prob_when_not_null = df[target][~df[column].isnull()].mean()
+        # For instance, if the gap is larger than 0.4, flag it:
+        if (prob_when_null - prob_when_not_null) > 0.4:
+            high_null_association = True
 
         return {
             "null_target_association": corr_value,
             "high_null_association": high_null_association,
-            "recommended_handling": recommended_handling
+            "recommended_handling": "convert_to_category" if high_null_association else "impute"
         }
 
+    #### **Case 3: Categorical Target → Chi-Square or Fisher’s Exact Test**
     else:
-        # 2b. Categorical or text target => let's do a chi-square test
-        # Build a contingency table of:
-        #  rows = null_indicator(0/1), columns = categories in the target
-        # If the target has extremely high cardinality (like freeform text), 
-        # this might get large. But let's attempt it.
-
-        # Convert target to string (just in case) to group by unique categories
         target_str = df[target].astype(str)
 
+        # Auto-bin high-cardinality categorical targets
+        unique_count = target_str.nunique()
+        if unique_count > max_categories:
+            print(f"Warning: Target '{target}' has high cardinality ({unique_count} unique values). Reducing categories to {max_categories}.")
+            top_categories = target_str.value_counts().nlargest(max_categories).index
+            target_str = target_str.apply(lambda x: x if x in top_categories else "Other")
+
+        # Create contingency table
         contingency_df = pd.crosstab(null_indicator, target_str, dropna=False)
 
-        # If there's only 1 row or 1 column in the contingency, chi2 is not well-defined
+        # Debugging: Print contingency table
+        print("Contingency Table for Null Indicator vs Target:")
+        print(contingency_df)
+
+        # If only one row or column, switch to Fisher’s Exact Test
         if contingency_df.shape[0] < 2 or contingency_df.shape[1] < 2:
-            # Means either all null or no null, or the target has only 1 unique value
+            print("Warning: Contingency table is too small for Chi-square or Fisher’s test.")
             return {
                 "null_target_association": float('nan'),
                 "high_null_association": False,
                 "recommended_handling": "impute"
             }
 
-        chi2, p_val, dof, ex = chi2_contingency(contingency_df)
+        # Use Fisher’s Exact Test for 2x2 tables, Chi-square otherwise
+        if contingency_df.shape == (2, 2):
+            _, p_val = fisher_exact(contingency_df)
+        else:
+            chi2, p_val, _, _ = chi2_contingency(contingency_df)
 
-        # If p_val < threshold => means "strong association" between null-indicator & target category
         high_null_association = (p_val < chi2_pvalue_threshold)
-
-        recommended_handling = "convert_to_category" if high_null_association else "impute"
-
         return {
-            "null_target_association": p_val,  # storing the p-value as the association measure
+            "null_target_association": p_val,
             "high_null_association": high_null_association,
-            "recommended_handling": recommended_handling
+            "recommended_handling": "convert_to_category" if high_null_association else "impute"
         }
-
 
 
 # Convert Nulls to exNulls if they are highly correlated to the target feature
 # WARNING: This turns the column into object type to accomodate non-encoded "null_category" entries.
-def convert_nulls_to_category(df, category_label="null_category"):
-    """
-    Converts null values in a column to a categorical label.
+# Has been replaced by convert_nulls_to_category_new. Delete after testing convert_nulls_to_category_new
+# def convert_nulls_to_category_old(df, category_label="null_category"):
+#     """
+#     Converts null values in a column to a categorical label.
 
-    Args:
-        df (pd.DataFrame): The DataFrame containing the column.
-        column (str): The column to process.
-        category_label (str): The label to replace null values with (default: "Missing").
+#     Args:
+#         df (pd.DataFrame): The DataFrame containing the column.
+#         column (str): The column to process.
+#         category_label (str): The label to replace null values with (default: "Missing").
 
-    Returns:
-        pd.DataFrame: The updated DataFrame with nulls converted to a category.
-    """
-    column=get_shared_var('current_column')
+#     Returns:
+#         pd.DataFrame: The updated DataFrame with nulls converted to a category.
+#     """
+#     column=get_shared_var('current_column')
 
-    # Ensure the column exists
-    if column not in df.columns:
-        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+#     # Ensure the column exists
+#     if column not in df.columns:
+#         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
 
-    # Count number of nulls before replacement
-    num_nulls = df[column].isnull().sum()
+#     # Count number of nulls before replacement
+#     num_nulls = df[column].isnull().sum()
+#     # Replace nulls with the specified category label
+#     # df[column].fillna(category_label, inplace=True) # Depricated Format
+#     df.fillna({column: category_label}, inplace=True)
 
-    # Replace nulls with the specified category label
-    df[column].fillna(category_label, inplace=True)
-
-    print(f"Converted {num_nulls} nulls in '{column}' to category '{category_label}'.")
+#     print(f"Converted {num_nulls} nulls in '{column}' to category '{category_label}'.")
     
-    return df
+#     return df
 
 
 # Basic Mode Imputation
@@ -849,6 +882,97 @@ def impute_categorical_numeric_mode(df):
 
     print(f"Column '{column}': Missing values imputed using mode ({mode_value}).")
     return df
+
+
+# endregion
+# ============================================================================================#
+#    region            OBJECT and or NUMERIC COLUMN HANDLING                                                 #
+#=============================================================================================#
+
+import pandas as pd
+import unicodedata
+
+def basic_text_preprocess(df):
+    """
+    Cleans and standardizes a categorical text column:
+    - Converts to lowercase (only for non-null values)
+    - Strips leading/trailing spaces
+    - Normalizes unicode characters (e.g., café → cafe)
+    - Preserves special characters like "-" and "/"
+    - Ensures NaNs remain unchanged
+
+    Parameters:
+    - df (pd.DataFrame): The DataFrame containing the column.
+
+    Returns:
+    - pd.DataFrame: Updated DataFrame with cleaned categorical column.
+    """
+    column = get_shared_var('current_column')
+
+    if column not in df.columns:
+        return df  # Return unchanged if column is missing
+
+    # Process only non-null values to avoid replacing NaN with "nan"
+    df[column] = df[column].apply(
+        lambda x: (
+            unicodedata.normalize('NFKD', str(x).strip().lower()) if pd.notna(x) else x
+        )
+    )
+
+    return df
+
+
+def determine_if_is_categorical(df, categorical_threshold=0.2, dominant_threshold=0.9):
+    """
+    Determines whether an object (text) column should be handled as categorical.
+    
+    Classification is based on:
+    - Unique-to-total ratio (low ratio suggests categorical).
+    - Dominant value ratio (one category dominating suggests categorical).
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+        categorical_threshold (float): If unique-to-total ratio is below this, it's categorical.
+        dominant_threshold (float): If one category dominates beyond this threshold, it's categorical.
+
+    Returns:
+        dict: A dictionary containing the column type and decision reasoning.
+    """
+
+    column = get_shared_var('current_column')
+
+    # Ensure the column exists
+    if column not in df.columns:
+        return {"error": f"Column '{column}' does not exist in the DataFrame."}
+
+    # Ensure column is object (text)
+    if not pd.api.types.is_object_dtype(df[column]):
+        return {"error": f"Column '{column}' is not an object (text) data type."}
+
+    # Count unique values and their frequencies
+    unique_values = df[column].value_counts(normalize=True)  # Frequencies as proportions
+
+    # Analyze the unique-to-total ratio
+    unique_count = df[column].nunique()
+    total_count = len(df[column])
+    unique_ratio = unique_count / total_count if total_count > 0 else 0
+
+    # Identify the most dominant value ratio
+    dominant_value_ratio = unique_values.iloc[0] if len(unique_values) > 0 else 0
+
+    # Decision logic: When should text be considered categorical?
+    if unique_ratio < categorical_threshold or dominant_value_ratio > dominant_threshold:
+        column_type = "categorical"
+    else:
+        column_type = "textual"
+
+    return {
+        "column": column,
+        "column_type": column_type,
+        "unique_ratio": unique_ratio,
+        "dominant_value_ratio": dominant_value_ratio
+    }
+
 
 def object_mode_impute(df):
     """
@@ -881,10 +1005,60 @@ def object_mode_impute(df):
     # Compute mode (most frequent value)
     mode_value = df[column].mode()[0]  # Takes first mode if multiple exist
 
-    # ✅ Assign back to df[column] to update the DataFrame
+    # Assign back to df[column] to update the DataFrame
     df[column] = df[column].fillna(mode_value)
 
     print(f"Column '{column}': {null_count} missing values imputed using mode value '{mode_value}'.")
     return df  # Return the full updated DataFrame
+
+
+def convert_nulls_to_category_new(df):
+    """
+    Converts null values in a numeric column to a new encoded value. For numeric columns,
+    the nulls are replaced with a value that is one greater than the current maximum.
+    The function also updates a global column_mappings dictionary to record this encoding.
+
+    For non-numeric columns, it falls back to replacing nulls with the string "null_category".
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+    
+    Returns:
+        pd.DataFrame: The updated DataFrame with nulls replaced.
+    """
+    column = get_shared_var('current_column')
+    column_mappings = get_shared_var('column_mappings')
+    
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+    
+    # Check if the column is numeric
+    if pd.api.types.is_numeric_dtype(df[column]):
+        # If there are any non-null values, set new_value to max+1; otherwise choose a default (e.g., 1)
+        if df[column].notnull().any():
+            max_value = df[column].max()
+            new_value = max_value + 1
+        else:
+            new_value = 1
+
+        num_nulls = df[column].isnull().sum()
+        df[column].fillna(new_value, inplace=True)
+        print(f"Converted {num_nulls} nulls in '{column}' to encoded value {new_value}.")
+
+        # Update column_mappings for this column
+        if column in column_mappings:
+            column_mappings[column]['null_encoding'] = new_value
+        else:
+            column_mappings[column] = {'null_encoding': new_value}
+    
+    else:
+        # For non-numeric columns, revert to a string replacement.
+        num_nulls = df[column].isnull().sum()
+        df[column].fillna("null_category", inplace=True)
+        print(f"Converted {num_nulls} nulls in '{column}' to category 'null_category'.")
+
+    return df
+
+
 
 # endregion

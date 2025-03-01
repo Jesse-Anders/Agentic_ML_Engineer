@@ -808,13 +808,14 @@ class Preprocesser:
                 continue
 
             # DEBUGGING: Run iteration of small column set or a single column
-            # if self.args.debug:
-            #     COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-            #     if column not in COLUMNS_TO_TEST:
-            #         continue
+            if self.args.debug:
+                COLUMNS_TO_TEST = ['col7'] # Empty to Skip Agent Entirely!
+                if column not in COLUMNS_TO_TEST:
+                    continue
             
             # Outlier and Impute Handler Loop
             set_shared_var('current_column', column)
+            set_shared_var('target_column', args.target_var)
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT2_IA["AGENT2_START"])]}
             try:
@@ -1073,7 +1074,7 @@ class FeatureEngineer:
         save_dataframe_stage(self.get_df(), 'POST_AGENT_5')
 
         #  endregion  ================================================#
-        #  region  AGENT6 LOOP                                        #
+        #  region  AGENT6 LOOP (ENCODE AGENT)                         #
         #=============================================================#    
         set_shared_var('current_agent_name', 'Agent 6')
 
@@ -1087,7 +1088,7 @@ class FeatureEngineer:
                 if column not in COLUMNS_TO_TEST:
                     continue
             
-            # OBJECT TO NUM AND ALIAS NULLS AGENT LOOP
+            # ENCODE SELECTION AGENT
             set_shared_var('current_column', column)
             pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT6_IA["AGENT6_START"])]}
@@ -1112,7 +1113,7 @@ class FeatureEngineer:
         #     "Numeric_Encode": execute_numeric_encode,  # Tree Models Only
         #     # "One_Hot_Encode": execute_one_hot_encode,  # Neural Network Models Only
         #     # "Frequency_Count_Encode": execute_frequency_encode,  # Future Feature (Not Currently Active)
-        #     "Ordinal_Encode": execute_ordinal_encode,
+        #     # "Ordinal_Encode": execute_ordinal_encode, # Future Feature (Not Currently Active)
         #     # "NLP_Handler": execute_nlp_handler,
         #     "Scale_Or_Normalize": execute_scaling_normalization,
 
@@ -1392,7 +1393,7 @@ def run_ml_engineer(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_input_path', type=str, default='data_inputs/data_post_agent1.csv')
+    parser.add_argument('--data_input_path', type=str, default='data_inputs/data_post_agent1-exn.csv')
     parser.add_argument('--data_output_path', type=str, default='data_outputs/output.csv')
     parser.add_argument('--pipeline_path', type=str, default='runtime_lib/pipeline.py')
     parser.add_argument('--static_lib_path', type=str, default='runtime_lib/static_lib.py')

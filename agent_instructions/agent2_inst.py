@@ -51,14 +51,14 @@ AGENT2_IA = {
     # Instructions for handling numeric as categorical nulls.
     "CATEGORICAL_NULL_INST": (
         "Use exec_stored_func tool to run evaluate_null_correlation_with_target(df) to get null handling recommendations.\n"
-        "If 'convert_to_category' is recommended, use exec_stored_func tool to run convert_nulls_to_category(df). Then use tool call get_inst(CATEGORICAL_ENCODE_EXNULLS_CATEGORY) for instructions.\n"
+        "If 'convert_to_category' is recommended, use exec_stored_func tool to run convert_nulls_to_category_new(df). Then use tool call get_inst(ENCODE_EXNULLS_UPDATE_DICT) for instructions.\n"
         # THIS SHOULD BE UPGRADED to impute based on correlation or knn etc when possible, rather than always MODE impute.
         "If 'impute' is recommended, use exec_stored_func tool to run impute_categorical_numeric_mode(df). END PROCESS.\n"
     ),
     # Instructions for encoding new Null as Category Column.
-    "CATEGORICAL_ENCODE_EXNULLS_CATEGORY": (
-        # STILL UNDER CONSTRUCTION!! Need to encode exNull to revert now object column back to integer or float.
-        "Column still needs to be converted back to numeric after exNull category created. END PROCESS.\n"\
+    "ENCODE_EXNULLS_UPDATE_DICT": (
+        # TO DO: Must update encodes dictionary with column_mappings that were just populated by convert_nulls_to_category_new. This is ussually triggered in main.py after agent6.
+        "END PROCESS.\n"\
     ),
 
 #    endregion  ==============================================================================#
@@ -66,11 +66,23 @@ AGENT2_IA = {
 #=============================================================================================#
     # Instructions for handling Object data type columns.
     "OBJECT_INST": (
-        # IMPORTANT: Incomplete. Must handle exNulls when target correlation 
-        # IMPORTANT: Incomplete. Handle Categorical assimilation. 1-99 vs [1-99] vs 1 - 199 type issues
-        "Use the exec_stored_func tool to run object_mode_impute(df).\n"
-        "END PROCESS.\n"
+        "Use exec_stored_func tool to run basic_text_preprocess(df).\n"
+        "Use exec_stored_func tool to run evaluate_null_correlation_with_target(df) to get null handling recommendations.\n"
+        "If 'convert_to_category' is recommended, use exec_stored_func tool to run convert_nulls_to_category_new(df).\n"
+        "Else, ese the exec_stored_func tool to run object_mode_impute(df).\n"
+        "Now, use tool call get_inst(OBJECT_INST_2) for further instructions."
     ),
+        "OBJECT_INST_2": (
+        #"Use exec_stored_func tool to run determine_if_is_categorical(df) to determine if the column is categorical.\n"
+        #"If column_type is is textual, END PROCESS.\n"
+        #"If column_type is is 'categorical'
+        "Use exec_stored_func tool to run display_most_common_unique_entries(df).\n"
+        "Read the Function Output and determine if any of the unique entries seem like duplicate entries that just have slight differences in spelling or sybols.\n"
+        # This needs to be executed on
+        "List any items that seem like they are duplicate items.\n"
+        "END PROCESS."
+    ),
+    
     # Instructions for handling Unknown data type columns.
     "UNKNOWN_INST": (
         "Tell me you have read the Unknown instructions. And say Thank You. \n"
