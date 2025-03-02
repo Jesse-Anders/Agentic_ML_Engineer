@@ -846,7 +846,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ["col7"] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1122,7 +1122,7 @@ class FeatureEngineer:
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
                 # For quick paste: 'col1', 'col2', 'col3', 'col4', 'col5', 'col6', 'col7', 'col8'
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['title', 'description'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1138,6 +1138,38 @@ class FeatureEngineer:
 
         with open('json_lib/saved_encode_selections.json', 'w') as file:
             json.dump(get_shared_var('encode_selections'), file, indent=4)
+
+
+        # Consolidate NLP columns if there are multiple
+        encode_selections = get_shared_var('encode_selections')
+        nlp_columns = encode_selections.get('NLP_Handler', [])
+        
+        if len(nlp_columns) > 1:
+            print(f"Found multiple NLP columns: {nlp_columns}. Consolidating...")
+            
+            # Create cumulative column name
+            cumulative_col_name = "cumulative_nlp_text"
+            
+            # Combine text from all NLP columns with space separator
+            df = feature_engineer.get_df()
+            df[cumulative_col_name] = df[nlp_columns].astype(str).agg(' '.join, axis=1)
+            
+            # Remove original NLP columns
+            df = df.drop(columns=nlp_columns)
+
+            feature_engineer.update_df(df)
+            
+            # Update encode_selections with new cumulative column
+            encode_selections['NLP_Handler'] = [cumulative_col_name]
+            set_shared_var('encode_selections', encode_selections)
+            
+            # Update the JSON file
+            with open('json_lib/saved_encode_selections.json', 'w') as file:
+                json.dump(encode_selections, file, indent=4)
+            
+            print(f"Created consolidated NLP column: {cumulative_col_name}")
+            print(f"Removed original columns: {nlp_columns}")
+
 
         #  ===========================================================#
         #  region START: AGENT6 Encode Execution                      #

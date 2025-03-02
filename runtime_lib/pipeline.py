@@ -21,6 +21,7 @@ from runtime_lib.static_agent_libs.agent6_static_lib import *
 
 # SYSTEM GENERATION START:
 
-df = pd.read_csv("data_inputs/data_post_agent1-exn.csv", index_col=None)
+df = pd.read_csv("data_inputs/anime_data.csv", index_col=None)
 
-set_current_column("col7")
+set_current_column("title")
+set_current_column("description")

@@ -3,7 +3,9 @@
     "One_Hot_Encode": [],
     "Frequency_Count_Encode": [],
     "Ordinal_Encode": [],
-    "NLP_Handler": [],
+    "NLP_Handler": [
+        "cumulative_nlp_text"
+    ],
     "Scale_Or_Normalize": [],
     "Failed_Encode_Selection": []
 }
