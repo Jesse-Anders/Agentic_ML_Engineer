@@ -1,9 +1,20 @@
+object_4_general_instructions = """
+Look closely at the Function Output and determine if any of the unique entries seem like duplicate entries but have slight differences.
+There may be differences such as spelling errors, or duplicate entries may have added extraneous characters such as brackets, dashes or parentheses.
+Be thorough and complete, making comprehensive comparisons between all the items when searching for potential duplicates.
+For all entries that you are EXTREMELY confident are duplicates, use the redundancy_dictionary tool to add items as Keys & Values to the redundancy_dict.
+"""
+
 AGENT2_IA = {
 #=============================================================================================#
 #    region                AGENT2   OUTLIERS AND NULL IMPUTING                                #
 #=============================================================================================#
+# Temp jump to object batcher
+    # "AGENT2_START": (
+    #     "Use tool call get_inst(OBJECT_INST_3) for further instructions."
+    # ),
+
     "AGENT2_START": (
-        # FUTURE WORK:Look over for BOOL and CATEGORICAL TYPE handling
         "Use the exec_stored_func tool to run the data_type_check(df) function to determine the Column's data type.\n"
         "If data type is Float, use the tool call get_inst(FLOAT_INST) for instructions.\n"
         "If data type is Integer, use the tool call get_inst(NUMERIC_INST) for instructions.\n"
@@ -11,13 +22,11 @@ AGENT2_IA = {
         "If data type is Boolean, use the tool call get_inst(BOOL_INST) for instructions.\n"
         "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions."
     ),
-
     "BOOL_CHECK_INST": (
         "Use exec_stored_func tool to run check_for_bool(df).\n"
         "If column is determined to be boolean get_inst(BOOL_INST).\n"
         "Else, use the tool call get_inst(OBJECT_INST) for instructions."
     ),
-
     "BOOL_INST": (
         "Use exec_stored_func tool to run encode_bool_to_num_cat(df).\n"
         "After running encode_bool_to_num_cat(df), use the tool call get_inst(NUMERIC_INST) for instructions."
@@ -51,49 +60,77 @@ AGENT2_IA = {
     # Instructions for handling numeric as categorical nulls.
     "CATEGORICAL_NULL_INST": (
         "Use exec_stored_func tool to run evaluate_null_correlation_with_target(df) to get null handling recommendations.\n"
-        "If 'convert_to_category' is recommended, use exec_stored_func tool to run convert_nulls_to_category_new(df). Then use tool call get_inst(ENCODE_EXNULLS_UPDATE_DICT) for instructions.\n"
+        # NEED NEW LOGIC HERE... The convert_nulls_to_category_new encodes new null_category as 1 number higher than the highest number in the data set.
+        "If 'convert_to_category' is recommended, use exec_stored_func tool to run convert_nulls_to_category_new(df).\n"
         # THIS SHOULD BE UPGRADED to impute based on correlation or knn etc when possible, rather than always MODE impute.
-        "If 'impute' is recommended, use exec_stored_func tool to run impute_categorical_numeric_mode(df). END PROCESS.\n"
-    ),
-    # Instructions for encoding new Null as Category Column.
-    "ENCODE_EXNULLS_UPDATE_DICT": (
-        # TO DO: Must update encodes dictionary with column_mappings that were just populated by convert_nulls_to_category_new. This is ussually triggered in main.py after agent6.
-        "END PROCESS.\n"\
+        "If 'impute' is recommended, use exec_stored_func tool to run impute_categorical_numeric_mode(df). END PROCESS."
     ),
 
 #    endregion  ==============================================================================#
-#    region                            DEAD ENDS TO WORK ON                                   #
+#    region                            OBJECT COLUMNS                                         #
 #=============================================================================================#
     # Instructions for handling Object data type columns.
+
     "OBJECT_INST": (
         "Use exec_stored_func tool to run basic_text_preprocess(df).\n"
         "Use exec_stored_func tool to run evaluate_null_correlation_with_target(df) to get null handling recommendations.\n"
         "If 'convert_to_category' is recommended, use exec_stored_func tool to run convert_nulls_to_category_new(df).\n"
-        "Else, ese the exec_stored_func tool to run object_mode_impute(df).\n"
+        # Could maybe upgrade to include a correlation or knn impute in addition to basic mode impute
+        "Else, use the exec_stored_func tool to run object_mode_impute(df).\n"
         "Now, use tool call get_inst(OBJECT_INST_2) for further instructions."
     ),
     "OBJECT_INST_2": (
+        "Use exec_stored_func tool to run determine_if_is_categorical(df)\n"
+        "If Function Return column_type as 'categorical', use tool call get_inst(OBJECT_INST_2-1) for further instructions.\n"
+        "If Function Return column_type as 'short_text', use tool call get_inst(OBJECT_INST_3) for further instructions.\n" # Send to cleaning of top 40 unique entries
+        "If Function Return column_type as 'long_text', END PROCESS."    
+    ),
+    "OBJECT_INST_2-1": (
         "Use exec_stored_func tool to run count_unique_entries(df).\n"
         "If column has 40 or fewer unique entries, use tool call get_inst(OBJECT_INST_3) for further instructions.\n"
-        "Else, use tool call get_inst(OBJECT_INST_4) for further instructions."
+        "Else, if column has 41 or more unique entries, use tool call get_inst(OBJECT_INST_4-1) for further instructions."  
     ),
     "OBJECT_INST_3": (
-        #"Use exec_stored_func tool to run determine_if_is_categorical(df) to determine if the column is categorical.\n"
-        #"If column_type is is textual, END PROCESS.\n"
-        #"If column_type is is 'categorical'
         # NOTE: display_most_common_unique_entries is in agent1_static_lib.py
         "Use exec_stored_func tool to run display_most_common_unique_entries(df, max_display=40).\n"
-        "Read the Function Output and determine if any of the unique entries seem like duplicate entries that just have slight differences in spelling or symbols.\n"
-        "List any items that seem like they are duplicate items and use the redundancy_dictionary tool to add items as Keys & Values to the redundancy_dict.\n"
-        #"Use exec_stored_func tool to run display_redundancy_dictionary().\n"
-        "Use exec_stored_func tool to run clean_redundant_entries(df)"
+        f"{object_4_general_instructions}\n"
+        "Use exec_stored_func tool to run display_redundancy_dictionary().\n"
+        "Use exec_stored_func tool to run clean_redundant_entries(df)\n"
         "END PROCESS."
     ),
-    "OBJECT_INST_4": (
-        # Under COnstruction!!!
-        "Waiting for Instructions for the 40+ unique items redundancy fix.\n"
+    "OBJECT_INST_4-1": (
+        "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_first=True, batch_second=True)\n"
+        f"{object_4_general_instructions}\n"   
+        "Use tool call get_inst(OBJECT_INST_4-2) for further instructions."
+    ),
+    "OBJECT_INST_4-2": (
+        "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_first=True, batch_second_to_last=True)\n"
+        f"{object_4_general_instructions}\n"
+        "Use tool call get_inst(OBJECT_INST_4-3) for further instructions."
+    ),
+    "OBJECT_INST_4-3": (
+        "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_first=True, batch_last=True)\n"
+        f"{object_4_general_instructions}\n"
+        "Use tool call get_inst(OBJECT_INST_4-4) for further instructions."
+    ),
+    "OBJECT_INST_4-4": (
+        "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_second=True, batch_second_to_last=True)\n"
+        f"{object_4_general_instructions}\n" 
+        "Use tool call get_inst(OBJECT_INST_4-5) for further instructions."
+    ),
+    "OBJECT_INST_4-5": (
+        "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_second=True, batch_last=True)\n" 
+        f"{object_4_general_instructions}\n"
+        "Use tool call get_inst(OBJECT_INST_4-6) for further instructions."
+    ),
+    "OBJECT_INST_4-6": (
+        "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_second_to_last=True, batch_last=True)\n"  
+        f"{object_4_general_instructions}\n"
+        "Use exec_stored_func tool to run display_redundancy_dictionary().\n"
+        "Use exec_stored_func tool to run clean_redundant_entries(df).\n"
         "END PROCESS."
     ),
+
 
     # Instructions for handling Unknown data type columns.
     "UNKNOWN_INST": (
@@ -101,7 +138,3 @@ AGENT2_IA = {
     )
     # endregion
 }
-
-# OBJECT_INST will handl exNull situations
-# OBJECT_INST will handle Categorical determination AND categorical assimilation. 1-99 vs [1-99] vs 1 - 199 type issues.
-# OBJECT_INST will mode impute

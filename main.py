@@ -697,7 +697,6 @@ def redundancy_dictionary(key_item: str, value_items: list, extra_info: dict = N
     Parameters:
       key_item (str): The canonical value (e.g., "1-99") considered the primary label.
       value_items (list): A list of redundant variations (e.g., ["[1-99]", "(1-99)"]).
-      extra_info (dict, optional): Additional information (currently unused).
       
     Returns:
       str: A confirmation message indicating the update to the redundancy dictionary.
@@ -705,7 +704,6 @@ def redundancy_dictionary(key_item: str, value_items: list, extra_info: dict = N
     # Retrieve the redundancy dictionary from shared variables; create if not present.
     redundancy_dict = get_shared_var('redundancy_dictionary')
     
-    # Pretty sure this 'if' statement can be removed.
     if redundancy_dict is None:
         redundancy_dict = {}
 
@@ -848,7 +846,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ["col7"] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1123,7 +1121,8 @@ class FeatureEngineer:
             
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['col1', 'col2', 'col3', 'col4', 'col5', 'col6', 'col7', 'col8'] # Empty to Skip Agent Entirely!
+                # For quick paste: 'col1', 'col2', 'col3', 'col4', 'col5', 'col6', 'col7', 'col8'
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             

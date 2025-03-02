@@ -7,3 +7,4 @@ scikit-learn
 scipy
 python-dotenv
 word2number
+ace_tools

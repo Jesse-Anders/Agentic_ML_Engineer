@@ -667,8 +667,8 @@ def determine_max_decimal_places(series):
 # Notes: If the target is freeform text with thousands of unique labels, your crosstab can blow up. You might need a pre-check (e.g., skip chi-square if cardinality > 50 or so, or do a more scalable approach).
 
 from scipy.stats import chi2_contingency, fisher_exact
-import numpy as np
 
+# This is used for both numeric and object/text columns
 def evaluate_null_correlation_with_target(
     df,
     numeric_correlation_threshold=0.5,
@@ -823,39 +823,6 @@ def evaluate_null_correlation_with_target(
             "recommended_handling": "convert_to_category" if high_null_association else "impute"
         }
 
-
-# Convert Nulls to exNulls if they are highly correlated to the target feature
-# WARNING: This turns the column into object type to accomodate non-encoded "null_category" entries.
-# Has been replaced by convert_nulls_to_category_new. Delete after testing convert_nulls_to_category_new
-# def convert_nulls_to_category_old(df, category_label="null_category"):
-#     """
-#     Converts null values in a column to a categorical label.
-
-#     Args:
-#         df (pd.DataFrame): The DataFrame containing the column.
-#         column (str): The column to process.
-#         category_label (str): The label to replace null values with (default: "Missing").
-
-#     Returns:
-#         pd.DataFrame: The updated DataFrame with nulls converted to a category.
-#     """
-#     column=get_shared_var('current_column')
-
-#     # Ensure the column exists
-#     if column not in df.columns:
-#         raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
-
-#     # Count number of nulls before replacement
-#     num_nulls = df[column].isnull().sum()
-#     # Replace nulls with the specified category label
-#     # df[column].fillna(category_label, inplace=True) # Depricated Format
-#     df.fillna({column: category_label}, inplace=True)
-
-#     print(f"Converted {num_nulls} nulls in '{column}' to category '{category_label}'.")
-    
-#     return df
-
-
 # Basic Mode Imputation
 def impute_categorical_numeric_mode(df):
     """
@@ -889,7 +856,6 @@ def impute_categorical_numeric_mode(df):
 #    region            OBJECT and or NUMERIC COLUMN HANDLING                                                 #
 #=============================================================================================#
 
-import pandas as pd
 import unicodedata
 
 def basic_text_preprocess(df):
@@ -929,6 +895,7 @@ def determine_if_is_categorical(df, categorical_threshold=0.2, dominant_threshol
     Classification is based on:
     - Unique-to-total ratio (low ratio suggests categorical).
     - Dominant value ratio (one category dominating suggests categorical).
+    - Average character count per entry (longer text suggests NLP-style text).
 
     Args:
         df (pd.DataFrame): The DataFrame containing the column.
@@ -936,7 +903,7 @@ def determine_if_is_categorical(df, categorical_threshold=0.2, dominant_threshol
         dominant_threshold (float): If one category dominates beyond this threshold, it's categorical.
 
     Returns:
-        dict: A dictionary containing the column type and decision reasoning.
+        dict: A dictionary containing the column type, decision reasoning, and average character count.
     """
 
     column = get_shared_var('current_column')
@@ -949,28 +916,37 @@ def determine_if_is_categorical(df, categorical_threshold=0.2, dominant_threshol
     if not pd.api.types.is_object_dtype(df[column]):
         return {"error": f"Column '{column}' is not an object (text) data type."}
 
+    # Remove NaN values before analysis
+    column_data = df[column].dropna()
+
     # Count unique values and their frequencies
-    unique_values = df[column].value_counts(normalize=True)  # Frequencies as proportions
+    unique_values = column_data.value_counts(normalize=True)  # Frequencies as proportions
 
     # Analyze the unique-to-total ratio
-    unique_count = df[column].nunique()
-    total_count = len(df[column])
+    unique_count = column_data.nunique()
+    total_count = len(column_data)
     unique_ratio = unique_count / total_count if total_count > 0 else 0
 
     # Identify the most dominant value ratio
     dominant_value_ratio = unique_values.iloc[0] if len(unique_values) > 0 else 0
 
+    # Compute the average character count per entry
+    avg_char_count = column_data.str.len().mean() if total_count > 0 else 0
+
     # Decision logic: When should text be considered categorical?
     if unique_ratio < categorical_threshold or dominant_value_ratio > dominant_threshold:
         column_type = "categorical"
+    elif avg_char_count <= 40:
+        column_type = "short_text"  # Typically short labels, codes, names, etc.
     else:
-        column_type = "textual"
+        column_type = "long_text"  # Likely NLP-style text (paragraphs, descriptions, etc.)
+
 
     return {
-        "column": column,
+        #"column": column,
         "column_type": column_type,
-        "unique_ratio": unique_ratio,
-        "dominant_value_ratio": dominant_value_ratio
+        #"unique_ratio": unique_ratio,
+        #"dominant_value_ratio": dominant_value_ratio,
     }
 
 
@@ -1058,6 +1034,56 @@ def convert_nulls_to_category_new(df):
         print(f"Converted {num_nulls} nulls in '{column}' to category 'null_category'.")
 
     return df
+
+def display_unique_entry_batches(df, batch_size=20,
+                                 batch_first=False, batch_second=False,
+                                 batch_second_to_last=False, batch_last=False):
+    """
+    Displays batches of unique entries in a column based on their frequency.
+    
+    Args:
+        df (pd.DataFrame): The DataFrame containing the column.
+        column (str): The column to analyze.
+        batch_size (int, optional): The size of each batch. Default is 20.
+        batch_first (bool, optional): Whether to display the first batch (most common entries). Default is False.
+        batch_second (bool, optional): Whether to display the second batch (next most common entries). Default is False.
+        batch_second_to_last (bool, optional): Whether to display the second to last batch (least common entries before the last batch). Default is False.
+        batch_last (bool, optional): Whether to display the last batch (least common entries). Default is False.
+        
+    Returns:
+        pd.DataFrame: A DataFrame containing the selected batches.
+    """
+    column = get_shared_var('current_column')
+    if column not in df.columns:
+        raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+
+# Get unique entries in the order they appear
+    unique_entries = df[column].dropna().unique()  # Excludes NaN values
+
+    # Define the batches
+    batches = {}
+
+    if batch_first:
+        batches["Batch 1"] = unique_entries[:batch_size]
+
+    if batch_second:
+        batches["Batch 2"] = unique_entries[batch_size:2*batch_size]
+
+    if batch_second_to_last:
+        batches["Batch 3"] = unique_entries[-2*batch_size:-batch_size]
+
+    if batch_last:
+        batches["Batch 4"] = unique_entries[-batch_size:]
+
+    return batches
+
+    # Option 2: Display using IPython's display if available, otherwise print it.
+    # try:
+    #     from IPython.display import display
+    #     display(batch_df)
+    # except ImportError:
+    #     print(batch_df)
+
 
 def count_unique_entries(df):
     """
