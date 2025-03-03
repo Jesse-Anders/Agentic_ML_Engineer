@@ -12,18 +12,19 @@ AGENT2_IA = {
 #    region                AGENT2   OUTLIERS AND NULL IMPUTING                                #
 #=============================================================================================#
 # Temp jump to object batcher
+    "AGENT2_START": (
+        "Use tool call get_inst(OBJECT_INST_3) for further instructions."
+    ),
+
     # "AGENT2_START": (
-    #     "Use tool call get_inst(OBJECT_INST_3) for further instructions."
+    #     "Use the exec_stored_func tool to run the data_type_check(df) function to determine the Column's data type.\n"
+    #     "If data type is Float, use the tool call get_inst(FLOAT_INST) for instructions.\n"
+    #     "If data type is Integer, use the tool call get_inst(NUMERIC_INST) for instructions.\n"
+    #     "If data type is Object, use the tool call get_inst(BOOL_CHECK_INST) for instructions.\n"
+    #     "If data type is Boolean, use the tool call get_inst(BOOL_INST) for instructions.\n"
+    #     "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions."
     # ),
 
-    "AGENT2_START": (
-        "Use the exec_stored_func tool to run the data_type_check(df) function to determine the Column's data type.\n"
-        "If data type is Float, use the tool call get_inst(FLOAT_INST) for instructions.\n"
-        "If data type is Integer, use the tool call get_inst(NUMERIC_INST) for instructions.\n"
-        "If data type is Object, use the tool call get_inst(BOOL_CHECK_INST) for instructions.\n"
-        "If data type is Boolean, use the tool call get_inst(BOOL_INST) for instructions.\n"
-        "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions."
-    ),
     "BOOL_CHECK_INST": (
         "Use exec_stored_func tool to run check_for_bool(df).\n"
         "If column is determined to be boolean get_inst(BOOL_INST).\n"
@@ -89,6 +90,7 @@ AGENT2_IA = {
         "If Function Return column_type as 'long_text', END PROCESS."    
     ),
     "OBJECT_INST_2-1": (
+        # NEED A RUN_REDUNDANCY=True/False parameter to open this up or close it.
         "Use exec_stored_func tool to run count_unique_entries(df).\n"
         "If column has 40 or fewer unique entries, use tool call get_inst(OBJECT_INST_3) for further instructions.\n"
         "Else, if column has 41 or more unique entries, use tool call get_inst(OBJECT_INST_4-1) for further instructions."  
@@ -132,9 +134,10 @@ AGENT2_IA = {
         "Use tool call get_inst(OBJECT_3_AND_4_HUMAN_APPROVAL) for further instructions."
     ),
     "OBJECT_3_AND_4_HUMAN_APPROVAL": (
-        "Call tool request_human_approval('clean_redundant_entries')\n"
-        "If human grants approval, Use exec_stored_func tool to run clean_redundant_entries(df).\n"
-        "Else, END PROCESS."
+        #"Call tool request_human_approval('clean_redundant_entries')\n"
+        #"If human grants approval, Use exec_stored_func tool to run clean_redundant_entries(df).\n"
+        #"Else, END PROCESS."
+        "End Process"
     ),
 
     # Instructions for handling Unknown data type columns.

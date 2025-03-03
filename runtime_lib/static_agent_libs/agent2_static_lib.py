@@ -1108,40 +1108,7 @@ def count_unique_entries(df):
     
     return unique_count
 
-def clean_redundant_entries(df):
-    """
-    Cleans redundant entries in a specified DataFrame column by mapping them to their canonical key.
-    
-    The function retrieves the redundancy dictionary from shared variables (under the key
-    'redundancy_dictionary'). It then constructs a mapping from each redundant variant to its
-    canonical key and applies this mapping to update the column values.
-    
-    Args:
-        df (pd.DataFrame): The DataFrame containing the column to be cleaned.
-        column (str): The column name in which to replace redundant entries.
-        
-    Returns:
-        pd.DataFrame: The updated DataFrame with redundant entries replaced by their key.
-    """
-    # Retrieve the redundancy dictionary from shared variables
-    column = get_shared_var('current_column')
-    redundancy_dict = get_shared_var('redundancy_dictionary')
 
-    if redundancy_dict is None:
-        print("No redundancy dictionary found. No changes applied.")
-        return df
-    
-    # Build the mapping dictionary: for each canonical key, map each redundant variant to the key.
-    mapping = {}
-    for canonical_key, redundant_values in redundancy_dict.items():
-        for variant in redundant_values:
-            mapping[variant] = canonical_key
-
-    # Replace all redundant values in the specified column with the canonical key.
-    df[column] = df[column].replace(mapping)
-    
-    print(f"Cleaned redundant entries in column '{column}'.")
-    return df
 
 
 # Temp Display Dictionary Function

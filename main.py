@@ -19,6 +19,7 @@ from runtime_lib.static_lib import *
 
 from runtime_lib.static_agent_libs.agent1_static_lib import *
 from runtime_lib.static_agent_libs.agent2_static_lib import *
+from runtime_lib.static_agent_libs.agent2_1_static_lib import *
 from runtime_lib.static_agent_libs.agent3_static_lib import *
 from runtime_lib.static_agent_libs.agent4_static_lib import *
 from runtime_lib.static_agent_libs.agent5_static_lib import *
@@ -26,16 +27,17 @@ from runtime_lib.static_agent_libs.agent6_static_lib import *
 
 import runtime_lib.static_agent_libs.agent1_static_lib as agent1
 import runtime_lib.static_agent_libs.agent2_static_lib as agent2
+import runtime_lib.static_agent_libs.agent2_1_static_lib as agent2_1
 import runtime_lib.static_agent_libs.agent3_static_lib as agent3
 import runtime_lib.static_agent_libs.agent4_static_lib as agent4
 import runtime_lib.static_agent_libs.agent5_static_lib as agent5
 import runtime_lib.static_agent_libs.agent6_static_lib as agent6
 
 # List of agent modules
-AGENT_MODULES = [agent1, agent2, agent3, agent4, agent5, agent6]
+AGENT_MODULES = [agent1, agent2, agent2_1, agent3, agent4, agent5, agent6]
 
 # INSTRUCTION ARCHIVE LIST: Used in the get_inst tool
-IA_LIST = [INST_ARCHIVE, AGENT1_IA, AGENT2_IA, AGENT3_IA, AGENT4_IA, AGENT5_IA, AGENT6_IA]
+IA_LIST = [INST_ARCHIVE, AGENT1_IA, AGENT2_IA, AGENT2_1_IA, AGENT3_IA, AGENT4_IA, AGENT5_IA, AGENT6_IA]
 
 #=============================================================================================#
 #  region                                Dynamic Globals                                      #
@@ -688,39 +690,51 @@ def encode_choice(encoding_category: str, extra_info: dict = None):
 @tool
 def redundancy_dictionary(key_item: str, value_items: list, extra_info: dict = None):
     """
-    Updates the redundancy dictionary with a canonical key and its associated redundant variations.
-    
+    Updates the redundancy dictionary with a canonical key and its associated redundant variations,
+    organized by the current column.
+
     This tool retrieves the shared variable 'redundancy_dictionary'. If it doesn't exist,
-    it creates one. Then it either creates a new entry for the provided key_item or appends
-    any new value items to the existing list (avoiding duplicates).
-    
+    it creates one. It then gets the current column name via get_shared_var('current_column') and 
+    ensures there is a dedicated dictionary for that column. Finally, it either creates a new entry 
+    for the provided key_item or appends any new value items to the existing list (avoiding duplicates).
+
     Parameters:
       key_item (str): The canonical value (e.g., "1-99") considered the primary label.
       value_items (list): A list of redundant variations (e.g., ["[1-99]", "(1-99)"]).
-      
+      extra_info (dict): Optional extra information (not used in this implementation).
+
     Returns:
-      str: A confirmation message indicating the update to the redundancy dictionary.
+      str: A confirmation message indicating the update to the redundancy dictionary for the current column.
     """
-    # Retrieve the redundancy dictionary from shared variables; create if not present.
+    # Retrieve the current column name
+    column = get_shared_var('current_column')
+
+    # Retrieve the full redundancy dictionary; if not present, initialize it.
     redundancy_dict = get_shared_var('redundancy_dictionary')
-    
     if redundancy_dict is None:
         redundancy_dict = {}
 
-    # If the key already exists, add new values (avoiding duplicates)
-    if key_item in redundancy_dict:
-        for item in value_items:
-            if item not in redundancy_dict[key_item]:
-                redundancy_dict[key_item].append(item)
-    else:
-        redundancy_dict[key_item] = value_items
+    # Ensure there is a dictionary for the current column
+    if column not in redundancy_dict:
+        redundancy_dict[column] = {}
 
-    # Update the shared variable with the new redundancy dictionary
+    # Work on the dictionary for the current column
+    column_dict = redundancy_dict[column]
+
+    # If the key already exists, add new values (avoiding duplicates)
+    if key_item in column_dict:
+        for item in value_items:
+            if item not in column_dict[key_item]:
+                column_dict[key_item].append(item)
+    else:
+        column_dict[key_item] = value_items
+
+    # Update the main redundancy dictionary with the modified column data
+    redundancy_dict[column] = column_dict
     set_shared_var('redundancy_dictionary', redundancy_dict)
     
-    return f"Updated redundancy dictionary: key '{key_item}' now maps to {redundancy_dict[key_item]}"
+    return f"Updated redundancy dictionary for column '{column}': key '{key_item}' now maps to {column_dict[key_item]}"
 
-from langchain.tools import tool
 
 @tool
 def request_human_approval(task_to_approve):
@@ -817,6 +831,12 @@ class Preprocesser:
             agent2 = create_react_agent(model, tools)                                                                       
         except Exception as e:
             print(f'Error creating agent2 : A LanGraph prebuit ReAct agent: {e}')
+        
+        try:
+            # AGENT2_1 = Redundancy Dictionary Executer
+            agent2_1 = create_react_agent(model, tools)                                                                       
+        except Exception as e:
+            print(f'Error creating agent2_1 : A LanGraph prebuit ReAct agent: {e}')
 
         #  endregion  ================================================#
         #  region  AGENT1 LOOP                                        #
@@ -857,7 +877,7 @@ class Preprocesser:
 
             # # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['cabin'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -871,9 +891,56 @@ class Preprocesser:
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+        
+        # Save Redundancy Dictionary to Json
+        with open('json_lib/saved_redundancy_dictionary.json', 'w') as file:
+            json.dump(get_shared_var('redundancy_dictionary'), file, indent=4)
+            print('Updated ')
 
         save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_2')
-        #  endregion
+
+
+        # Toggle Off Activity Flag
+        self.active = False
+
+        return self.df # Return the most recent dataframe
+    
+    def update_df(self, altered_df):
+        '''
+        Updates the working dataframe so that the wordflow can continue.
+
+        altered_df: altered version of the preprocessor dataframe
+        '''
+        self.backup_df = self.df.copy()
+        self.df = altered_df.copy()
+
+        #  endregion  ================================================#
+        #  region  AGENT2_1 LOOP                                        #
+        #=============================================================#
+        set_shared_var('current_agent_name', 'Agent 2_1')       
+
+        for column in preprocessor.get_df().columns:
+            if column == self.args.target_var:
+                continue
+
+            # # DEBUGGING: Run iteration of small column set or a single column
+            if self.args.debug:
+                COLUMNS_TO_TEST = ['home.dest'] # Empty to Skip Agent Entirely!
+                if column not in COLUMNS_TO_TEST:
+                    continue
+            
+            # Outlier and Impute Handler Loop
+            set_shared_var('current_column', column)
+            set_shared_var('target_column', args.target_var)
+            pipeline.write(f'set_current_column("{column}")')
+            inputs = {'messages': [('user', AGENT2_1_IA["AGENT2_1_START"])]}
+            try:
+                stream = agent2_1.stream(inputs, {"recursion_limit": 100}, stream_mode='values')
+                print_stream(stream)
+            except Exception as e:
+                print(f'Error during stream: {e}')
+        
+        save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_2_1')
 
         # Toggle Off Activity Flag
         self.active = False

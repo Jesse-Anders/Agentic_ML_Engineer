@@ -2,6 +2,7 @@ from langchain_core.tools import tool
 
 from agent_instructions.agent1_inst import AGENT1_IA
 from agent_instructions.agent2_inst import AGENT2_IA
+from agent_instructions.agent2_1_inst import AGENT2_1_IA
 from agent_instructions.agent3_inst import AGENT3_IA
 from agent_instructions.agent4_inst import AGENT4_IA
 from agent_instructions.agent5_inst import AGENT5_IA
@@ -119,6 +120,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from utils import set_current_column
 from runtime_lib.static_agent_libs.agent1_static_lib import *
 from runtime_lib.static_agent_libs.agent2_static_lib import *
+from runtime_lib.static_agent_libs.agent2_1_static_lib import *
 from runtime_lib.static_agent_libs.agent3_static_lib import *
 from runtime_lib.static_agent_libs.agent4_static_lib import *
 from runtime_lib.static_agent_libs.agent5_static_lib import *
