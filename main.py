@@ -818,7 +818,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ['cabin'] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -844,9 +844,13 @@ class Preprocesser:
             if column == self.args.target_var:
                 continue
 
-            # DEBUGGING: Run iteration of small column set or a single column
+            # # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
+<<<<<<< Updated upstream
                 COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+=======
+                COLUMNS_TO_TEST = ['cabin'] # Empty to Skip Agent Entirely!
+>>>>>>> Stashed changes
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1466,7 +1470,7 @@ def run_ml_engineer(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_input_path', type=str, default='data_inputs/data_post_agent1-exn.csv')
+    parser.add_argument('--data_input_path', type=str, default='data_inputs/data-arti-300/titanic_passenger_list.csv')
     parser.add_argument('--data_output_path', type=str, default='data_outputs/output.csv')
     parser.add_argument('--pipeline_path', type=str, default='runtime_lib/pipeline.py')
     parser.add_argument('--static_lib_path', type=str, default='runtime_lib/static_lib.py')
@@ -1482,7 +1486,7 @@ if __name__ == "__main__":
     parser.add_argument('--pow_iter', type=int, default=2)
     parser.add_argument('--max_nlp_token_features', type=int, default=1000)
     
-    parser.add_argument('--target_var', type=str, default='target')
+    parser.add_argument('--target_var', type=str, default='survived')
     parser.add_argument('--id_var', type=str)
 
     # parser.add_argument('--dataset_goal_id', type=str, default='default')
