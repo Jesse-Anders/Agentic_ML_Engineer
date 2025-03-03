@@ -132,11 +132,10 @@ AGENT2_IA = {
         "Use tool call get_inst(OBJECT_3_AND_4_HUMAN_APPROVAL) for further instructions."
     ),
     "OBJECT_3_AND_4_HUMAN_APPROVAL": (
-        "Ask for human to approve next step."
-        "Use exec_stored_func tool to run clean_redundant_entries(df).\n"
-        "END PROCESS."
-    )
-
+        "Call tool request_human_approval('clean_redundant_entries')\n"
+        "If human grants approval, Use exec_stored_func tool to run clean_redundant_entries(df).\n"
+        "Else, END PROCESS."
+    ),
 
     # Instructions for handling Unknown data type columns.
     "UNKNOWN_INST": (

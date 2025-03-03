@@ -720,6 +720,16 @@ def redundancy_dictionary(key_item: str, value_items: list, extra_info: dict = N
     
     return f"Updated redundancy dictionary: key '{key_item}' now maps to {redundancy_dict[key_item]}"
 
+from langchain.tools import tool
+
+@tool
+def request_human_approval(task_to_approve):
+    """
+    Requests human approval before executing the next function.
+    Returns 'approved' if approved, otherwise 'denied'.
+    """
+    user_input = input(f"Do you approve running {task_to_approve}? (yes/no): ").strip().lower()
+    return "approved" if user_input == "yes" else "denied"
 
 
 tools = [
@@ -729,7 +739,8 @@ tools = [
     append_to_json_list,
     add_nlp_column,
     encode_choice,
-    redundancy_dictionary
+    redundancy_dictionary,
+    request_human_approval
 ]
 
 
@@ -818,7 +829,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ['cabin'] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -846,11 +857,7 @@ class Preprocesser:
 
             # # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-<<<<<<< Updated upstream
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-=======
                 COLUMNS_TO_TEST = ['cabin'] # Empty to Skip Agent Entirely!
->>>>>>> Stashed changes
                 if column not in COLUMNS_TO_TEST:
                     continue
             
