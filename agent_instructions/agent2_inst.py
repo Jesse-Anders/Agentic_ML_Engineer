@@ -13,7 +13,9 @@ AGENT2_IA = {
 #=============================================================================================#
 # Temp jump to object batcher
     "AGENT2_START": (
-        "Use tool call get_inst(OBJECT_INST_3) for further instructions."
+        #"Use tool call get_inst(OBJECT_INST_3) for further instructions."
+        "Use exec_stored_func too to run drop_column()"
+        "Else, END PROCESS."
     ),
 
     # "AGENT2_START": (

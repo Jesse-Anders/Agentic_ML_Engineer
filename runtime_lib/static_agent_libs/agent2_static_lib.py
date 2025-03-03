@@ -1109,8 +1109,6 @@ def count_unique_entries(df):
     return unique_count
 
 
-
-
 # Temp Display Dictionary Function
 def display_redundancy_dictionary():
     """

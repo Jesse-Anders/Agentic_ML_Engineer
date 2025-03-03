@@ -1,1 +1,27 @@
-{}
+{
+    "home.dest": {
+        "New York, NY": [
+            "New York, NY",
+            "Syria New York, NY",
+            "Ruotsinphytaa, Finland New York, NY"
+        ],
+        "Montreal, PQ": [
+            "Montreal, PQ",
+            "Montreal, PQ / Chesterville, ON",
+            "Paris / Montreal, PQ"
+        ],
+        "London, England": [
+            "London",
+            "London, England"
+        ],
+        "Chicago, IL": [
+            "Chicago, IL",
+            "Ireland Chicago, IL",
+            "Bulgaria Chicago, IL"
+        ],
+        "Haverford, PA": [
+            "Haverford, PA",
+            "Haverford, PA / Cooperstown, NY"
+        ]
+    }
+}

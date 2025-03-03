@@ -892,27 +892,12 @@ class Preprocesser:
             except Exception as e:
                 print(f'Error during stream: {e}')
         
-        # Save Redundancy Dictionary to Json
-        with open('json_lib/saved_redundancy_dictionary.json', 'w') as file:
-            json.dump(get_shared_var('redundancy_dictionary'), file, indent=4)
-            print('Updated ')
+        # UPDATE!! This is overwritten too easily Save Redundancy Dictionary to Json 
+        # with open('json_lib/saved_redundancy_dictionary.json', 'w') as file:
+        #     json.dump(get_shared_var('redundancy_dictionary'), file, indent=4)
+        #     print('Saved Redundancy Dictionary To Json')
 
         save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_2')
-
-
-        # Toggle Off Activity Flag
-        self.active = False
-
-        return self.df # Return the most recent dataframe
-    
-    def update_df(self, altered_df):
-        '''
-        Updates the working dataframe so that the wordflow can continue.
-
-        altered_df: altered version of the preprocessor dataframe
-        '''
-        self.backup_df = self.df.copy()
-        self.df = altered_df.copy()
 
         #  endregion  ================================================#
         #  region  AGENT2_1 LOOP                                        #
@@ -941,6 +926,10 @@ class Preprocesser:
                 print(f'Error during stream: {e}')
         
         save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_2_1')
+
+#  endregion  ================================================================================#
+#  region                               Close Out Preprocessor                                #
+#=============================================================================================#
 
         # Toggle Off Activity Flag
         self.active = False
