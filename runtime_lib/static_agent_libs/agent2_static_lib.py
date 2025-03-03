@@ -1018,7 +1018,9 @@ def convert_nulls_to_category_new(df):
             new_value = 1
 
         num_nulls = df[column].isnull().sum()
-        df[column].fillna(new_value, inplace=True)
+        df.fillna({column: new_value}, inplace=True)
+        # df[column].fillna(new_value, inplace=True) #Depricated
+
         print(f"Converted {num_nulls} nulls in '{column}' to encoded value {new_value}.")
 
         # Update column_mappings for this column
@@ -1030,7 +1032,8 @@ def convert_nulls_to_category_new(df):
     else:
         # For non-numeric columns, revert to a string replacement.
         num_nulls = df[column].isnull().sum()
-        df[column].fillna("null_category", inplace=True)
+        df.fillna({column: "null_category"}, inplace=True)
+        # df[column].fillna("null_category", inplace=True) #Depricated
         print(f"Converted {num_nulls} nulls in '{column}' to category 'null_category'.")
 
     return df

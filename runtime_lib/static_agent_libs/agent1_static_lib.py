@@ -25,10 +25,7 @@ def evaluate_column_for_drop(df, drop_null_threshold=0.5, target_corr_threshold=
     
     Args:
         df (pd.DataFrame): The DataFrame containing the data.
-        column (str): The column to evaluate.
-        target (str, optional): The target column name for assessing whether missingness is predictive.
-        drop_null_threshold (float): The threshold proportion (0-1) of missing values among non-null rows
-                                     above which the column is considered for dropping.
+        drop_null_threshold (float): The threshold proportion (0-1) of missing values above which the column is considered for dropping.
         target_corr_threshold (float): If target is provided, the minimum absolute correlation between the 
                                        missingness indicator and target needed to override a high null rate.
     
@@ -36,7 +33,7 @@ def evaluate_column_for_drop(df, drop_null_threshold=0.5, target_corr_threshold=
         dict: A dictionary containing:
             - 'total_count': Total number of rows.
             - 'non_null_count': Count of non-null entries.
-            - 'null_percentage': Percentage of missing values relative to non-null count.
+            - 'null_percentage': Percentage of missing values relative to total count.
             - 'unique_value_ratio': Ratio of unique non-null values to non-null count.
             - 'missing_target_corr': (If target provided) Correlation between missing indicator and target.
             - 'recommended_action': "drop" or "keep", with an explanation.
@@ -45,11 +42,13 @@ def evaluate_column_for_drop(df, drop_null_threshold=0.5, target_corr_threshold=
     column = get_shared_var('current_column')
     target = get_shared_var('target_column')
 
-    # Basic counts and null percentage (based on non-null entries)
+    if column not in df.columns:
+        return {"error": f"Column '{column}' does not exist in the DataFrame."}
+
     total_count = len(df)
     non_null_count = df[column].notnull().sum()
+    
     if non_null_count == 0:
-        # If there are no non-null entries, it's a clear candidate for dropping.
         return {
             "total_count": total_count,
             "non_null_count": non_null_count,
@@ -58,49 +57,36 @@ def evaluate_column_for_drop(df, drop_null_threshold=0.5, target_corr_threshold=
             "recommended_action": "drop",
             "details": "Column contains only null values."
         }
-    
-    # Compute null percentage relative to non-null count:
-    # (The logic here is: if you consider only the non-null values,
-    #  what percentage is missing? In practice, you may simply use total_count,
-    #  but here we subtract the missing values.)
-    # Actually, if you want to consider "numeric vs. non-null", you might do:
-    # null_percentage = (total_count - non_null_count) / total_count
-    # But the user requested "against all entries - null entries", meaning:
+
     null_percentage = (total_count - non_null_count) / total_count
-    
-    # For additional insight, compute the unique value ratio among non-null values.
     unique_values = df[column].dropna().unique()
     unique_value_ratio = len(unique_values) / non_null_count
-    
-    # Initialize the dictionary of metrics.
+
     metrics = {
         "total_count": total_count,
         "non_null_count": non_null_count,
         "null_percentage": null_percentage,
         "unique_value_ratio": unique_value_ratio
     }
-    
-    # If a target column is provided, compute the correlation between the missing indicator and target.
+
+    # Check correlation with target if available
     missing_target_corr = None
     if target is not None:
         if target not in df.columns:
             raise ValueError(f"Target column '{target}' not found in the DataFrame.")
-        # Create a binary indicator for missingness in the column
+
         missing_indicator = df[column].isnull().astype(int)
-        # Attempt to compute Pearson correlation if target is numeric.
-        # (For non-numeric targets, more sophisticated methods might be needed.)
+
         if pd.api.types.is_numeric_dtype(df[target]):
-            missing_target_corr = missing_indicator.corr(df[target])
+            if missing_indicator.nunique() > 1 and df[target].nunique() > 1:
+                missing_target_corr = missing_indicator.corr(df[target])
+            else:
+                missing_target_corr = np.nan  # Prevents division by zero errors
         else:
-            # For non-numeric targets, we can compute the point-biserial correlation,
-            # or simply mark it as not applicable.
-            missing_target_corr = np.nan
+            missing_target_corr = np.nan  # Not applicable for non-numeric targets
+
         metrics["missing_target_corr"] = missing_target_corr
-    
-    # Decision logic:
-    # - If the null_percentage is above the threshold AND (if target provided, the absolute correlation
-    #   between missingness and target is below the target_corr_threshold), recommend drop.
-    # - Otherwise, recommend keep.
+
     if null_percentage >= drop_null_threshold:
         if target is not None and pd.notnull(missing_target_corr):
             if abs(missing_target_corr) >= target_corr_threshold:
@@ -117,10 +103,10 @@ def evaluate_column_for_drop(df, drop_null_threshold=0.5, target_corr_threshold=
     else:
         recommended_action = "keep"
         explanation = f"Missingness ({null_percentage:.2%}) is within acceptable limits."
-    
+
     metrics["recommended_action"] = recommended_action
     metrics["explanation"] = explanation
-    
+
     return metrics
 
 
@@ -151,14 +137,20 @@ def drop_column(df):
 #  region              COLUMN NUM AND ALIAS NULL CHECKERES                                #
 #=============================================================================================#
 
+import re
+import pandas as pd
+import re
+
+import pandas as pd
+import re
+
 def check_percent_numeric(df, numeric_threshold=0.9):
     """
     Checks whether a column is text/object or if it is 90%+ numeric,
-    providing a comment on its classification.
+    but only counts entries that are fully numeric and contain a single number.
 
     Args:
         df (pd.DataFrame): The DataFrame containing the column to check.
-        column (str): The name of the column to analyze.
         numeric_threshold (float): The threshold for numeric data classification (default: 0.9).
 
     Returns:
@@ -166,24 +158,25 @@ def check_percent_numeric(df, numeric_threshold=0.9):
     """
     column = get_shared_var('current_column')
 
-    # Ensure the column exists
     if column not in df.columns:
         return f"Column '{column}' does not exist in the DataFrame."
 
-    def is_numeric(value):
+    def is_single_numeric(entry):
         """
-        Helper function to check if a value is numeric or can be safely cast to a number.
+        Returns True if the entry is a single number (not a mix of text and numbers or multiple numbers).
         """
-        try:
-            float(value)  # Try converting to a float
-            return True
-        except (ValueError, TypeError):
+        if pd.isna(entry):  # Handle NaN values
             return False
+        
+        entry = str(entry).strip()  # Convert to string and remove whitespace
+        
+        # Check if the entire entry is just a single number (integer or float)
+        return bool(re.fullmatch(r"\d+(\.\d+)?", entry))  # Matches "123", "45.67" but not "A12" or "10, 15"
 
-    # Count numeric and non-numeric entries
-    numeric_count = df[column].apply(is_numeric).sum()
-    total_exluding_nulls_count = df[column].notnull().sum()  # Total length of column excluding nulls
-    numeric_ratio = numeric_count / total_exluding_nulls_count if total_exluding_nulls_count > 0 else 0
+    # Count truly numeric (single-number) entries
+    numeric_count = df[column].apply(is_single_numeric).sum()
+    total_non_null_count = df[column].notnull().sum()  # Total non-null entries
+    numeric_ratio = numeric_count / total_non_null_count if total_non_null_count > 0 else 0
 
     # Determine classification
     if numeric_ratio >= numeric_threshold:

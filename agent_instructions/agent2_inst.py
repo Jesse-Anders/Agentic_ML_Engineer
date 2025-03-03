@@ -1,3 +1,5 @@
+# TO DO: IMPORTANT: The redundancy_dictionary needs to be updated to run off a json so there is a permanent record of the changes
+
 object_4_general_instructions = """
 Look closely at the Function Output and determine if any of the unique entries seem like duplicate entries but have slight differences.
 There may be differences such as spelling errors, or duplicate entries may have added extraneous characters such as brackets, dashes or parentheses.
@@ -45,6 +47,7 @@ AGENT2_IA = {
     ), 
     # Instructions for handling numeric outliers.
     "NUMERIC_OUTLIER_INST": (
+        # Potential Update to Handle low numbers of 'extreme' outliers.
         "Use exec_stored_func tool to run evaluate_outliers(df) to get outlier handling recommendations.\n"
         "If 'keep' is recommended, use tool call get_inst(NUMERIC_NULL_INST) for instructions.\n"
         "If 'winsorize' is recommended, use exec_stored_func to run winsorize_column(df). Then use tool call get_inst(NUMERIC_NULL_INST) for instructions.\n"
@@ -95,8 +98,7 @@ AGENT2_IA = {
         "Use exec_stored_func tool to run display_most_common_unique_entries(df, max_display=40).\n"
         f"{object_4_general_instructions}\n"
         "Use exec_stored_func tool to run display_redundancy_dictionary().\n"
-        "Use exec_stored_func tool to run clean_redundant_entries(df)\n"
-        "END PROCESS."
+        "Use tool call get_inst(OBJECT_3_AND_4_HUMAN_APPROVAL) for further instructions."
     ),
     "OBJECT_INST_4-1": (
         "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_first=True, batch_second=True)\n"
@@ -127,9 +129,13 @@ AGENT2_IA = {
         "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_second_to_last=True, batch_last=True)\n"  
         f"{object_4_general_instructions}\n"
         "Use exec_stored_func tool to run display_redundancy_dictionary().\n"
+        "Use tool call get_inst(OBJECT_3_AND_4_HUMAN_APPROVAL) for further instructions."
+    ),
+    "OBJECT_3_AND_4_HUMAN_APPROVAL": (
+        "Ask for human to approve next step."
         "Use exec_stored_func tool to run clean_redundant_entries(df).\n"
         "END PROCESS."
-    ),
+    )
 
 
     # Instructions for handling Unknown data type columns.
