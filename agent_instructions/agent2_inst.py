@@ -12,20 +12,20 @@ AGENT2_IA = {
 #    region                AGENT2   OUTLIERS AND NULL IMPUTING                                #
 #=============================================================================================#
 # Temp jump to object batcher
-    "AGENT2_START": (
-        #"Use tool call get_inst(OBJECT_INST_3) for further instructions."
-        "Use exec_stored_func too to run drop_column()"
-        "Else, END PROCESS."
-    ),
-
     # "AGENT2_START": (
-    #     "Use the exec_stored_func tool to run the data_type_check(df) function to determine the Column's data type.\n"
-    #     "If data type is Float, use the tool call get_inst(FLOAT_INST) for instructions.\n"
-    #     "If data type is Integer, use the tool call get_inst(NUMERIC_INST) for instructions.\n"
-    #     "If data type is Object, use the tool call get_inst(BOOL_CHECK_INST) for instructions.\n"
-    #     "If data type is Boolean, use the tool call get_inst(BOOL_INST) for instructions.\n"
-    #     "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions."
+    #     #"Use tool call get_inst(OBJECT_INST_3) for further instructions."
+    #     "Use exec_stored_func too to run drop_column()"
+    #     "Else, END PROCESS."
     # ),
+
+    "AGENT2_START": (
+        "Use the exec_stored_func tool to run the data_type_check(df) function to determine the Column's data type.\n"
+        "If data type is Float, use the tool call get_inst(FLOAT_INST) for instructions.\n"
+        "If data type is Integer, use the tool call get_inst(NUMERIC_INST) for instructions.\n"
+        "If data type is Object, use the tool call get_inst(BOOL_CHECK_INST) for instructions.\n"
+        "If data type is Boolean, use the tool call get_inst(BOOL_INST) for instructions.\n"
+        "If data type is any other type, use the tool call get_inst(UNKNOWN_INST) for instructions."
+    ),
 
     "BOOL_CHECK_INST": (
         "Use exec_stored_func tool to run check_for_bool(df).\n"

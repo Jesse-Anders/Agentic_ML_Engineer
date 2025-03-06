@@ -707,7 +707,7 @@ def evaluate_null_correlation_with_target(
     null_indicator = df[column].isnull().astype(int)
     target_dtype = df[target].dtype
 
-    ### **1️⃣ Step 1: Determine Target Type First**
+    # Step 1: Determine Target Type First
     unique_target_values = df[target].dropna().unique()
     num_unique_target_values = len(unique_target_values)
 
@@ -721,7 +721,7 @@ def evaluate_null_correlation_with_target(
 
     print(f"Determined Target Type: {target_type}")
 
-    ### **2️⃣ Step 2: Check for Zero Variance (Prevents NaN Issues)**
+    #Step 2: Check for Zero Variance (Prevents NaN Issues)
     if null_indicator.nunique() == 1:
         print("Warning: Null indicator has no variance (all values are the same).")
         return {
@@ -738,7 +738,7 @@ def evaluate_null_correlation_with_target(
             "recommended_handling": "impute"
         }
 
-    ### **3️⃣ Step 3: Apply the Correct Test Based on Target Type**
+    #Step 3: Apply the Correct Test Based on Target Type
     
     #### **Case 1: Continuous Numeric Target → Pearson Correlation**
     if target_type == "continuous_numeric":
