@@ -1057,7 +1057,7 @@ class FeatureEngineer:
 
 
         #  endregion  ================================================#
-        #  region  AGENT3 LOOP  Preliminary NLP                       #
+        #  region  AGENT3 LOOP  NLP Feature Generator                 #
         #=============================================================#      
         set_shared_var('current_agent_name', 'Agent 3')
 
