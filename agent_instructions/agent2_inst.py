@@ -136,9 +136,7 @@ AGENT2_IA = {
         "Use tool call get_inst(OBJECT_3_AND_4_HUMAN_APPROVAL) for further instructions."
     ),
     "OBJECT_3_AND_4_HUMAN_APPROVAL": (
-        #"Call tool request_human_approval('clean_redundant_entries')\n"
-        #"If human grants approval, Use exec_stored_func tool to run clean_redundant_entries(df).\n"
-        #"Else, END PROCESS."
+        # NOW HUMAN IN AGENT 2_1 LOOP!!!
         "End Process"
     ),
 

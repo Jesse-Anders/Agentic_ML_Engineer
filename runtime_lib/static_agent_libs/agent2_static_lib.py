@@ -936,7 +936,7 @@ def determine_if_is_categorical(df, categorical_threshold=0.2, dominant_threshol
     # Decision logic: When should text be considered categorical?
     if unique_ratio < categorical_threshold or dominant_value_ratio > dominant_threshold:
         column_type = "categorical"
-    elif avg_char_count <= 40:
+    elif avg_char_count <= 60:
         column_type = "short_text"  # Typically short labels, codes, names, etc.
     else:
         column_type = "long_text"  # Likely NLP-style text (paragraphs, descriptions, etc.)

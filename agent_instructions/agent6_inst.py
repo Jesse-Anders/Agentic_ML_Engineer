@@ -9,8 +9,8 @@ AGENT6_IA = {
         "Else, use the tool call get_inst(NLP_OR_CATEGORICAL_INST) for instructions"
     ),
     "NLP_OR_CATEGORICAL_INST": (
-        "Decide if the current column generally suitable for NLP operations. Meaning, it is primarily multi word text entries, likely including many complete sentences.\n"
-        "If the column is suitable for NLP operations, add the current column name to the encode_selections dictionary as NLP_Handler. END PROCESS.\n"
+        "Use exec_stored_func tool to run determine_if_is_categorical(df)\n"
+        "If Function Return column_type as 'long_text', add the current column name to the encode_selections dictionary as NLP_Handler. END PROCESS.\n"
         "Else, use the tool call get_inst(CATEGORICAL_1_INST) for instructions."
     ),
     "CATEGORICAL_1_INST": (
