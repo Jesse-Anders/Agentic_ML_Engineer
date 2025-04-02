@@ -26,12 +26,11 @@ def populate_redundancy_json(file_path='json_lib/saved_redundancy_dictionary.jso
     Returns:
         str: Status message indicating success or failure.
     """
-    # Retrieve the redundancy dictionary from shared memory (LangGraph state)
+    # Retrieve the redundancy dictionary from shared memory
     redundancy_dictionary = get_shared_var('redundancy_dictionary')
     
     # If no dictionary is found, do not proceed
     if not redundancy_dictionary:
-        print("No redundancy dictionary found in shared state.")
         return "No redundancy dictionary found in shared state."
 
     # Ensure the output directory exists
@@ -41,72 +40,80 @@ def populate_redundancy_json(file_path='json_lib/saved_redundancy_dictionary.jso
     with open(file_path, 'w') as file:
         json.dump(redundancy_dictionary, file, indent=4)
 
-    print(f"Redundancy dictionary saved to {file_path}")
     return f"Redundancy dictionary saved to {file_path}"
 
 
-def display_redundancy_json():
+import os
+import json
+
+def display_redundancy_json(file_path='json_lib/saved_redundancy_dictionary.json'):
     """
-    Retrieves the redundancy dictionary from shared state and returns it
-    as a formatted JSON string for display purposes.
-
-    Returns:
-        str: Pretty-printed JSON string of the redundancy dictionary,
-             or a message if nothing is found.
-    """
-    redundancy_dictionary = get_shared_var('redundancy_dictionary')
-
-    if not redundancy_dictionary:
-        return "No redundancy dictionary found in shared state."
-
-    # Return as a human-readable formatted JSON string
-    return json.dumps(redundancy_dictionary, indent=4)
-
-
-def clean_redundant_entries(df):
-    """
-    Cleans redundant entries in a specified DataFrame column by mapping them to their canonical key.
-    
-    This function loads the column-specific redundancy dictionary from a JSON file located at
-    'json_lib/saved_redundancy_dictionary.json'. It then retrieves the current column name via 
-    get_shared_var('current_column') and constructs a mapping from each redundant variant to its canonical key.
-    Finally, it applies this mapping to update the DataFrame column.
+    Reads and returns the contents of the saved redundancy dictionary JSON file 
+    as a formatted string for display purposes.
     
     Args:
-        df (pd.DataFrame): The DataFrame containing the column to be cleaned.
+        file_path (str): Path to the JSON file. Defaults to 'json_lib/saved_redundancy_dictionary.json'.
         
     Returns:
-        pd.DataFrame: The updated DataFrame with redundant entries replaced by their canonical key.
+        str: Formatted contents of the JSON file, or an error message if the file doesn't exist or an error occurs.
     """
-    # Retrieve the current column name
-    column = get_shared_var('current_column')
+    # Convert to an absolute path to avoid issues with relative paths
+    abs_file_path = os.path.abspath(file_path)
     
-    # Define the file path for the redundancy JSON file
-    file_path = 'json_lib/saved_redundancy_dictionary.json'
+    if not os.path.exists(abs_file_path):
+        return f"No file found at {abs_file_path}."
     
-    # Check if the JSON file exists
-    if not os.path.exists(file_path):
-        print("JSON file with redundancy dictionary not found. No changes applied.")
-        return "JSON file with redundancy dictionary not found. No changes applied."
+    try:
+        with open(abs_file_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+    except Exception as e:
+        return f"Error reading file: {e}"
     
-    # Load the redundancy dictionary from the JSON file
-    with open(file_path, 'r') as file:
-        redundancy_dict = json.load(file)
+    formatted_json = json.dumps(data, indent=4)
     
-    # If no dictionary exists for the current column, do nothing
-    if column not in redundancy_dict:
-        print(f"No redundancy dictionary found for column '{column}'. No changes applied.")
-        return f"No redundancy dictionary found for column '{column}'. No changes applied."
+    # Optionally print to ensure the output is displayed in the workflow
+    print(formatted_json)
     
-    # Build the mapping: for each canonical key in the current column's dictionary,
-    # map each redundant variant to the canonical key.
-    mapping = {}
-    for canonical_key, redundant_values in redundancy_dict[column].items():
-        for variant in redundant_values:
-            mapping[variant] = canonical_key
+    return formatted_json
 
-    # Replace all redundant values in the specified column with the canonical key.
-    df[column] = df[column].replace(mapping)
+
+def clean_redundant_entries(df, file_path='json_lib/saved_redundancy_dictionary.json'):
+    """
+    Cleans redundant entries in the DataFrame by replacing variant values with their canonical versions.
     
-    print(f"Cleaned redundant entries in column '{column}'.")
+    The function expects a JSON file at the given file_path in the following format:
+    
+    {
+        "column_name": {
+            "canonical_value": ["variant1", "variant2", ...],
+            ...
+        },
+        ...
+    }
+    
+    For each column in the JSON that exists in df, each variant found in the list
+    will be replaced by the canonical value.
+    
+    Parameters:
+        df (pd.DataFrame): The DataFrame to be cleaned.
+        file_path (str): Path to the JSON redundancy dictionary file.
+        
+    Returns:
+        pd.DataFrame: The cleaned DataFrame.
+    """
+    # Load the redundancy mapping dictionary from the JSON file
+    with open(file_path, 'r') as f:
+        mapping_data = json.load(f)
+    
+    # Loop over each column mapping from the JSON file
+    for column, mappings in mapping_data.items():
+        if column in df.columns:
+            # Build a dictionary where each variant maps to its canonical value
+            replacement_dict = {}
+            for canonical_value, variants in mappings.items():
+                for variant in variants:
+                    replacement_dict[variant] = canonical_value
+            # Replace the variant values in the DataFrame column
+            df[column] = df[column].replace(replacement_dict)
+    
     return df

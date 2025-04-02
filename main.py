@@ -742,8 +742,24 @@ def request_human_approval(task_to_approve):
     Requests human approval before executing the next function.
     Returns 'approved' if approved, otherwise 'denied'.
     """
-    user_input = input(f"Do you approve running {task_to_approve}? (yes/no): ").strip().lower()
+    current_column = get_shared_var('current_column')
+    user_input = input(f"Do you approve running {task_to_approve} in {current_column}? (yes/no): ").strip().lower()
     return "approved" if user_input == "yes" else "denied"
+
+@tool
+def request_human_exec():
+    """
+    Requests human to run any function from the agent static libs modules.
+    Returns 'approved' if approved, otherwise 'denied'.
+    """
+    if args.request_human == False:
+        return "x"
+    else:
+        user_input = input(f"Enter the function you wish to run OR enter 'x' to continue.")
+        if user_input.strip().lower() == "x":
+            return "x"
+        else:
+            return f"Use exec_stored_func tool to run {user_input} \n"
 
 
 tools = [
@@ -754,7 +770,8 @@ tools = [
     add_nlp_column,
     encode_choice,
     redundancy_dictionary,
-    request_human_approval
+    request_human_approval,
+    request_human_exec
 ]
 
 
@@ -887,7 +904,7 @@ class Preprocesser:
 
             # # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ["car name"] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -902,10 +919,11 @@ class Preprocesser:
             except Exception as e:
                 print(f'Error during stream: {e}')
         
-        # UPDATE!! This is overwritten too easily Save Redundancy Dictionary to Json 
-        # with open('json_lib/saved_redundancy_dictionary.json', 'w') as file:
-        #     json.dump(get_shared_var('redundancy_dictionary'), file, indent=4)
-        #     print('Saved Redundancy Dictionary To Json')
+        # Save Redundancy Dictionary to Json only if agent 2 was run.
+        if self.args.run_agent_2:
+            with open('json_lib/saved_redundancy_dictionary.json', 'w') as file:
+                json.dump(get_shared_var('redundancy_dictionary'), file, indent=4)
+                print('Saved Redundancy Dictionary To Json')
 
         save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_2')
 
@@ -914,8 +932,8 @@ class Preprocesser:
         #=============================================================#
         set_shared_var('current_agent_name', 'Agent 2_1')       
 
-        for column in preprocessor.get_df().columns:
-
+        #for column in preprocessor.get_df().columns:
+        for i in range(1):
             if self.args.run_agent_2_1 != True:
                 continue
 
@@ -923,15 +941,14 @@ class Preprocesser:
                 continue
 
             # DEBUGGING: Run iteration of small column set or a single column
-            if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
-                if column not in COLUMNS_TO_TEST:
-                    continue
+            # if self.args.debug:
+            #     COLUMNS_TO_TEST = ["weight","car name"] # Empty to Skip Agent Entirely!
+            #     if column not in COLUMNS_TO_TEST:
+            #         continue
             
-            # Outlier and Impute Handler Loop
-            set_shared_var('current_column', column)
-            set_shared_var('target_column', args.target_var)
-            pipeline.write(f'set_current_column("{column}")')
+            # set_shared_var('current_column', column)
+            # set_shared_var('target_column', args.target_var)
+            # pipeline.write(f'set_current_column("{column}")')
             inputs = {'messages': [('user', AGENT2_1_IA["AGENT2_1_START"])]}
             try:
                 stream = agent2_1.stream(inputs, {"recursion_limit": 100}, stream_mode='values')
@@ -1559,7 +1576,7 @@ def run_ml_engineer(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_input_path', type=str, default='data_inputs/data-arti-300/auto-mpg.csv')
+    parser.add_argument('--data_input_path', type=str, default='data_inputs/data-arti-300/auto-mpg-enc.csv')
     parser.add_argument('--data_output_path', type=str, default='data_outputs/output.csv')
     parser.add_argument('--pipeline_path', type=str, default='runtime_lib/pipeline.py')
     parser.add_argument('--static_lib_path', type=str, default='runtime_lib/static_lib.py')
@@ -1579,13 +1596,16 @@ if __name__ == "__main__":
     parser.add_argument('--id_var', type=str)
 
     # Isolate running of specific agent loops.
-    parser.add_argument('--run_agent_1', type=bool, default=False)
-    parser.add_argument('--run_agent_2', type=bool, default=False)
-    parser.add_argument('--run_agent_2_1', type=bool, default=False)
-    parser.add_argument('--run_agent_3', type=bool, default=False)
-    parser.add_argument('--run_agent_4', type=bool, default=False)
-    parser.add_argument('--run_agent_5', type=bool, default=False) # POW!
-    parser.add_argument('--run_agent_6', type=bool, default=False)
+    parser.add_argument('--run_agent_1', type=bool, default=False) # Alias Null Prep
+    parser.add_argument('--run_agent_2', type=bool, default=False) # Null Handler (Biggie Biggie Biggie)
+    parser.add_argument('--run_agent_2_1', type=bool, default=True) # Category Redundancy Cleaner
+    parser.add_argument('--run_agent_3', type=bool, default=False) # LLM NLP Feature Engineer Generator
+    parser.add_argument('--run_agent_4', type=bool, default=False) # Empty
+    parser.add_argument('--run_agent_5', type=bool, default=False) # POW!!!
+    parser.add_argument('--run_agent_6', type=bool, default=False) # Encoder
+
+    # Allow human to manually execute functions after agent 2
+    parser.add_argument('--request_human', type=bool, default=False) 
 
 
     # parser.add_argument('--dataset_goal_id', type=str, default='default')
