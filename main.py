@@ -6,6 +6,7 @@ import os
 import re
 import pandas as pd
 import shutil
+import time
 
 from dotenv import load_dotenv
 from langchain_core.tools import tool
@@ -770,8 +771,8 @@ tools = [
     add_nlp_column,
     encode_choice,
     redundancy_dictionary,
-    request_human_approval,
-    request_human_exec
+    request_human_approval
+    # request_human_exec
 ]
 
 
@@ -872,7 +873,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = [] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ["weight"] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -885,9 +886,12 @@ class Preprocesser:
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+            
+            print("10 Second pause to prevent Token Per Minute failures")
+            time.sleep(10)
 
         save_dataframe_stage(preprocessor.get_df(), 'POST_AGENT_1')
-
+       
 
         #  endregion  ================================================#
         #  region  AGENT2 LOOP                                        #
@@ -918,6 +922,10 @@ class Preprocesser:
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+            
+            # 20 second delay between comlum loops to prevent tokens per minute failures.
+            print("20 Second pause to prevent Token Per Minute failures")
+            time.sleep(20)
         
         # Save Redundancy Dictionary to Json only if agent 2 was run.
         if self.args.run_agent_2:
@@ -1113,7 +1121,11 @@ class FeatureEngineer:
                 stream = agent3.stream(inputs, stream_mode='values')
                 print_stream(stream)
             except Exception as e:
-                print(f'Error during stream: {e}')          
+                print(f'Error during stream: {e}') 
+
+            # 20 second delay between comlum loops to prevent tokens per minute failures.
+            print("20 Second pause to prevent Token Per Minute failures")
+            time.sleep(20)         
 
         save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_3')
 
@@ -1147,6 +1159,10 @@ class FeatureEngineer:
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+                        
+            # 20 second delay between comlum loops to prevent tokens per minute failures.
+            print("20 Second pause to prevent Token Per Minute failures")
+            time.sleep(20)
 
         save_dataframe_stage(feature_engineer.get_df(), 'POST_AGENT_4')
 
@@ -1245,6 +1261,10 @@ class FeatureEngineer:
                 print_stream(stream)
             except Exception as e:
                 print(f'Error during stream: {e}')
+
+            # 20 second delay between comlum loops to prevent tokens per minute failures.
+            print("20 Second pause to prevent Token Per Minute failures")
+            time.sleep(20)
 
         with open('json_lib/saved_encode_selections.json', 'w') as file:
             json.dump(get_shared_var('encode_selections'), file, indent=4)
@@ -1348,30 +1368,6 @@ class FeatureEngineer:
 #  endregion  ================================================================================#
 #  region                                File Management                                      #
 #=============================================================================================#
-
-def save_df_to_csv(args, df, csv_name=None):
-    '''
-    Saves dataframe to a .csv file
-
-    df: dataframe
-    csv_name: name (without extension) of output .csv
-    '''
-    csv_path = args.data_output_path
-
-    # update path for custom name
-    if csv_name:
-        csv_path = os.path.join(os.path.dirname(args.data_output_path), f'{csv_name}.csv')
-
-    # don't overwrite an existing .csv
-    if os.path.exists(csv_path):
-        print('Error: A dataframe is already saved under this name')
-        return
-
-    try:
-        df.to_csv(csv_path, index=False)
-        print(f'Dataframe saved to {csv_path}')
-    except Exception as e:
-        print(f'Error saving dataframe: {e}')
 
 def init_pyfiles(args):
     '''
@@ -1567,7 +1563,8 @@ def run_ml_engineer(args):
     feature_engineer.set_df(preprocessed_df)
     feature_engineered_df = feature_engineer.run(temperature=0.5)
 
-    # save the final dataframe
+    # save the final dataframe 
+    # (This function is now in utils - working to apply to each post_agentX state)
     save_df_to_csv(args, feature_engineered_df)
 
 #  endregion  ================================================================================#
@@ -1576,7 +1573,7 @@ def run_ml_engineer(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_input_path', type=str, default='data_inputs/data-arti-300/auto-mpg-enc.csv')
+    parser.add_argument('--data_input_path', type=str, default='data_inputs/data-arti-300/auto-mpg.csv')
     parser.add_argument('--data_output_path', type=str, default='data_outputs/output.csv')
     parser.add_argument('--pipeline_path', type=str, default='runtime_lib/pipeline.py')
     parser.add_argument('--static_lib_path', type=str, default='runtime_lib/static_lib.py')
@@ -1596,9 +1593,9 @@ if __name__ == "__main__":
     parser.add_argument('--id_var', type=str)
 
     # Isolate running of specific agent loops.
-    parser.add_argument('--run_agent_1', type=bool, default=False) # Alias Null Prep
+    parser.add_argument('--run_agent_1', type=bool, default=True) # Alias Null Prep
     parser.add_argument('--run_agent_2', type=bool, default=False) # Null Handler (Biggie Biggie Biggie)
-    parser.add_argument('--run_agent_2_1', type=bool, default=True) # Category Redundancy Cleaner
+    parser.add_argument('--run_agent_2_1', type=bool, default=False) # Category Redundancy Cleaner
     parser.add_argument('--run_agent_3', type=bool, default=False) # LLM NLP Feature Engineer Generator
     parser.add_argument('--run_agent_4', type=bool, default=False) # Empty
     parser.add_argument('--run_agent_5', type=bool, default=False) # POW!!!

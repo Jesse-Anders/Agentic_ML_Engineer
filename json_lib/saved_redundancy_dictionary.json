@@ -1,13 +1,8 @@
 {
     "car name": {
-      "volkswagen rabbit": [
-        "vw rabbit"
-      ]
-    },
-    "last name": {
-        "volkswagen rabbit": [
-          "vw rabbit"
+        "chevrolet chevelle malibu": [
+            "chevrolet malibu",
+            "chevrolet chevelle malibu classic"
         ]
-      }
-  }
-  
+    }
+}

@@ -226,30 +226,33 @@ def execute_ordinal_encode(df, column):
     return df
 
 
-# MIN/MAX NORMALIZATION
-# Creates a new Column with min/max normalization
-def execute_scaling_normalization(df, column):
+def execute_scaling_normalization(df, column, decimals=4):
     """
-    Apply min-max normalization to a specific column in a pandas DataFrame and create a new column for the normalized values.
+    Apply min-max normalization to a specific column in a pandas DataFrame and create a new column 
+    for the normalized values, rounded to a specified number of decimal places.
 
     Parameters:
     - df: pandas DataFrame
     - column: The column to normalize
+    - decimals: Number of decimal places to round to (default is 4)
 
-    The function will add a new column to the DataFrame with the normalized values, prefixed with 'mm_'.
+    The function adds a new column with normalized values (prefixed with '_Normalized') and drops the original.
     """
 
     # Apply min-max normalization
     min_value = df[column].min()
     max_value = df[column].max()
-    df[column + '_Normalized'] = (df[column] - min_value) / (max_value - min_value)
-    
-        # Drop the original column
+
+    normalized_column = (df[column] - min_value) / (max_value - min_value)
+    df[column + '_Normalized'] = normalized_column.round(decimals)
+
+    # Drop the original column
     df.drop(columns=[column], inplace=True)
 
-    print(f"Created {column}_Normalized")
+    print(f"Created {column}_Normalized (rounded to {decimals} decimal places)")
 
     return df
+
 
 
 def execute_nlp_handler(df, column):

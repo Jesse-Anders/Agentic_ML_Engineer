@@ -1,3 +1,4 @@
+import os
 from langchain_core.tools import tool
 
 from agent_instructions.agent1_inst import AGENT1_IA
@@ -185,3 +186,31 @@ INST_ARCHIVE = {
 # endregion
 
 } 
+
+#  endregion  ================================================================================#
+#    region                            File Management                                   #
+#=============================================================================================#
+
+def save_df_to_csv(args, df, csv_name=None):
+    '''
+    Saves dataframe to a .csv file
+
+    df: dataframe
+    csv_name: name (without extension) of output .csv
+    '''
+    csv_path = args.data_output_path
+
+    # update path for custom name
+    if csv_name:
+        csv_path = os.path.join(os.path.dirname(args.data_output_path), f'{csv_name}.csv')
+
+    # don't overwrite an existing .csv
+    if os.path.exists(csv_path):
+        print('Error: A dataframe is already saved under this name')
+        return
+
+    try:
+        df.to_csv(csv_path, index=False)
+        print(f'Dataframe saved to {csv_path}')
+    except Exception as e:
+        print(f'Error saving dataframe: {e}')
