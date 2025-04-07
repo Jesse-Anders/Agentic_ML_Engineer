@@ -873,7 +873,7 @@ class Preprocesser:
 
             # DEBUGGING: Run iteration of small column set or a single column
             if self.args.debug:
-                COLUMNS_TO_TEST = ["weight"] # Empty to Skip Agent Entirely!
+                COLUMNS_TO_TEST = ["car name"] # Empty to Skip Agent Entirely!
                 if column not in COLUMNS_TO_TEST:
                     continue
             
@@ -1593,9 +1593,9 @@ if __name__ == "__main__":
     parser.add_argument('--id_var', type=str)
 
     # Isolate running of specific agent loops.
-    parser.add_argument('--run_agent_1', type=bool, default=True) # Alias Null Prep
-    parser.add_argument('--run_agent_2', type=bool, default=False) # Null Handler (Biggie Biggie Biggie)
-    parser.add_argument('--run_agent_2_1', type=bool, default=False) # Category Redundancy Cleaner
+    parser.add_argument('--run_agent_1', type=bool, default=False) # Alias Null Prep
+    parser.add_argument('--run_agent_2', type=bool, default=True) # Null Handler (Biggie Biggie Biggie)
+    parser.add_argument('--run_agent_2_1', type=bool, default=True) # Category Redundancy Cleaner
     parser.add_argument('--run_agent_3', type=bool, default=False) # LLM NLP Feature Engineer Generator
     parser.add_argument('--run_agent_4', type=bool, default=False) # Empty
     parser.add_argument('--run_agent_5', type=bool, default=False) # POW!!!

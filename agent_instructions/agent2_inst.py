@@ -1,10 +1,11 @@
 # TO DO: IMPORTANT: The redundancy_dictionary needs to be updated to run off a json so there is a permanent record of the changes
 
 object_4_general_instructions = """
-Look closely at the Function Output and determine if any of the unique entries seem like duplicate entries but have slight differences.
+Look line by line at the Function Output and determine if any of the unique entries seem like duplicate entries but have slight differences.
 There may be differences such as spelling errors, or duplicate entries may have added extraneous characters such as brackets, dashes or parentheses.
-Be thorough and complete, making comprehensive comparisons between all the items when searching for potential duplicates.
-For all entries that you are EXTREMELY confident are duplicates, use the redundancy_dictionary tool to add items as Keys & Values to the redundancy_dict.
+Be thorough and complete, check each entry against all the other entries, when searching for potential duplicates.
+Look over the entries a second time to be absolutely certain you have not missed any possible duplicate entries.
+For all entries that you are very confident are duplicates, use the redundancy_dictionary tool to add items as Keys & Values to the redundancy_dict.
 """
 
 AGENT2_IA = {
@@ -92,6 +93,7 @@ AGENT2_IA = {
         "If Function Return column_type as 'long_text', END PROCESS."    
     ),
     "OBJECT_INST_2-1": (
+        # THIS IS NOT WORKING. CRASHES TOKENS PER MINUTE LIMIT WHEN RUNNING TO 4-1 INSRTUCTIONS.
         # NEED A RUN_REDUNDANCY=True/False parameter to open this up or close it.
         "Use exec_stored_func tool to run count_unique_entries(df).\n"
         "If column has 40 or fewer unique entries, use tool call get_inst(OBJECT_INST_3) for further instructions.\n"
@@ -102,7 +104,7 @@ AGENT2_IA = {
         "Use exec_stored_func tool to run display_most_common_unique_entries(df, max_display=40).\n"
         f"{object_4_general_instructions}\n"
         "Use exec_stored_func tool to run display_redundancy_dictionary().\n"
-        "Use tool call get_inst(OBJECT_3_AND_4_HUMAN_APPROVAL) for further instructions."
+        "Use tool call get_inst(OBJECT_3_AND_4_HUMAN_APPROVAL) for further instructions." # Currently just ends the process
     ),
     "OBJECT_INST_4-1": (
         "Use exec_stored_func tool to run display_unique_entry_batches(df, batch_size=20, batch_first=True, batch_second=True)\n"

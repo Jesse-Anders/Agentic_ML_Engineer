@@ -1,0 +1,2 @@
+Option to output file at each agent
+Create separate agent for Bert / Auto encoder model to handle redundancy searching. (this is confusing)
