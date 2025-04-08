@@ -824,9 +824,14 @@ class Preprocesser:
             is_lms = self.args.llm_platform == 'lm-studio'
             api_key = 'lm-studio' if is_lms else get_openai_api_key()
             model_name = self.args.lms_model if is_lms else self.args.openai_model
+            
 
             model = ChatOpenAI(
                 openai_api_key=api_key,
+                # Below is for inferencing through models via instances on Lambda
+                # base_url="https://api.lambda.ai/v1",
+                # default_headers={"Authorization": api_key}, # Probably not needed
+                # model_name="llama-4-maverick-17b-128e-instruct-fp8",
                 model_name=model_name,
                 temperature=temperature
             )
