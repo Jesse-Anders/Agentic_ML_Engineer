@@ -1,9 +1,23 @@
 {
-    "Numeric_Encode": [],
-    "One_Hot_Encode": [],
+    "Numeric_Encode": [
+        "car name"
+    ],
+    "One_Hot_Encode": [
+        "car name"
+    ],
     "Frequency_Count_Encode": [],
     "Ordinal_Encode": [],
     "NLP_Handler": [],
-    "Scale_Or_Normalize": [],
+    "Scale_Or_Normalize": [
+        "cylinders",
+        "displacement",
+        "horsepower",
+        "weight",
+        "acceleration",
+        "model year",
+        "origin",
+        "power_to_weight_ratio",
+        "efficiency_ratio"
+    ],
     "Failed_Encode_Selection": []
 }

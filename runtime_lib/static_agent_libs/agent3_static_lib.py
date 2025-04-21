@@ -34,46 +34,6 @@ def show_sample_of_entries(df, sample_count=5, sample_length=1000):
 
 
 
-# def generate_llm_feature(df):
-#     """
-#     Iterates over each entry in the current column, uses the prebuilt React agent to generate a response to the prompt,
-#     and writes it to a new column named "<current_column>_gen_feature".
-#     """
-#     column = get_shared_var('current_column')
-#     target_column = column + "_gen_feature"
-    
-#     prompt_template = (
-#         "Entry Text: {text}\n"
-#         "call to a json list.\n"
-#     )
-
-#     def call_agent_on_text(text: str) -> str:
-#         if pd.isna(text) or text.strip() == "":
-#             return ""
-        
-#         prompt = prompt_template.format(text=text)
-#         inputs = {'messages': [{'role': 'user', 'content': prompt}]}
-        
-#         try:
-#             assistant_response = ""
-#             # Process each event from the agent stream
-#             for event in basic_agent.stream(inputs):
-#                 # Since event is always a dict with a "messages" key, we extract the last message
-#                 if isinstance(event, dict) and "messages" in event:
-#                     assistant_response = event["messages"][-1].content.strip()
-#             return assistant_response
-#         except Exception as e:
-#             print(f"Error during agent stream for text: {text}\n{e}")
-#             return f"Error: {e}"
-
-    
-#     tqdm.pandas(desc="Processing rows with agent")
-#     df[target_column] = df[column].progress_apply(call_agent_on_text)
-#     return df
-
-
-
-
 def generate_llm_feature(df):
     """
     Iterates over each entry in the current column and, for each prompt in the JSON file,

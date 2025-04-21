@@ -236,12 +236,25 @@ def determine_numeric_or_categorical(df, numeric_override_threshold=0.9):
     dominant_value_ratio = unique_values.iloc[0]  # Proportion of the most frequent value
 
     # Analyze the unique-to-total ratio
+    # ----------------------------------------------------------
+    # This ratio gives an indication of how diverse the values in the column are.
+    # A low ratio (e.g., < 0.05) suggests that most values repeat frequently,
+    # which is typical of categorical data (like zip codes or ratings).
+    # A high ratio implies that values are more unique, which is a hallmark of numeric data.
+    # We use this ratio as a primary heuristic to distinguish between categorical and numeric types.
     unique_count = df[column].nunique()
     total_count = len(df[column])
     unique_ratio = unique_count / total_count
 
     # Determine if data is numeric or categorical
-    # Override to numeric if most values are unique despite dominant values
+    # ----------------------------------------------------------
+    # Primary logic:
+    #   - If more than 5% of the values are unique, we consider the column numeric.
+    #   - However, to account for cases where a single value dominates but the rest are still diverse,
+    #     we check if the combined frequency of all other values (excluding the dominant one)
+    #     exceeds a defined threshold (default: 90%).
+    #     This allows us to reclassify skewed but truly numeric columns (e.g., "age" with many 30s).
+    # This dual-condition strategy prevents mislabeling numeric columns that happen to be imbalanced.
     if unique_ratio > 0.05 or unique_values.iloc[1:].sum() > numeric_override_threshold:
         column_type = "numeric"
     else:
