@@ -9,6 +9,7 @@ AGENT1_IA = {
         "If recommended_action is 'drop', exec_stored_func to run drop_column(df) to drop the column from the df. END PROCESS.\n"
         "If recommended_action is 'keep' use the exec_stored_func to run data_type_check(df).\n"
         "If data type is 'object' call tool get_inst(CONFIRM_TRULY_OBJECT) for further instructions.\n"
+        # Note: In order for an alias null to exist, the type must be object. Full numeric columns do not contain aliases.
         "If data type is not 'object', END PROCESS.\n"
     ), 
 # Confirms that the column data type is truly text and not a truly numeric column with sparse text items.
