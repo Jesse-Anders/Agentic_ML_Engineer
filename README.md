@@ -26,22 +26,15 @@ The run produces:
 
 ## Architecture
 
-Six agents run as a pipeline; each is a [LangGraph](https://github.com/langchain-ai/langgraph) state machine driven by a per-agent **instruction archive** and backed by a **static function library**.
+Six agents run in sequence, but each one is itself a **branching [LangGraph](https://github.com/langchain-ai/langgraph) state machine** — inspecting a column, routing it down different paths (numeric vs. categorical, short vs. long text, boolean, high-cardinality, disguised nulls, …), and looping through batched review and human-approval gates before it acts. The full graph across all six agents:
 
-```mermaid
-flowchart TD
-    IN["Raw CSV + target variable"] --> A1
-    A1["<b>Agent 1 — Alias Nulls</b><br/>drop no-signal high-null cols · detect object cols that are really numeric · convert disguised nulls ('?', 'N/A', …) to true nulls (incl. an LLM pass)"] --> A2
-    A2["<b>Agent 2 — Outliers &amp; Imputation</b><br/>datatype resolution (lossless float→int, booleans) · numeric vs categorical routing · outlier handling · KNN / stochastic-median impute · mode / exNulls for categoricals"] --> A21
-    A21["<b>Agent 2.1 — Category Redundancy Cleaner</b><br/>LLM finds near-duplicate categories (typos, stray chars) → redundancy dictionary"] --> A3
-    A3["<b>Agent 3 — NLP Feature Generator</b><br/>flags text columns; from the dataset goal, the LLM writes 4 prompts applied row-by-row to synthesize 4 new features"] --> A4
-    A4{"<b>Agent 4 — Human Approval</b><br/>review / sign off on proposed changes"} --> A5
-    A5["<b>Agent 5 — Numeric Feature Generator (POW)</b><br/>a stronger model runs a <i>parts-of-a-whole</i> search over numeric features, forms POW Groups, and iteratively engineers new numeric features"] --> A6
-    A6["<b>Agent 6 — Encoding</b><br/>scale/normalize vs categorical · ordinal vs one-hot · flag non-processable"] --> OUT
-    OUT["Model-ready CSV + generated pipeline.py"] --> M["Model benchmark<br/>(regressor suite → R²/MSE/RMSE/MAE)"]
-```
+<p align="center">
+  <img src="images/architecture-flowchart.png" alt="AMALEE architecture — the full branching state machine across all six agents: Agent 1 Alias Nulls, Agent 2 Outliers & Imputation, Agent 3 NLP Feature Generator, Agent 5 Numeric Parts-of-a-Whole Feature Generator, and Agent 6 Encoding, with human-approval gates" width="900">
+</p>
 
-The detailed original diagram is in [`presentation/Miro Flowchart.pdf`](presentation/Miro%20Flowchart.pdf); the full walkthrough is in [`presentation/AMALEE Presentation.pdf`](presentation/AMALEE%20Presentation.pdf).
+_Source: [`presentation/Miro Flowchart.pdf`](presentation/Miro%20Flowchart.pdf) (zoomable vector original). The full project walkthrough is in [`presentation/AMALEE Presentation.pdf`](presentation/AMALEE%20Presentation.pdf)._
+
+At a high level the flow is Alias-Null prep → outlier/imputation → NLP feature generation → human approval → numeric parts-of-a-whole feature generation → encoding. But the detail above is the point: most of the engineering lives in the **per-agent branching and the human checkpoints**, not in a single straight-through pass.
 
 ### How an agent is built
 
